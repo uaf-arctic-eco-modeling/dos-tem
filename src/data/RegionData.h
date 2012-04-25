@@ -8,9 +8,11 @@ class RegionData{
   		RegionData();
   		~RegionData();
     
-  		int act_co2_drv_yr;
-    	int co2year[MAX_CO2_DRV_YR];
+    	int act_co2yr;
+  		int co2year[MAX_CO2_DRV_YR];
     	float co2[MAX_CO2_DRV_YR];
+
+    	double initco2;
 
 };
 

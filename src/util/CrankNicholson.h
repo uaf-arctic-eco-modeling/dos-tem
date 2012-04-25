@@ -2,12 +2,11 @@
  * */
 #ifndef CRANKNICHOLSON_H_
 #define CRANKNICHOLSON_H_
- #include <cmath>
- #include <iostream>
- using namespace std;
-
+#include <cmath>
+#include <iostream>
+using namespace std;
  
- class CrankNicholson{
+class CrankNicholson{
 	 public :
 	    
 		 CrankNicholson();
@@ -20,17 +19,11 @@
 	 * \arg \c cap array of volumetric capacity * thickness
 	 * \arg \c s  array of s
 	 * \arg \c e  array of e
-	 * \arg \c numl the number of snow/soil layers
 	 */
-	void geBackward(const int  &startind, const int & endind, double  t[], double dx[], double  cn[], 
-	 			double cap[], double  s[], double e[], double & dt, const bool & lstlaybot); 
+	void geBackward(const int  &startind, const int & endind, double t[], double cn[],
+	 			double cap[], double s[], double e[], double & dt, const double & endlayergflux);
 	void cnForward(const int & startind, const int & endind ,double tii[], double tit[], double s[], double e[]);
- 
-    void geForward(const int  &startind, const int & endind, double  t[], double dx[], double  cn[], 
-	 			double cap[], double  s[], double e[], double & dt, const bool & fstlaytop);
-	 
-    void cnBackward(const int & startind, const int & endind ,double tii[], double tit[], double s[], double e[]);
-	  
+
 	void tridiagonal(const int ind, const int numsl, double a[], double b[], double c[],double r[],  double u[]);
 };
 #endif /*CRANKNICHOLSON_H_*/

@@ -7,7 +7,7 @@
 
 	#include <cmath>
 	#include <iostream>
-	#include "../inc/PhysicalConstants.h"
+	#include "../inc/physicalconst.h"
 	
 	using namespace std;
 

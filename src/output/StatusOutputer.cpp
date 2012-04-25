@@ -6,16 +6,13 @@ StatusOutputer::StatusOutputer(){
 };
 
 StatusOutputer::~StatusOutputer(){
- 	//cout<< "closing output files in StatusOutputer \n";
  	if(statusFile!=NULL){
     	statusFile->close();
 		delete statusFile;
  	}
 };
 
-inline string itos (int n) {stringstream ss; ss<<n; return ss.str();}
-
-void StatusOutputer::init(string& outputdir, const int & myid, string& stage){
+void StatusOutputer::init(string& outputdir, string& stage){
 	
 	string moncfn =outputdir+"status"+stage+".nc";
 	statusFile = new NcFile(moncfn.c_str(), NcFile::Replace);

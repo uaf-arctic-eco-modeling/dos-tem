@@ -15,66 +15,49 @@ using namespace std;
 #include "netcdfcpp.h"
 
 //local header
-#include "../run/ModelData.h"
+#include "../runmodule/ModelData.h"
 
-//from TEMcore.dll
-#include "../util/Exception.h"
+#include "../inc/cohortconst.h"
 #include "../inc/layerconst.h"
 #include "../inc/timeconst.h"
-#include "../inc/ErrorCode.h"
 
 class CohortInputer{
 	public:
 		CohortInputer();
 		~CohortInputer();
 
-		void init( );
+		int act_clmyr;
+		int act_vegset;
+		int act_fireset;
 
-		int  getEqRecID(const int &chtid);
-		void getGrdID(int &grdid, const int &recid);   //Yuan: this id is for grid-level data, like soil, FRI, fire size
-		void getVegetation(int & vtype,  const int & eqcid);
-		void getDrainage(  int & dtype,  const int & eqcid);
-	
-		int  getSpRecID(const int &chtid);
-		void getEqchtid5SpFile(int & eqchtid,  const int &recid);
-  
-		int  getTrRecID(const int &chtid);
-		void getSpchtid5TrFile( int & spchtid,  const int &recid);
+		void init(string & dir);
 
-		void getChtID(int &chtid, const int &recid);   //Yuan: this is used for all run stages
-		void getClmID(int &clmid, const int &recid);   //Yuan: this is used for all run stages
+		int getChtDataids(int & inichtid, int & grdid, int & clmid,int & vegid,
+				int & fireid, const int &chtid);
 
-		void getSpinupFireOccur(int year[MAX_SP_FIR_OCR_NUM], const int &spcid);
-		void getSpinupFireSeason(int season[MAX_SP_FIR_OCR_NUM], const int &spcid);
-		void getSpinupSeverity(int severity[MAX_SP_FIR_OCR_NUM], const int &spcid);  //Yuan:
+		int getClmRec(const int &clmid);
+		int getVegRec(const int &vegid);
+		int getFireRec(const int &fireid);
 
-		void getTransientFireOccur(int year[MAX_TR_FIR_OCR_NUM], const int &trcid);
-		void getTransientFireSeason(int season[MAX_TR_FIR_OCR_NUM], const int &trcid);
-		void getTransientSeverity(int severity[MAX_TR_FIR_OCR_NUM], const int &trcid);  //Yuan:
+		void getClimate(float tair[], float prec[], float nirr[], float vap[],
+				const int& yrno, const int & recid);
 
-		void setModelData(ModelData* mdp);
+		void getVegetation(int vsetyr[], int vtype[], int vfrac[], const int & recid);
+
+		void getFire(int fyear[], int fseason[], int fsize[], const int &recid);
+		void getFireSeverity(int fseverity[], const int &recid);
 
 	private:
 	 
-		 int useseverity;
-		 string eqidfname;
-		 string vegidfname;
-		 string drgidfname;
-		 string spidfname;
-		 string spffname;
-		 string tridfname;
-		 string trffname;
+		 string chtidfname;
+		 string clmfname;
+		 string vegfname;
+		 string firefname;
 
-		 void initEqChtidFile(string& dir);
-		 void initVegetation(string& dir);
-		 void initDrainage(string& dir);
-
-		 void initSpChtidFile(string& dir);
-		 void initTrChtidFile(string& dir);
-		 void initSpinupFire(string& dir);
-		 void initTransientFire(string& dir);
-
-		 ModelData* md;
+		 void initChtidFile(string& dir);
+		 int initClmFile(string& dir);
+		 int initVegFile(string& dir);
+		 int initFireFile(string& dir);
 	
 };
 

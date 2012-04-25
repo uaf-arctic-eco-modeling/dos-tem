@@ -25,7 +25,7 @@ void AtmosUtil::updateDailyPrec(float precd[], const int & dinmcurr ,
     DURT=RT/R;
     DURS=RS/R;
 	
-	float B, T, S, RB, DURB;
+	float B=1.0, T=0.0, S=1.0, RB, DURB;
 	for(int id =0;id<32;id++){
 		RAININTE[id] =0.;
 		RAINDUR[id] = 0.; 
@@ -44,8 +44,6 @@ void AtmosUtil::updateDailyPrec(float precd[], const int & dinmcurr ,
           S=1.0;
         }
         
-        //RB=(PREC*2.54-RS*S-RT*T)/B;
-        //DURB=RB/R;
      }
      
 //   Case 2, PREC<1.0 inch.
@@ -53,8 +51,6 @@ void AtmosUtil::updateDailyPrec(float precd[], const int & dinmcurr ,
           B=1.0;
           T=0.0;
           S=1.0;
-          //RB=(PREC*2.54-RS*S-RT*T)/B;
-          //DURB=RB/R;
      }
 
 //   Case 3, 1.0<PREC<2.5 inches.
@@ -62,8 +58,6 @@ void AtmosUtil::updateDailyPrec(float precd[], const int & dinmcurr ,
            B=1.0;
            T=1.0;
            S=1.0;
-           //RB=(PREC*2.54-RS*S-RT*T)/B;
-           //DURB=RB/R;
      }
 
 //   Case 4, 2.5<PREC<4.0 inches.
@@ -74,8 +68,6 @@ void AtmosUtil::updateDailyPrec(float precd[], const int & dinmcurr ,
              T=1.0;
            else
              T=2.0;
-           //RB = (PREC*2.54-RS*S-RT*T)/B;
-           //DURB = RB/R;
      }
 
 //   Case 5, 4.0<PREC<5.0 inches.
@@ -86,8 +78,6 @@ void AtmosUtil::updateDailyPrec(float precd[], const int & dinmcurr ,
              T=1.0;
            else
              T=2.0;
-           //RB=(PREC*2.54-RS*S-RT*T)/B;
-           //DURB=RB/R;
      }
 
 //   Case 6, 5.0<PREC<7.0 inches.
@@ -98,8 +88,6 @@ void AtmosUtil::updateDailyPrec(float precd[], const int & dinmcurr ,
              T=1.0;
            else
              T=2.0;
-           //RB= (PREC*2.54-RS*S-RT*T)/B;
-           //DURB=RB/R;
      }
 
 //   Case 7, 7.0<PREC<9.0 inches.
@@ -110,8 +98,6 @@ void AtmosUtil::updateDailyPrec(float precd[], const int & dinmcurr ,
              T=3.0;
            else
              T=4.0;
-           //RB=(PREC*2.54-RS*S-RT*T)/B;
-           //DURB=RB/R;
      }
 
 //   Case 8, 9.0<PREC<11.0 inches.
@@ -122,8 +108,6 @@ void AtmosUtil::updateDailyPrec(float precd[], const int & dinmcurr ,
               T=4.0;
            else
               T=5.0;
-           //RB=(PREC*2.54-RS*S-RT*T)/B;
-           //DURB=RB/R;
      }
 
 //   Case 9, PREC>11.0 inches.
@@ -134,8 +118,6 @@ void AtmosUtil::updateDailyPrec(float precd[], const int & dinmcurr ,
              	T=4.0;
            else
              	T=5.0;
-           //RB=(PREC*2.54-RS*S-RT*T)/B;
-           //DURB=RB/R;
      }
 
     RB=(PREC*2.54-RS*S-RT*T)/B;   //Yuan
@@ -218,30 +200,26 @@ void AtmosUtil::updateDailyPrec(float precd[], const int & dinmcurr ,
 void AtmosUtil::updateDailyDriver(float tad[],const float prevta, const float curta, 
                                   const float nextta, const int & dinmprev, 
 		                          const int & dinmcurr, const int & dinmnext){
+	int dmax = int(dinmprev/2)+dinmcurr+int(dinmnext/2);
+	float temp[dmax],timind[dmax];
 
-	//int hdamx = dinmprev+2*dinmcurr+dinmnext;
-	int hdamx = int(dinmprev/2)+dinmcurr+int(dinmnext/2);    //Yuan:
-	float temp[hdamx],timind[hdamx];//, stemp[hdamx];
-	//float dtday =0.5;     //Yuan: not needed
-	int months=3;
-	float tamon[months], timmon[months];//, sfmon[months];
-	
+	int mmax=3;
+	float tamon[mmax], timmon[mmax];
 	tamon[0]=prevta;
 	tamon[1]=curta;
 	tamon[2]=nextta;
 
-	//Yuan: the original interpolation caused discontinuouity between months, so modified as needed
-	timmon[0] = 1; //dtday;
-	timmon[1] = int(dinmprev/2)+int(dinmcurr/2);//dtday*(dinmprev+dinmcurr);
-	timmon[2] = hdamx; //dtday * hdamx;
-	for(int ihd=0; ihd <hdamx ;ihd++){
-		timind[ihd] = ihd+1; //(ihd+1)*dtday;
+	timmon[0] = 1;
+	timmon[1] = int(dinmprev/2)+int(dinmcurr/2);
+	timmon[2] = dmax;
+
+	for(int ihd=0; ihd <dmax ;ihd++){
+		timind[ihd] = ihd+1;
 	}
-	
-	itp.interpolate(timmon,tamon,months,timind,temp,hdamx);
-    for (int ihd=0; ihd<dinmcurr ;ihd++){
-         //tad[ihd]=(temp[2*ihd+dinmprev] +temp[2*ihd+1+dinmprev])/2.;
-         tad[ihd]=temp[int(dinmprev/2)+ihd];
+	itp.interpolate(timmon,tamon,mmax, timind,temp,dmax);
+
+	for (int id=0; id<dinmcurr ;id++){
+         tad[id]=temp[int(dinmprev/2)+id];
     }
   
 }; 

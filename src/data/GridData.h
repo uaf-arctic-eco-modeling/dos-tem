@@ -1,7 +1,7 @@
 #ifndef GRIDDATA_H_
 #define GRIDDATA_H_
 #include "../inc/timeconst.h"
-//using namespace  timec;
+#include "../inc/cohortconst.h"
 class GridData{
   public:
   	GridData();
@@ -12,30 +12,18 @@ class GridData{
     float lon;
     float alldaylengths[365]; 
 
-    //Yuan: fire data at grid-level
-    int fri;
-	int fireyear[MAX_FSIZE_DRV_YR];
-	int firesize[MAX_FSIZE_DRV_YR];
-	int fireseason[MAX_FSIZE_DRV_YR];
+    int drainageid;
+	int drgtype;
 
+    int soilid;
     int topsoil;
     int botsoil;
-    
-    int act_atm_drv_yr;    //Yuan: the actual climate driving data years
 
-    float ta[MAX_ATM_DRV_YR][12];
-	float prec[MAX_ATM_DRV_YR][12];
-	float nirr[MAX_ATM_DRV_YR][12];
-	float vap[MAX_ATM_DRV_YR][12];
+    int gfireid;
+    int fri;
+	double pfsize[NUM_FSIZE];
+	double pfseason[NUM_FSEASON];
 
-	//for java interface
-    float ta1d[MAX_ATM_DRV_YR*12];
-	float prec1d[MAX_ATM_DRV_YR*12];
-	float nirr1d[MAX_ATM_DRV_YR*12];
-	float vap1d[MAX_ATM_DRV_YR*12];
-	
-	void d1tod2();
-	
 };
 
 

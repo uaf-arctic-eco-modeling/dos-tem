@@ -9,7 +9,12 @@ SoilLookup::SoilLookup(){
 	
     deriveParam5TextureEnv();//also based on soil moisture and/or temperature
 	
-}
+};
+
+//deconstructor
+SoilLookup::~SoilLookup(){
+
+};
 
 void SoilLookup::deriveParam5TextureEnv(){
 	
@@ -40,24 +45,14 @@ void SoilLookup::deriveParam5Texture(){
 
      	tcunfsat[it] = pow(k , 1- p) * pow((double)TCLIQ, p);
 	 	tcfrzsat[it] = pow(k , 1- p) * pow((double)TCICE, p);
-	 	tcdry[it] = getDryThermCond(bulkden[it]);//pow(k , 1- p) * pow(TCAIR, p);
+	 	tcdry[it] = getDryThermCond(bulkden[it]);
 	
-		if(color[it] ==7){// for moss
-   	    	albsatvis[it] =0.06;
-			albsatnir[it] =0.12;
-			albdryvis[it] =0.12;
-		 	albdrynir[it]=0.24;	
-   	 	}else if(color[it]==8){// for peat
-   	    	albsatvis[it] =0.05;
-			albsatnir[it] =0.10;
-			albdryvis[it] =0.10;
-			albdrynir[it] =0.20;
-   	 	}else if(color[it]==4){// for mineral
+   	 	//if(color[it]==4){   //not used, but maybe in future version
    	    	albsatvis[it] =0.09;
 			albsatnir[it] =0.18;
 			albdryvis[it] =0.18;
 			albdrynir[it] =0.36;
-     	}
+     	//}
    	    
 	} // end of it loop
 } 
@@ -73,7 +68,6 @@ void SoilLookup::setLookupParam(){
 	int dumsilt[] = {5 , 12, 32, 39, 70, 15, 34, 56, 6 , 47, 20, 5};
 	int dumclay[] = {3 , 6 , 10, 18, 13, 27, 34, 34, 42, 47, 58, 3};
 	
-	
 	float dumksolids[] = {8.6143, 8.3991, 7.9353, 7.0649, 6.2520, 6.9323, 5.7709, 
 						4.2564, 6.1728, 3.5856, 4.5370, 8.6143};
 										
@@ -87,27 +81,22 @@ void SoilLookup::setLookupParam(){
     float dumporo[]  ={ 0.3731, 0.3857, 0.4159, 0.4348, 0.4676, 0.4159, 0.4487,
 		                0.4764, 0.4235, 0.4814, 0.4613, 0.50};
 
-    float dumb[] = {3.39, 3.86, 4.50, 5.77, 4.98, 7.20, 8.32, 8.32, 9.59, 10.38, 12.13, 3.39}	;
+    float dumb[] = {3.39, 3.86, 4.50, 5.77, 4.98, 7.20, 8.32, 8.32, 9.59, 10.38, 12.13, 3.39};
  
-    int  dumcolor[] = {4, 4, 4, 4,4,4,4,4,4,4,4, 4};	              				 
-    
-
-       
-    
+    int  dumcolor[] = {4, 4, 4, 4,4,4,4,4,4,4,4, 4};
     
     for(int it=0; it<MAX_SOIL_TXTR; it++){
-     sand[it] = dumsand[it];		
-	 silt[it] = dumsilt[it];		
-	 clay[it] = dumclay[it];		
-	 Ksolids[it] = dumksolids[it];
-	 Csolids[it] = dumcsolids[it];
-	 Ksat[it] = dumksat[it];
-	 Psisat[it] = dumpsisat[it];
-	 poro[it] = dumporo[it];
-	 b[it] = dumb[it];
-	 bulkden[it] = getBulkden(poro[it]);
-	 color[it] = dumcolor[it];
-
+    	sand[it] = dumsand[it];
+    	silt[it] = dumsilt[it];
+    	clay[it] = dumclay[it];
+    	Ksolids[it] = dumksolids[it];
+    	Csolids[it] = dumcsolids[it];
+    	Ksat[it] = dumksat[it];
+    	Psisat[it] = dumpsisat[it];
+    	poro[it] = dumporo[it];
+    	b[it] = dumb[it];
+    	bulkden[it] = getBulkden(poro[it]);
+    	color[it] = dumcolor[it];
     }
      
 };
@@ -149,8 +138,5 @@ float SoilLookup::getDryThermCond(const float & bulkden){
    return kdry;
 }   
 
-//deconstructor
-SoilLookup::~SoilLookup(){
-	
-}
+
 

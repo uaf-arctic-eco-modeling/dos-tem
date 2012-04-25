@@ -3,123 +3,135 @@
  * defines struct for diagnostic variables between atmosphere, vegetation, land(snow and soil)
  */
 #ifndef DIAGNOSTICS_H_
-	#define DIAGNOSTICS_H_
-	#include "layerconst.h"
+#define DIAGNOSTICS_H_
+
+#include "cohortconst.h"
+#include "layerconst.h"
 
 // Diagnostic Variables
 struct atmdiag_env{
-  	double rhoa;	
-  	double vpd;
-  	double abshd; //absolute humidity deficit
-  	double dersvp;
-  	double vp;    //Pa, Nov. 4, 2007
-  	double svp; 	//Pa, Nov. 4, 2007
-};
-
-struct soidiag_fir{
-  	double burnthick;	
+  	double vpd;     // vapor pressure deficit (Pa)
+  	double vp;      // vapor pressure (Pa)
+  	double svp; 	// saturated vapor pressure (Pa)
 };
 
 struct vegdiag_env{
-  	double envlai;
   	double btran;
-  	double m_ppfd;
-  	double m_vpd;
   
-  	double rc;
-  	double cc; //canopy conductance m/s
-  	double rac; // radiation in canopy // MJ/(m2d)
-  	double rinter; //rain interception
-  	double sinter; //snow interception
-  	double parabsorb; //absorbed PAR
-  	double ppfdabsorb; //absorbed PAR
-  	double vegfrac; //fraction of vegetation
+  	double rc;         // canopy resistance s/m
+  	double cc;         // canopy conductance m/s
+
+  	double m_ppfd;     //
+  	double m_vpd;
 };
 
 struct vegdiag_bgc{
-  	double abvgndc;
-  	double lai;
-  	double fpc;
-  	double leaf; 
-  	double foliage;
-  	double raq10;
+
+	double raq10;
   	double ftemp; /*! temperature factor for gpp*/
   	double gv;
-  	double kr;  // is related to kra, krb, and vegetation carbon  pool 
+
+  	double kr[NUM_PFT_PART];  // maintainence resp: is related to kra, krb, and vegetation carbon  pool
   	double fna; // effect of nitrogen availability on gpp
   	double fca; // effect of carbon availability on nuptake
 };
 
 struct snwdiag_env{
-  	double dense;
-  	double melt;
+	int snowfreeFst;       //used for estimating growing season
+	int snowfreeLst;       //used for estimating growing season
+	double tcond[MAX_SNW_LAY];
+
+    double fcmelt;         /*! melting factor */
+
 };
 
 struct soidiag_env{
-	double growpct;
-	double watertab;
-	double frasat;
-	double itnum;// interation number
-	double itnumliq;// interation number
-	  
-	double btran;
-	double degday10;
-	double nfactor;
+
 	int permafrost;
+	double unfrzcolumn;    // unfrozen soil column length (m)
+	double alc;            // active layer cap (m), i.e. the top of active layer - seasonal frezing front
+	double ald;            // active layer depth (m), i.e., the bottom of active layer - seasonal or permafrost
+
+	double tsrtdp;         //used for estimating growing season (soil temperature over the active root zone depth 'rtdp4growpct')
+	double growpct;
+	double tsdegday;
 	int growstart;
-	int snowfree1st;
 	int growend;
-	double tmineral10cm;
-	double trock34m;
-	double  unfrzcolumn;
-	  
-	double allvwc[MAX_SOI_LAY];  // Yuan: soil water content: volume fraction of all water/total soil volume (Theta)
-	double alliwc[MAX_SOI_LAY];  // Yuan: ice water content: volume fraction of ice water/total soil volume (Theta)
-	double alllwc[MAX_SOI_LAY];  // Yuan: liquid water content: volume fraction of liquid water/total soil volume (Theta)
-	double allsws[MAX_SOI_LAY];  // soil liquid water saturation (liq vwc/total porosity) for use in Soil_Bgcfor use in Soil_Bgc
-	double allaws[MAX_SOI_LAY];  // adjusted soil liquid water saturation (liq vwc/(porosity-ice vwc)) for use in Soil_Bgc
 
-	double hcond[MAX_SOI_LAY];   // Yuan: actual soil hydraulic conductivity
+	double nfactor;
 
-	double minliq[MAX_SOI_LAY]; 
+	double vwc[MAX_SOI_LAY];  // Yuan: soil water content: volume fraction of all water/total soil volume (Theta)
+	double iwc[MAX_SOI_LAY];  // Yuan: ice water content: volume fraction of ice water/total soil volume (Theta)
+	double lwc[MAX_SOI_LAY];  // Yuan: liquid water content: volume fraction of liquid water/total soil volume (Theta)
+	double sws[MAX_SOI_LAY];  // soil liquid water saturation (liq vwc/total porosity) for use in Soil_Bgc
+	double aws[MAX_SOI_LAY];  // adjusted soil liquid water saturation (liq vwc/(porosity-ice vwc)) for use in Soil_Bgc
 	  
-	double tem[MAX_SOI_LAY];
+	double minliq[MAX_SOI_LAY];
 	double tcond[MAX_SOI_LAY];
+	double hcond[MAX_SOI_LAY];
 
-	double frzfnt[MAX_NUM_FNT];
-	double thwfnt[MAX_NUM_FNT];
-	
-	int actual_num_soil;
-	double mossthick;
- 	double shlwthick;
- 	double deepthick;
- 	double minethick;
-	double mossnum;
-	double shlwnum;
-	double deepnum;
- 
- 	double maxrootratio;
- 	int maxrootind;
+	double fbtran[MAX_SOI_LAY];   // fraction of root water uptake (transpiration) in each soil layer (total 1.0)
+
+
+///// variables of summarized over soil horizons
+	double tsave;    // all soil profile
+	double tshlw;
+	double tdeep;
+	double tminea;
+	double tmineb;
+	double tminec;
+	double tbotrock;
+	double tcshlw;   //thermal conductivity
+	double tcdeep;
+	double tcminea;
+	double tcmineb;
+	double tcminec;
+
+	double frasat;  // soil saturation for all layers
+	double liqsum;
+	double icesum;
+	double vwcshlw;
+	double vwcdeep;
+	double vwcminea;
+	double vwcmineb;
+	double vwcminec;
+	double hkshlw;
+	double hkdeep;
+	double hkminea;
+	double hkmineb;
+	double hkminec;
+
+
 };
 
 struct soidiag_bgc{
-  	double ksoil[MAX_SOI_LAY];
+  	double knmoist[MAX_SOI_LAY];        //soil liq water factor to be used in N immobilization and mineralization
   	double rhmoist[MAX_SOI_LAY];
   	double rhq10[MAX_SOI_LAY];
-  	double frprod_frac[MAX_SOI_LAY];
-  	double totc[MAX_SOI_LAY];
-   	double reacsum; 
-   	double noncsum;
-    double rrhsum; 
-    double nrhsum; 
-    double shlwc;
+
+  	double ltrfcn[MAX_SOI_LAY];        //litterfall (root death) input C/N ratios in each soil layer for adjusting 'kd'
+
+  	double tsomc[MAX_SOI_LAY];
+
+  	//variables of summarized over soil horizons
+  	double shlwc;
     double deepc;
-    double minec;
-    
-  	double kdl[MAX_SOI_LAY];
-  	double kdr[MAX_SOI_LAY];
-  	double kdn[MAX_SOI_LAY];
+    double mineac;
+    double minebc;
+    double minecc;
+
+    double rawcsum;
+   	double somasum;
+   	double somprsum;
+   	double somcrsum;
+
+   	double orgnsum;
+   	double avlnsum;
+
 };
 
+struct soidiag_fir{
+  	double burnthick;
+};
 
 #endif /*DIAGNOSTICS_H_*/

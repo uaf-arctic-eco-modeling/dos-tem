@@ -6,7 +6,6 @@
  */
 
 #include "netcdfcpp.h"
-#include "ncvalues.h"
 
 #include <math.h>
 #include <iostream>
@@ -18,8 +17,6 @@ using namespace std;
 #include <string>
 using std::string;
 
-#include "../inc/layerconst.h"
-#include "../inc/timeconst.h"
 #include "../data/RestartData.h"
 
 class RestartOutputer {
@@ -27,17 +24,11 @@ class RestartOutputer {
 		RestartOutputer();
 		~RestartOutputer();
 
-		void init(string& dir, string& stage, const int& numproc, const int & myid);
-		int errorChecking();
+		void init(string& dir, string& stage);
 
-		void defineRestartDimensions();
-		void defineRestartVariables();
 		void outputVariables(const int & chtcount);
 		void setRestartOutData(RestartData * resodp);
-
-		bool runeq;
-		bool runsp;
-		bool runtr;
+		int errorChecking();
 
 		RestartData * resod;
 
@@ -48,82 +39,95 @@ class RestartOutputer {
 		NcFile* restartFile;
 	   
    		NcDim * chtD;
+   		NcDim * pftD;
+   		NcDim * pftpartD;
+   		NcDim * rootlayerD;
    		NcDim * snowlayerD;
    		NcDim * soillayerD;
+   		NcDim * minelayerD ;
    		NcDim * rocklayerD;
    		NcDim * frontD;
-   		NcDim * minlayerD ;
-   		NcDim * monD ;
-   		NcDim * meanyearD ;
+   		NcDim * prvyearD ;
 	
-	
-   		NcVar* chtidV;
-   		NcVar* errcodeV;
+		NcVar* chtidV;
+		NcVar* errcodeV;
 
-   		NcVar* permaV;
-   		NcVar* TSsnowV;
-   		NcVar* DZsnowV;
-   		NcVar* LIQsnowV;
-   		NcVar* ICEsnowV;
-   		NcVar* RHOsnowV;
-	
+		//atm
+		NcVar* dsrV;
+		NcVar* firea2sorgnV;
 
-   		NcVar* AGEsnowV;
-	
-   		NcVar* TSsoilV;
-   		NcVar* DZsoilV;
-   		NcVar* LIQsoilV;
-   		NcVar* ICEsoilV;
-   		NcVar* FROZENsoilV;
-   		NcVar* NONCsoilV;
-   		NcVar* REACsoilV;
-
-   		NcVar* TYPEsoilV;
-	
-   		NcVar* TYPEminV;
-	
-   		NcVar* TSrockV;
-   		NcVar* DZrockV;
-	
-   		NcVar* frontZV;
-   		NcVar* frontFTV;
-	
-   		NcVar* solnV;
-   		NcVar* avlnV;
-   		NcVar* wdebrisV;
-	
-	
-   		NcVar* strnV;
-   		NcVar* stonV;
-   		NcVar* vegcV;
-   		NcVar* deadcV;
-   		NcVar* deadnV;
-	
-   		NcVar* prveetmxV;
-   		NcVar* prvpetmxV;
-   		NcVar* foliagemxV;
-	
-		NcVar* laiV;
-	
-		NcVar* unnormleafV;
-		NcVar* prvunnormleafmxV;
-		NcVar* prvtoptV;
-	
-		NcVar* toptAV;
-		NcVar* eetmxAV;
-		NcVar* petmxAV;
-		NcVar* unnormleafmxAV;
-	 
-		NcVar* c2nV;
-		NcVar* kdfibV;
-		NcVar* kdhumV;
-		NcVar* kdminV;
-		NcVar* kdslowV;
-	
 		NcVar* ysfV;
-		NcVar* burnednV;
-		
-};
 
+	    //veg
+		NcVar* numpftV;
+	    NcVar* ifwoodyV;
+	    NcVar* ifdeciwoodyV;
+	    NcVar* ifperenialV;
+	    NcVar* nonvascularV;
+
+	    NcVar* vegageV;
+	    NcVar* vegcovV;
+	    NcVar* laiV;
+	    NcVar* rootfracV;
+
+		NcVar* vegwaterV;
+		NcVar* vegsnowV;
+
+		NcVar* vegcV;
+		NcVar* labnV;
+		NcVar* strnV;
+		NcVar* deadcV;
+		NcVar* deadnV;
+		NcVar* unnormleafV;
+
+		NcVar* toptAV;
+	    NcVar* eetmxAV;
+	    NcVar* growingttimeAV;
+	    NcVar* unnormleafmxAV;
+	    NcVar* prvfoliagemxV;
+
+	    //snow
+	    NcVar* numsnwlV;
+	    NcVar* snwextramassV;
+	    NcVar* DZsnowV;
+	    NcVar* TSsnowV;
+	    NcVar* LIQsnowV;
+	    NcVar* RHOsnowV;
+	    NcVar* ICEsnowV;
+	    NcVar* AGEsnowV;
+
+	    //ground-soil
+	    NcVar* numslV;
+	    NcVar* monthsfrozenV;
+	    NcVar* watertabV;
+
+	    NcVar* DZsoilV;
+	    NcVar* AGEsoilV;
+	    NcVar* TYPEsoilV;
+	    NcVar* TSsoilV;
+	    NcVar* LIQsoilV;
+	    NcVar* ICEsoilV;
+	    NcVar* FROZENFRACsoilV;
+	    NcVar* TEXTUREsoilV;
+
+	    NcVar* TSrockV;
+	    NcVar* DZrockV;
+
+	    NcVar* frontZV;
+	    NcVar* frontFTV;
+
+	    NcVar* wdebriscV;
+	    NcVar* rawcV;
+	    NcVar* somaV;
+	    NcVar* somprV;
+	    NcVar* somcrV;
+
+	    NcVar* wdebrisnV;
+	    NcVar* solnV;
+	    NcVar* avlnV;
+
+	    NcVar* prvltrfcnV;
+
+};
 
 #endif /*RESTARTOUTPUTER_H_*/

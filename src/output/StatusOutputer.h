@@ -4,8 +4,6 @@
 	#define STATUSOUTPUTER_H_
 	
 	#include "netcdfcpp.h"
-	#include "ncvalues.h"
-
 	#include <iostream>
 	#include <string>
 	#include <sstream>
@@ -20,12 +18,13 @@
 	class StatusOutputer {
 		public :
 			StatusOutputer();
-			void init(string& dir, const int & myid, string& stage);
 			~StatusOutputer();
 
-			NcFile* statusFile;
 	 
+			void init(string& dir, string& stage);
 			void  outputVariables(const int & chtcount);
+
+			NcFile* statusFile;
 
     		bool runeq;
     		bool runsp;
@@ -35,7 +34,7 @@
     		int errorid;
      
    	private:
-   			NcDim * chtD;
+   			NcDim* chtD;
 			NcVar* chtidV;
 			NcVar* erroridV;  	
 	};

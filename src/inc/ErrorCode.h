@@ -8,4 +8,9 @@
  	   I_BURN_ZERO =60, 
  	   I_LAYER_FIRST_DEEP=70, I_FRONT_STATE_INCON,  I_FRONT_POSITION,
  	   I_NCFILE_NOT_EXIST=100, I_NCDIM_NOT_EXIST, I_NCVAR_NOT_EXIST, I_NCVAR_GET_ERROR};
+
+	const int MISSING_I    = -9999;    //missing value (INT) used in the code
+	const float MISSING_F  = -9999.f;  //missing value (FLOAT) used in the code
+	const double MISSING_D = -9999.;   //missing value (DOUBLE) used in the code
+
 #endif /*ERRORCODE_H_*/
