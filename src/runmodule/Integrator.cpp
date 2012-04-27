@@ -233,9 +233,6 @@ int Integrator::adapt(float pstate[], const int & numeq){
     	test = REJECT;
     	if ( syint == 1 ){
       		while ( test != ACCEPT ){
-      			if (dt<1.e-7) {
-      				cout << "integration time step " << dt << "\n";
-      			}
 
       			bool testavln = rkf45(numeq,pstate,dt);
 
@@ -444,9 +441,6 @@ void Integrator::y2cflux_soi(float y[]){
 
 /****************************************************************/
 void Integrator::delta(float pstate[], float pdstate[]){
-	time_t start;
-	time_t end;
-	double period = 0.;
 
 	if (vegbgc) {
 		// assign value from pstate to temporate variables in veg
@@ -455,21 +449,11 @@ void Integrator::delta(float pstate[], float pdstate[]){
 		y2tcstate_veg(pstate);
 
 		// calculate the fluxes
-		start=time(0);
 		veg->delta();
-		end=time(0);
-		period = difftime(start, end);
-
-		start=time(0);
 		veg->deltanfeed();
-		end=time(0);
-		period = difftime(start, end);
 
 		// update the delta of state variables
-		start=time(0);
 		veg->deltastate();
-		end=time(0);
-		period = difftime(start, end);
 
 		// assign fluxes and state back to pdstate
 		dc2ystate_veg(pdstate);
@@ -637,13 +621,30 @@ bool Integrator::checkPools(){
    	if (soibgc) {
 
    		for (int il=0; il<numsl; il++){
-   			if(ydum[I_L_RAWC+il]<0 || ydum[I_L_SOMA+il]<0
-   				 || ydum[I_L_SOMPR+il]<0 || ydum[I_L_SOMCR+il]<0) {
+   			if(ydum[I_L_RAWC+il]<0) {
+   				return true;
+   			}
+
+   			if(ydum[I_L_SOMA+il]<0) {
+   				return true;
+   			}
+
+   			if(ydum[I_L_SOMPR+il]<0) {
+   				return true;
+   			}
+
+   			if(ydum[I_L_SOMCR+il]<0) {
    				return true;
    			}
 
    			if (ssl->nfeed) {
-   				if(ydum[I_L_AVLN+il]<0 || ydum[I_L_ORGN+il]<0) return true;
+   				if(ydum[I_L_AVLN+il]<0) {
+   					return true;
+   				}
+
+   				if(ydum[I_L_ORGN+il]<0) {
+   					return true;
+   				}
    			}
 
    		}

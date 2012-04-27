@@ -6,13 +6,12 @@
  */
 
 #include "netcdfcpp.h"
-#include "ncvalues.h"
-
 #include <iostream>
 #include <string>
 using namespace std;
 
-#include "../run/RegnOutData.h"
+#include "../inc/ErrorCode.h"
+#include "../data/OutDataRegn.h"
 
 class RegnOutputer{
 	
@@ -20,95 +19,122 @@ class RegnOutputer{
 		RegnOutputer();
 		~RegnOutputer();
 	
- 		void init(string& outputdir, const int & myid, string& stage, int MAX_DRV_YR);
+ 		void init(string& outputdir, string& stage, int MAX_TIMESTEP);
   
- 		void outputYearCohortVars(const int & yrind, const int & chtid);
+ 		void outputCohortVars(const int & yrind, const int & chtid, const int & status);
   
-  		void missingValues(const int & MAX_YR, const int & chtid);
-  		void setOutData(RegnOutData *regnodp);
+  		void outputCohortMissing(const int & yrind, const int & chtid);
+  		void setOutData(OutDataRegn *regnodp);
   		  
     	NcFile* rFile;
 
-		NcDim * chtD;
-		NcDim * yearD;
-		NcDim * monthD;
- 
-    	NcVar* chtidCYV;
-   		NcVar* statusCYV;
-   		NcVar* ysfCYV;
+	 	NcVar* chtidV;
+	  	NcVar* statusV;
+		NcVar* yearV;
+		NcVar* yrmonV;
+  		NcVar* ysfV;
 
-   		NcVar* burnthickCYV;
-   		NcVar* burnsoicCYV;
-   		NcVar* burnvegcCYV;
+   		//
+   		NcVar* growstartV;
+   		NcVar* growendV;
 
-   		NcVar* growstartCYV;
-   		NcVar* growendCYV;
+   		NcVar* vegcovV;
+   		NcVar* vegageV;
+   		NcVar* laiV;
+   		NcVar* vegcV;
+   		NcVar* leafcV;
+   		NcVar* stemcV;
+   		NcVar* rootcV;
+   		NcVar* vegnV;
+   		NcVar* labnV;
+   		NcVar* leafnV;
+   		NcVar* stemnV;
+   		NcVar* rootnV;
 
-   		NcVar* permCYV;
+   		NcVar* gppV;
+   		NcVar* nppV;
+   		NcVar* rhV;
+        NcVar* ltrfalcV;
+        NcVar* ltrfalnV;
 
-   		NcVar* mossdzCYV;
-   		NcVar* shlwdzCYV;
-   		NcVar* deepdzCYV;
+        NcVar* nuptakeV;
 
-      	NcVar* laiCYV;
-   		NcVar* vegcCYV;
-   		NcVar* vegnCYV;
+        //
+   		NcVar* permafrostV;
 
-   		NcVar* gppCYV;
-   		NcVar* nppCYV;
-   		NcVar* rhCYV;
-        NcVar* ltrfalcCYV;
-        NcVar* ltrfalnCYV;
+   		NcVar* mossdzV;
+   		NcVar* oshlwdzV;
+   		NcVar* odeepdzV;
+   		NcVar* mineadzV;
+   		NcVar* minebdzV;
+   		NcVar* minecdzV;
 
-   		NcVar* shlwcCYV;
-   		NcVar* deepcCYV;
-   		NcVar* minecCYV;
-   		NcVar* orgnCYV;
-   		NcVar* avlnCYV;
+   		NcVar* oshlwcV;
+   		NcVar* odeepcV;
+   		NcVar* mineacV;
+   		NcVar* minebcV;
+   		NcVar* mineccV;
+   		NcVar* orgnV;
+   		NcVar* avlnV;
 
-   		NcVar* netnminCYV;
-        NcVar* nuptakeCYV;
-      	NcVar* ninputCYV;
-      	NcVar* nlostCYV;
+   		NcVar* netnminV;
 
-   		NcVar* eetCYV;
-   		NcVar* petCYV;
-   		NcVar* qdrainCYV;
-      	NcVar* qrunoffCYV;
+      	NcVar* orgninputV;
+   		NcVar* avlninputV;
+   		NcVar* orgnlostV;
+   		NcVar* avlnlostV;
+      	NcVar* doclostV;
 
-      	NcVar* sthickCYV;
-      	NcVar* sweCYV;
+      	//
+      	NcVar* eetV;
+   		NcVar* petV;
+   		NcVar* qinflV;
+   		NcVar* qdrainV;
+      	NcVar* qrunoffV;
 
-   		NcVar* wtdCYV;
-      	NcVar* aldCYV;
+      	NcVar* snwthickV;
+      	NcVar* sweV;
 
-   		NcVar* vwcshlwCYV;
-   		NcVar* vwcdeepCYV;
-   		NcVar* vwcminetopCYV;
-      	NcVar* vwcminebotCYV;
+   		NcVar* wtdV;
+   		NcVar* alcV;
+      	NcVar* aldV;
 
-   		NcVar* tshlwCYV;
-   		NcVar* tdeepCYV;
-   		NcVar* tminetopCYV;
-   		NcVar* tminebotCYV;
-   
-   		NcVar* hkshlwCYV;
-   		NcVar* hkdeepCYV;
-   		NcVar* hkminetopCYV;
-   		NcVar* hkminebotCYV;
+   		NcVar* vwcshlwV;
+   		NcVar* vwcdeepV;
+   		NcVar* vwcmineaV;
+      	NcVar* vwcminebV;
+      	NcVar* vwcminecV;
 
-   		NcVar* tcshlwCYV;
-   		NcVar* tcdeepCYV;
-   		NcVar* tcminetopCYV;
-   		NcVar* tcminebotCYV;
+   		NcVar* tshlwV;
+   		NcVar* tdeepV;
+   		NcVar* tmineaV;
+   		NcVar* tminebV;
+   		NcVar* tminecV;
 
-   		NcVar* trock34CYV;
+   		NcVar* hkshlwV;
+   		NcVar* hkdeepV;
+   		NcVar* hkmineaV;
+   		NcVar* hkminebV;
+   		NcVar* hkminecV;
 
-   		NcVar* somcaldCYV;
-      	NcVar* vwcaldCYV;
-      	NcVar* taldCYV;
+   		NcVar* tcshlwV;
+   		NcVar* tcdeepV;
+   		NcVar* tcmineaV;
+   		NcVar* tcminebV;
+   		NcVar* tcminecV;
 
-   		RegnOutData *regnod;
+   		NcVar* tbotrockV;
+
+   		//
+   		NcVar* burnthickV;
+   		NcVar* burnsoicV;
+   		NcVar* burnvegcV;
+   		NcVar* burnsoinV;
+   		NcVar* burnvegnV;
+   		NcVar* burnretaincV;
+   		NcVar* burnretainnV;
+
+   		OutDataRegn *regnod;
    		
 };
 

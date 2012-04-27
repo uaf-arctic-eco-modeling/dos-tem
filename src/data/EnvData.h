@@ -1,14 +1,16 @@
 #ifndef ENVDATA_H_
 #define ENVDATA_H_
+
 #include "../inc/diagnostics.h"
 #include "../inc/fluxes.h"
 #include "../inc/states.h"
-#include "../inc/layerconst.h"
-//using namespace layer;
- 
 
+#include "../inc/ErrorCode.h"
+#include "../inc/layerconst.h"
 #include "../inc/timeconst.h"
-//using namespace  timec;
+#include "../inc/physicalconst.h"
+#include "../inc/cohortconst.h"
+
 #include "RegionData.h"
 #include "GridData.h"
 #include "CohortData.h"
@@ -21,27 +23,25 @@ class EnvData{
   	EnvData();
   	~EnvData();	 
 
-    double daylengths[365];
-  	// for daily
-    atmstate_env d_atms;
+  	// for daily  - 'd' is daily
+    atmstate_env d_atms;  // last 's' - state variable
     vegstate_env d_vegs;
     snwstate_env d_snws;
     soistate_env d_sois;
     
-    atmdiag_env d_atmd; //first d is daily, last d is diagnostic
-    vegdiag_env d_vegd; 
+    atmdiag_env d_atmd;   // last 'd' - diagnostic variable
+    vegdiag_env d_vegd;
     snwdiag_env d_snwd;
     soidiag_env d_soid;
     
-    lnd2atm_env d_l2a;
+    lnd2atm_env d_l2a;    // 'l' - land, '2' - 'to', 'a' - atm
     atm2lnd_env d_a2l;
-    atm2veg_env d_a2v;
+    atm2veg_env d_a2v;    // 'v' - veg
     veg2atm_env d_v2a;
-    veg2gnd_env d_v2g;
-    lnd2soi_env d_l2soi;
-    soi2lnd_env d_soi2l;
+    veg2gnd_env d_v2g;    // 'g' - ground
+    soi2lnd_env d_soi2l;  // 'soi' - soil
     soi2atm_env d_soi2a;
-    snw2atm_env d_snw2a;
+    snw2atm_env d_snw2a;  // 'snw' - snow
     snw2soi_env d_snw2soi;
     
    // monthly
@@ -51,7 +51,7 @@ class EnvData{
     soistate_env m_sois;
     
     atmdiag_env m_atmd; 
-    vegdiag_env m_vegd; 
+    vegdiag_env m_vegd;
     snwdiag_env m_snwd;
     soidiag_env m_soid;
     
@@ -60,7 +60,6 @@ class EnvData{
     atm2veg_env m_a2v;
     veg2atm_env m_v2a;
     veg2gnd_env m_v2g;
-    lnd2soi_env m_l2soi;
     soi2lnd_env m_soi2l;
     soi2atm_env m_soi2a;
     snw2atm_env m_snw2a;
@@ -73,7 +72,7 @@ class EnvData{
     soistate_env y_sois;
     
     atmdiag_env y_atmd; 
-    vegdiag_env y_vegd; 
+    vegdiag_env y_vegd;
     snwdiag_env y_snwd;
     soidiag_env y_soid;
     
@@ -82,93 +81,48 @@ class EnvData{
     atm2veg_env y_a2v;
     veg2atm_env y_v2a;
     veg2gnd_env y_v2g;
-    lnd2soi_env y_l2soi;
     soi2lnd_env y_soi2l;
     soi2atm_env y_soi2a;
     snw2atm_env y_snw2a;
     snw2soi_env y_snw2soi;
     
-    double eetmx;
-    double petmx;
+    double eetmx;   //curren year only vegetation  max. monthly EET
+    double prveetmx; // mean of previous 10 years, calculated from 'eetmxque' below
+	deque <double> eetmxque;   //the last 10 years eet/ppt for long-lasting effect of drought on GPP, through f(phenology)
 
-    double prveetmx;
-    double prvpetmx;
-    
-    /*! initial concentration of carbon dioxide in ppmv*/
-    double initco2;
-   
-    /*! here is a special case, define carbon in env data
-     * for passing orgc to bgcdata.m_sois.orgc
-     * after the maniputlation of thickness of layer , the layer's carbon should also be changed
-     * however in soil_env there is no pointer point to bd.orgc
-     * */
-    //double orgc[MAX_SOI_LAY];
-    
-    // yr value
-    int permafrost; // whether a site is a permafrost
-    double y_ald; // active layer depth  //Yuan: yearly max.
-    double m_ald; // active layer depth  //Yuan: monthly max.
-    double d_ald; // active layer depth  //Yuan: daily
-    
-    double yrfrozensoil; //Yuan: the time (years) since frozen a soil bottom horizon
-
-    void init();
-
-    void beginOfDay();
-    void beginOfMonth();
-    void beginOfYear();
-    
-    void endOfDay(const int & dinm, const int & doy );
-    void endOfMonth(const int & currmind, const bool & assign);
-    void endOfYear(const bool & assign);
-    
-    // monthly soil climate
-    double eq_ts[12][MAX_SOI_LAY];
-    double eq_liq[12][MAX_SOI_LAY];
-    double eq_ice[12][MAX_SOI_LAY];
-    double eq_vwc[12][MAX_SOI_LAY];  //(all) volume water content
-    double eq_sws[12][MAX_SOI_LAY];  //soil water saturation
-    double eq_aws[12][MAX_SOI_LAY];  //adjusted soil water saturation (porosity adjusted by ice)
-    double eq_ta[12];
-    double eq_co2[12];
-    double eq_eet[12];
-    double eq_pet[12];
-    double eq_par[12];
-    double eq_grow[12];
-    double eq_y_eet;
-    double eq_y_pet;
-    double eq_y_co2;
-    double eq_prveetmx;
-    double eq_prvpetmx;
+    double monthsfrozen;  // months since bottom soil frozen started - 24 months is the criterial for permafrost
+	int rtfrozendays;         // soil top rootzone continously frozen days
+	int rtunfrozendays;       // soil top rootzone continously unfrozen days
      
-	deque <double> eetmxque;
-	deque <double> petmxque;
+	CohortData * cd;
+	//
+	void init();
 
-	RegionData * rd;
-	GridData * gd;
-	CohortData * cd; 
+	// initializing yearly/monthly accumulators
+    void atm_beginOfYear();
+    void veg_beginOfYear();
+    void grnd_beginOfYear();
+    void atm_beginOfMonth();
+    void veg_beginOfMonth();
+    void grnd_beginOfMonth();
 
-   // for java interface
-    double eq_ts1d[12*MAX_SOI_LAY];
-    double eq_liq1d[12*MAX_SOI_LAY];
-    double eq_vwc1d[12*MAX_SOI_LAY];
-    double eq_sws1d[12*MAX_SOI_LAY];
-    double eq_ice1d[12*MAX_SOI_LAY];
-    void d1tod2();
-    void d2tod1();
-    // for java interface
-   
-  private:
-	
-	void veg_beginOfMonth();
-	void soi_beginOfMonth();
-	void snw_beginOfMonth();
-	
+    // initializing some daily variables
+    void grnd_beginOfDay();
+
+    // accumulating/averaging monthly variables at the end of day
 	void atm_endOfDay(const int & dinm);
 	void veg_endOfDay(const int & dinm);
-	void soi_endOfDay(const int & dinm, const int & doy);
-	void snw_endOfDay(const int & dinm);
-	   
+	void grnd_endOfDay(const int & dinm, const int & doy);
+
+	// accumulating/averaging yearly variables at the end of month
+	void atm_endOfMonth();
+	void veg_endOfMonth(const int & currmind);
+	void grnd_endOfMonth();
+
+	void assignPrveetmx();
+
+  private:
+	
 };
 
 #endif /*ENVDATA_H_*/

@@ -5,28 +5,29 @@
 #ifndef BGCDATA_H_
 #define BGCDATA_H_
 
+#include "../inc/ErrorCode.h"
 #include "../inc/diagnostics.h"
 #include "../inc/fluxes.h"
 #include "../inc/states.h"
-#include "EnvData.h"
 
 #include <iostream>
 #include <math.h>
 
+#include "EnvData.h"
 #include "RegionData.h"
 #include "GridData.h"
 #include "CohortData.h"
 
 #include <vector>
 #include <deque>
-using namespace std;
-
 
 class BgcData{
  	public:
   		BgcData();
   		~BgcData();	
 	
+		CohortData * cd;
+
 		//monthly
 		vegstate_bgc m_vegs;
 		soistate_bgc m_sois;
@@ -59,43 +60,26 @@ class BgcData{
 		atm2soi_bgc y_a2soi;
 		soi2soi_bgc y_soi2soi;
 
-		deque <double> toptque;
-		deque <double> unleafmxque;
+		double prvltrfcn[MAX_SOI_LAY];
+		deque <double> prvltrfcnque[MAX_SOI_LAY];
 
-		double foliagemx;
-	
-		double topt;
-		double unleafmx;
-		double prvunleafmx;
-		double prvtopt;
-		double c2n;
-		double kdfib;
-		double kdhum;
-		double kdmin;
-		double kdslow;
-	
 		void init();
     
-    	void beginOfMonth(const int & curmrind);
-    	void beginOfYear();
-    
-   		void endOfMonth(const int & currmind); 
-    	void endOfYear(const double & cnsoil);
-    
-    	void setEnvData(EnvData* edp);
-    
-     	int baseline; //=1 allowing ninput and nlost to be used for adjusting c/n of soil
-     	int nfeed;
-		int avlnflg;
- 
-        RegionData * rd;
-		GridData * gd;
-		CohortData * cd;
+    	void land_beginOfYear();
+   		void land_endOfMonth();
 
+   		void veg_beginOfYear();
+   		void veg_beginOfMonth();
+   		void veg_endOfMonth();
+   		void veg_endOfYear();
+
+   		void soil_beginOfYear();
+   		void soil_beginOfMonth();
+   		void soil_endOfMonth(const bool &baseline);
+   		void soil_endOfYear(const double &cnsoil, const bool &baseline);
+    
     private:
-    	EnvData * ed;
-		void veg_beginOfMonth();
-		void soi_beginOfMonth();
+
 };
 
 #endif /*BGCDATA_H_*/

@@ -141,13 +141,11 @@ void RunCohort::run(){
 		// N cycles
 	    md->nfeed   = 1;
 		md->baseline= 1;
-	    md->avlnflg = 1;
+	    md->avlnflg = 0;
 
 	    //
 	    cht.timer->reset();
 
-	    //module testing
-//		moduletest();
 ///*
 		if(cht.md->runeq){
 			cht.timer->stageyrind = 0;
@@ -191,7 +189,7 @@ void RunCohort::runEquilibrium(){
 	// first, run model with "ENV module" only
 
 	 md->envmodule = true;
-     md->bgcmodule = false;
+     md->bgcmodule = true;
      md->dsbmodule = false;
      md->dslmodule = false;
      md->dvmmodule = false;
@@ -212,7 +210,7 @@ void RunCohort::runEquilibrium(){
 
  	 md->envmodule = true;
      md->bgcmodule = true;
-     md->dsbmodule = true;
+     md->dsbmodule = false;
      md->dslmodule = true;
      md->dvmmodule = true;
 
@@ -324,10 +322,6 @@ void RunCohort::modulerun(){
 	    	cout <<"TEM " << cht.md->runstages <<" run: year "
 	    	<<icalyr<<" @cohort "<<cht.cd.chtid<<"\n";
 
-	    	if (icalyr == 60) {
-	    		cout<<"checking! \n";
-	    	}
-
 	    }
 
 		// if EQ run,option for simulation break
@@ -340,90 +334,3 @@ void RunCohort::modulerun(){
 };
 
 ////////////////////////////////////////////////////////////////////////
-// the following is for testing modules
-void RunCohort::moduletest(){
-	cht.timer->reset();
-
-	//test modules by setting up the following switches or options
-	 md->baseline= 1;
-     md->nfeed   = 0;
-	 md->avlnflg = 1;
-
-	 md->envmodule = true;
-     md->bgcmodule = true;
-     md->dsbmodule = true;
-     md->dslmodule = true;
-     md->dvmmodule = true;
-     md->friderived= true;
-
-     usedatmyr = cht.cd.act_atm_drv_yr;
-
-     int dstepcnt = 0;
-     int mstepcnt = 0;
-     int ystepcnt = 0;
-	 for (int iy=0; iy<100; iy++){
-		 int yrcnt =iy;
-		 cht.prepareDayDrivingData(yrcnt, usedatmyr);
-
-		 int outputyrind= cht.timer->getOutputYearIndex();
-
-		 for (int im=0; im<12;im++){
-
-		   int currmind=  im;
-		   int dinmcurr = cht.timer->getDaysInMonth(im);;
-
-		   cht.updateMonthly(yrcnt, currmind, dinmcurr);
-	       cht.timer->advanceOneMonth();
-
-		   // output module calling
-		   if (outputyrind>=0) {
-			   if (md->outSiteDay){
-				   for (int id=0; id<dinmcurr; id++) {
-					   for (int ip=0; ip<cht.cd.numpft; ip++) {
-						   EnvDataDly *envoddly = &cht.outbuffer.envoddly[ip][id];
-						   envdlyouter.outputCohortEnvVars_dly(envoddly, iy, im, id, ip, dstepcnt);
-					   }
-
-					   dstepcnt++;
-				   }
-			   }
-
-			   //
-			   if (md->outSiteMonth){
-				   dimmlyouter.outputCohortDimVars_mly(&cht.cd, mstepcnt);
-				   for (int ip=0; ip<cht.cd.numpft; ip++) {
-					   envmlyouter.outputCohortEnvVars_mly(&cht.cd.m_snow, &cht.ed[ip], iy, im, ip, mstepcnt);
-					   bgcmlyouter.outputCohortBgcVars_mly(&cht.bd[ip], iy, im, ip, mstepcnt);
-				   }
-				   mstepcnt++;
-			   }
-
-			   //
-			   if (md->outSiteYear && im==11){
-				   dimylyouter.outputCohortDimVars_yly(&cht.cd, ystepcnt);
-				   for (int ip=0; ip<cht.cd.numpft; ip++) {
-					   envylyouter.outputCohortEnvVars_yly(&cht.cd.y_snow, &cht.ed[ip], iy, ip, ystepcnt);
-					   bgcmlyouter.outputCohortBgcVars_yly(&cht.bd[ip], iy, ip, ystepcnt);
-				   }
-				   ystepcnt++;
-
-			   }
-		   }
-
-	    }
-
-		if (md->outRegn && outputyrind>=0){
-			regnouter.outputCohortVars(outputyrind, cohortcount, 0);  // "0" implies good data
-		}
-
-		if(cht.md->consoledebug){
-	    	cout <<"TEM run: year "
-	    	<<iy<<" @cohort "<<cht.cd.chtid<<"\n";
-
-	    }
-
-	}
-
-};
-
-

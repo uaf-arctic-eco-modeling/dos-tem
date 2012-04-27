@@ -587,6 +587,8 @@ void Soil_Bgc::deltastate(){
 	double fsompr   = (double)bgcpar.fsompr;    // the fraction of SOMPR in total SOM product
 	double fsomcr   = (double)bgcpar.fsomcr;    // the fraction of SOMCR in total SOM product
 
+	double del_orgn[MAX_SOI_LAY]; // soil org. N change with SOMC transformation and/or allocation
+
 		// 2) If soil respiration known, then internal C pool transformation can be estimated as following
 	for(int il =0; il<cd->m_soil.numsl; il++){
 
@@ -596,7 +598,9 @@ void Soil_Bgc::deltastate(){
  		del_sois.rawc[il] = ltrflc[il]  //So note that: root death is the reason for deep SOM increment
  		                    -del_soi2a.rhrawc[il]*(1.0+somtoco2);    //
 
- 		if (cd->m_soil.type[il]==0 && il==0) del_sois.rawc[il]+=bd->m_v2soi.mossdeathc;    //dead moss is added into the top moss layer's 'rawc'
+ 		if (cd->m_soil.type[il]==0 && il==0) {
+ 			del_sois.rawc[il]+=bd->m_v2soi.mossdeathc;    //dead moss is added into the top moss layer's 'rawc'
+ 		}
 
  		del_sois.soma[il]  = rhsum*somtoco2*fsoma
  		                    - del_soi2a.rhsoma[il]*(1.0+somtoco2);      //
@@ -617,7 +621,9 @@ void Soil_Bgc::deltastate(){
 
    	double s2dcarbon1 = 0.0;
    	double s2dcarbon2 = 0.0;
-   	double d2mcarbon = 0.0;
+  	double s2dorgn    = 0.0;
+  	double d2mcarbon = 0.0;
+  	double d2morgn   = 0.0;
    	double dlleft    = xtopdlthick;
    	double mlleft    = xtopmlthick;
   	double dcaddfrac = 0.0;
@@ -626,17 +632,33 @@ void Soil_Bgc::deltastate(){
 
     	// 1) most of resistant-C increment into the fibric-horizon (generated above) will move down
    		//    so that fibric horizon will be coarse-material dominated (active SOM will remain)
-	   	if (cd->m_soil.type[il]==1) {
- 	   		s2dcarbon1 += del_sois.sompr[il]*s2dfraction;   //
- 	   		s2dcarbon2 += del_sois.somcr[il]*s2dfraction;   //
+	   	if (cd->m_soil.type[il]<=1) {
+ 	   		if (del_sois.sompr[il] > 0.) {
+ 	   			s2dcarbon1 += del_sois.sompr[il]*s2dfraction;   //
+ 	   			del_sois.sompr[il]*= (1.0-s2dfraction);
+ 	   		}
 
- 	   		del_sois.sompr[il]*= (1.0-s2dfraction);
- 	   		del_sois.somcr[il]*= (1.0-s2dfraction);
+ 	   		if (del_sois.somcr[il] > 0.) {
+ 	   			s2dcarbon2 += del_sois.somcr[il]*s2dfraction;   //
+ 	   			del_sois.somcr[il]*= (1.0-s2dfraction);
+ 	   		}
+
+ 	   		if (nfeed==1){  // move orgn with SOMC as well
+ 	   			double totsomc = tmp_sois.rawc[il]+tmp_sois.soma[il]+tmp_sois.sompr[il]+tmp_sois.somcr[il];
+ 	   			if (totsomc>(s2dcarbon1+s2dcarbon2)) {
+ 	   				del_orgn [il] = - (s2dcarbon1+s2dcarbon2)/totsomc*tmp_sois.orgn[il]; //assuming C/N same for all SOM components
+ 	   			} else {
+ 	   				del_orgn[il] = 0.;
+	   			}
+ 	   			s2dorgn += (-del_orgn[il]);  //note: del_orgn[il] above is not positive
+ 	   		}
 
  	   		//in case no existing deep humific layer
  	   		if (il<(cd->m_soil.numsl-1) && cd->m_soil.type[il+1]>2) {
  	   			del_sois.sompr[il]+=s2dcarbon1;      // let the humified SOM C staying in the last fibrous layer,
  	   			del_sois.somcr[il]+=s2dcarbon2;      // which later on, if greater than a min. value, will form a new humic layer
+
+ 	   			if (nfeed == 1) del_orgn[il] += s2dorgn;
  	   		}
 
 	   	} else if (cd->m_soil.type[il]==2 && dlleft>0) {
@@ -648,6 +670,10 @@ void Soil_Bgc::deltastate(){
   	   		del_sois.sompr[il]+=dcaddfrac*s2dcarbon1;
  	   		del_sois.somcr[il]+=dcaddfrac*s2dcarbon2;
 
+ 	   		if (nfeed==1) {
+ 	   			del_orgn[il]+=s2dorgn;
+ 	   		}
+
  	   	// 3) meanwhile, the most mobilable portion of increment in deep-C layers will move down
  	   	//    Here, (1) the mobilable portion is assumed to equal the SOMA production ONLY in value
  	   	//              if any suggestion on this fraction (i.e., mobiletoco2) from field work, it
@@ -657,12 +683,26 @@ void Soil_Bgc::deltastate(){
  	   	//              should be related to microbial activity
  			double rhsum = del_soi2a.rhrawc[il]+del_soi2a.rhsoma[il]
  			              +del_soi2a.rhsompr[il]+del_soi2a.rhsomcr[il];
- 	   		d2mcarbon += rhsum*mobiletoco2;
+ 			if (rhsum>0.) {
+ 				double totmobile = rhsum*mobiletoco2;
+ 				d2mcarbon += totmobile;
 
- 	   		del_sois.rawc[il]  -= del_soi2a.rhrawc[il]*mobiletoco2;
- 	   		del_sois.soma[il]  -= del_soi2a.rhsoma[il]*mobiletoco2;
- 	   		del_sois.sompr[il] -= del_soi2a.rhsompr[il]*mobiletoco2;
- 	   		del_sois.somcr[il] -= del_soi2a.rhsomcr[il]*mobiletoco2;
+ 				del_sois.rawc[il]  -= del_soi2a.rhrawc[il]*mobiletoco2;
+ 				del_sois.soma[il]  -= del_soi2a.rhsoma[il]*mobiletoco2;
+ 				del_sois.sompr[il] -= del_soi2a.rhsompr[il]*mobiletoco2;
+ 				del_sois.somcr[il] -= del_soi2a.rhsomcr[il]*mobiletoco2;
+
+ 	 	   		if (nfeed==1){
+ 	 	   			double totsomc = tmp_sois.rawc[il]+tmp_sois.soma[il]+tmp_sois.sompr[il]+tmp_sois.somcr[il];
+ 	 	   			if (totsomc>totmobile) {
+ 	 	   				del_orgn [il] = - totmobile/totsomc*tmp_sois.orgn[il]; //assuming C/N same for all SOM components
+ 	 	   			} else {
+ 	 	   				del_orgn[il] = 0.;
+ 		   			}
+ 	 	   			d2morgn += (-del_orgn[il]);  //note: del_orgn[il] above is not positive
+ 	 	   		}
+
+ 			}
 
 	   	// 4) d2mcarbon from above will move into the 'xtopmlthick';
    		} else if (cd->m_soil.type[il]==3) {
@@ -681,6 +721,11 @@ void Soil_Bgc::deltastate(){
  	   			del_sois.somcr[il]+= dcaddfrac*d2mcarbon*fsomcr;
  	   		}
 
+ 	   		if (nfeed==1) {
+ 	   			del_orgn[il]=d2morgn *dcaddfrac;
+ 	   		}
+
+
  	   		if (mlleft<=0.0) break;
    		}
 
@@ -695,7 +740,7 @@ void Soil_Bgc::deltastate(){
   	   	for(int il =0; il<cd->m_soil.numsl; il++){
 
   	   		// organic N pools
-  	   		del_sois.orgn[il]= ltrfln[il] - del_soi2soi.netnmin[il];
+  	   		del_sois.orgn[il]= ltrfln[il] - del_soi2soi.netnmin[il] + del_orgn[il];  //del_orgn[il] is from above SOM C mixing and moving
 
    			if (il==0){    // put the deposited orgn (here, mainly fire emitted) into the first soil layer
    				del_sois.orgn[il] += bd->m_a2soi.orgninput;
@@ -821,7 +866,7 @@ void Soil_Bgc::updateKdyrly4all(){
 		}
 
 		if(cd->m_soil.type[il]==0){ //moss
-		 	bgcpar.kdrawc[il]  = 0.0;
+		 	bgcpar.kdrawc[il]  = kdrawc;
 		 	bgcpar.kdsoma[il]  = 0.0;
 		 	bgcpar.kdsompr[il] = 0.0;
 		 	bgcpar.kdsomcr[il] = 0.0;

@@ -2,46 +2,34 @@
 #define FIRDATA_H_
 /*! this class contains the fire at annually time steps.
 */
+#include <iostream>
+#include <math.h>
 
 #include "../inc/diagnostics.h"
 #include "../inc/fluxes.h"
 #include "../inc/states.h"
-#include "EnvData.h"
 #include "../inc/timeconst.h"
-
-#include <iostream>
-#include <math.h>
-#include "RegionData.h"
-#include "GridData.h"
-#include "CohortData.h"
 
 class FirData{
  	public:
-  		FirData();
-  		~FirData();	
+            FirData();
+            ~FirData();
 
-		veg2atm_fir y_v2a;
-		veg2soi_fir y_v2soi;
+            int ysf;
+            bool useseverity;
 
-		soi2atm_fir y_soi2a;
-		soidiag_fir y_soid;
-		atm2soi_fir y_a2soi;
+		soidiag_fir fire_soid;
 
-		bool useseverity;
+		veg2atm_fir fire_v2a;
+		veg2soi_fir fire_v2soi;
 
-//in Eric's algorithm, season, fire size 
-
-
-		void init();
-    	void beginOfYear();
-    	void endOfYear();    
-    	void burn();    
-    	
-    	int ysf; 
+		soi2atm_fir fire_soi2a;
+		atm2soi_fir fire_a2soi;
   
-		RegionData * rd;
-		GridData * gd;
-		CohortData * cd;
+	    void init();
+            void beginOfYear();
+            void endOfYear();
+            void burn();
     
 };
 
