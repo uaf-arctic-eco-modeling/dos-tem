@@ -1,5 +1,19 @@
 /*! \file
 *
+*  Yuan: 1) modified for 3 plant C pools (leaf, wood, root), 1 non-living plant C
+*                     4 plant N pools (labile, leaf, wood, root), 1 non-living plant N
+*                and, 4 soil C pools (raw materials, active SOM, phyiscally-resistant SOM,
+*                                     chemically-resistant SOM)
+*                     1 woody debris C pools
+*                     2 soil N pools (organic N, available N)
+*
+*        2) vegetation, soil are integrated separately, because vegetation may have multple PFTs,
+*        but all of which share ONE soil. Here, the code only deals with ONE PFT and/or ONE SOIL, by setting
+*        the following switches:
+*            bool vbgc, bool sbgc
+*
+*            And, the 'bd' (BgcData) for veg and soil may not be same - be cautious here!
+*
 */
 
 #include "Integrator.h"
@@ -14,22 +28,22 @@ float Integrator::a41 =   0.879380974;
 float Integrator::a42 =  -3.277196177;
 float Integrator::a43 =   3.320892126;
 
-float  Integrator::a5  =  -0.20;
-float  Integrator::a51 =   2.032407407;
-float  Integrator::a52 =  -8.0;
-float  Integrator::a53 =   7.173489279;
-float  Integrator::a54 =  -0.2058966866;
+float Integrator::a5  =  -0.20;
+float Integrator::a51 =   2.032407407;
+float Integrator::a52 =  -8.0;
+float Integrator::a53 =   7.173489279;
+float Integrator::a54 =  -0.2058966866;
 
-float   Integrator::b1 =   0.118518519;
-float   Integrator::b3 =   0.518986355;
-float   Integrator::b4 =   0.50613149;
-float   Integrator::b5 =  -0.18;
-float   Integrator::b6 =   0.036363636;
-float  Integrator::b61 =  -0.296296296;
-float  Integrator::b62 =   2.0;
-float  Integrator::b63 =  -1.381676413;
-float  Integrator::b64 =   0.45297271;
-float  Integrator::b65 =  -0.275;
+float Integrator::b1 =   0.118518519;
+float Integrator::b3 =   0.518986355;
+float Integrator::b4 =   0.50613149;
+float Integrator::b5 =  -0.18;
+float Integrator::b6 =   0.036363636;
+float Integrator::b61 =  -0.296296296;
+float Integrator::b62 =   2.0;
+float Integrator::b63 =  -1.381676413;
+float Integrator::b64 =   0.45297271;
+float Integrator::b65 =  -0.275;
 
 int REJECT =0;
 int ACCEPT=1;
@@ -39,91 +53,171 @@ Integrator::Integrator(){
    	maxit = 20;
     maxitmon = 100;
     syint = 1;
-    
-    strcpy( predstr[I_VEGC],"VEGC" );       // vegetation carbon
 
-    // Ecosystem nitrogen pools *************************************
+/*
+	//vegetation C & N state variables
+  	for(int i =0; i<NUM_PFT_PART; i++){     //Yuan: here is the reason that the "temconst.h" is needed
+		stringstream ipart;
+		ipart <<" " <<i;
+		string str1 = ipart.str();
 
-    strcpy( predstr[I_STRN],"STRN" );  // vegetation structural nitrogen
-  	strcpy( predstr[I_STON],"STON" );   // vegetation labile nitrogen
-  	strcpy( predstr[I_UNNORMLEAF],"UNNORMLEAF" );  // vegetation unormleaf
-  	strcpy( predstr[I_WDEBRIS],"WDEBRIS" ); // wood debris
+		// C and N pools, except not in individual veg. parts
+		strcpy(predstr_veg[I_VEGC+i],(string("VEGC") +str1).c_str());   //  vegetation carbon pools
+		strcpy(predstr_veg[I_STRN+i],(string("STRN") +str1).c_str());   //  vegetation nitrogen pools
 
-	// Phenology variables for ecosystems ***************************
+  	}
+  	strcpy(predstr_veg[I_LABN],"LABN" );    // vegetation labile nitrogen
+  	strcpy(predstr_veg[I_DEADC],"DEADC" );  // non-living veg C
+  	strcpy(predstr_veg[I_DEADN],"DEADN" );  // non-living veg N
 
-	// Carbon fluxes for ecosystems **********************************
+	// vegetation C&N flux variables
+	for(int i =0; i<NUM_PFT_PART; i++){     //Yuan: here is the reason that the "temconst.h" is needed
+			stringstream ipart;
+			ipart <<" " <<i;
+			string str2 = ipart.str();
 
-  	// GPP not limited by nutrient availability
-  	strcpy( predstr[I_INGPP],"INGPP" );
- 	strcpy( predstr[I_GPP],"GPP" );      // gross primary production
+			strcpy(predstr_veg[I_INGPP+i],(string("INGPP") +str2).c_str());  	// GPP not limited by nutrient availability
+			strcpy(predstr_veg[I_INNPP+i],(string("INNPP") +str2).c_str());  	// NPP not limited by nutrient availability
+			strcpy(predstr_veg[I_GPP+i],(string("GPP") +str2).c_str());       // actual GPP
+			strcpy(predstr_veg[I_NPP+i],(string("NPP") +str2).c_str());      // actual NPP
+			strcpy(predstr_veg[I_RM+i],(string("RM") +str2).c_str());      // plant maintainence respiration
+			strcpy(predstr_veg[I_RG+i],(string("RG") +str2).c_str());      // plant growth respiration
+			strcpy(predstr_veg[I_LTRC+i],(string("LTRC") +str2).c_str());    // litterfall carbon
 
-  	// NPP not limited by nutrient availability
-  	strcpy( predstr[I_INNPP],"INNPP" );
-  	strcpy( predstr[I_NPP],"NPP" );      // net primary production
-  	strcpy( predstr[I_RM],"RM" );      // gross plant respiration
-  	strcpy( predstr[I_RG],"RG" );      // gross plant respiration
+			strcpy(predstr_veg[I_SNUP+i],(string("SNUP") +str2).c_str());   // vegetation nitrogen uptake for structural components
+		  	strcpy(predstr_veg[I_NMBOL+i],(string("NMBOL") +str2).c_str());   // nitrogen mobilization by vegetation
+		  	strcpy(predstr_veg[I_NRSRB+i],(string("NRSRB") +str2).c_str()); // nitrogen resorption by vegetation
+		  	strcpy(predstr_veg[I_LTRN+i],(string("LTRN") +str2).c_str());       // litterfall nitrogen
 
-  	strcpy( predstr[I_LTRC],"LTRC" );   // litterfall carbon
- // strcpy( predstr[I_AGSTUBC],"CRPSTUBC" );   // stubble carbon
-  	strcpy( predstr[I_RH_WD],"RHWD" );   // litterfall carbon
-
-
-// Nitrogen fluxes for ecosystems ********************************
-
-  	strcpy( predstr[I_NINP],"NINPUT" );   	// total nitrogen inputs into ecosystem
-  	strcpy( predstr[I_INNUP],"VEGINNUP" );   	// VEGNUP not limited by carbon availability
-  	strcpy( predstr[I_VNUP],"VEGNUP" );   	// nitrogen uptake by vegetation
-   	strcpy( predstr[I_VSUP],"VEGSUP" ); // vegetation nitrogen uptake for structural components
-   	strcpy( predstr[I_VLUP],"VEGLUP" ); // vegetation nitrogen uptake for labile components
-  
-  	strcpy( predstr[I_VNMBL],"VNMOBIL" ); // nitrogen mobilization by vegetation
-  	strcpy( predstr[I_VNRSRB],"VNRESORB" ); // nitrogen resorption by vegetation
-  	strcpy( predstr[I_LTRN],"LTRN" );       // litterfall nitrogen
- 
-	strcpy( predstr[I_SOLN],"SOLN");   // soil organic nitrogen
-	strcpy( predstr[I_AVLN],"AVLN" );   // soil available nitrogen
-	strcpy( predstr[I_NMIN],"NMIN" );   // soil net n minerization
-	strcpy( predstr[I_MNUP],"MNUP" );   // 
-	strcpy( predstr[I_NLST],"NLOST");      //  nitrogen losses from ecosystem
-	strcpy( predstr[I_SNUP],"SNUP");      //  nitrogen uptake from each layer
-	
-	for(int il =0; il<MAX_SOI_LAY; il++){
-		stringstream out ;
-		out <<" " <<il;
-		string str = out.str();
-		strcpy( predstr[I_L_REAC+il],(string("REAC") +str).c_str() );   // soil reactive carbon
-		strcpy( predstr[I_L_NONC+il],(string("NONC") +str).c_str() );   // soil non-reactive carbon
-		strcpy( predstr[I_L_RRH+il],(string("RRH") +str).c_str() );   // soil rh
-		strcpy( predstr[I_L_NRH+il],(string("NRH") +str).c_str() );   // soil rh
 	}
+	strcpy(predstr_veg[I_INNUP],"INNUP");  // vegetation N uptake at full capacity without interaction from C
+	strcpy(predstr_veg[I_LNUP],"LNUP" );     // vegetation nitrogen uptake for labile components
+
+	//soil C&N state variables
+	for(int il =0; il<MAX_SOI_LAY; il++){     //Yuan: here is the reason that the "temconst.h" is needed
+		stringstream ilayer;
+		ilayer <<" " <<il;
+		string str2 = ilayer.str();
+		strcpy(predstr_soi[I_L_RAWC+il],(string("RAWC") +str2).c_str() );   //  soil raw material carbon
+		strcpy(predstr_soi[I_L_SOMA+il],(string("SOMA") +str2).c_str() );   // soil active som carbon
+		strcpy(predstr_soi[I_L_SOMPR+il],(string("SOMPR") +str2).c_str() );   // soil physically-resistant som carbon
+		strcpy(predstr_soi[I_L_SOMCR+il],(string("SOMCR") +str2).c_str() );   // soil chemically-resistant som carbon
+	}
+  	strcpy(predstr_soi[I_WDEBRIS],"WDEBRIS" ); // wood debris
+
+	// soil C&N flux variables
+	for(int il =0; il<MAX_SOI_LAY; il++){     //Yuan: here is the reason that the "temconst.h" is needed
+		stringstream ilayer;
+		ilayer <<" " <<il;
+		string str2 = ilayer.str();
+
+		strcpy(predstr_soi[I_L_RH_RAW+il],(string("RHRAW") +str2).c_str() );     // soil rh
+		strcpy(predstr_soi[I_L_RH_SOMA+il],(string("RHSOMA") +str2).c_str() );   // soil rh
+		strcpy(predstr_soi[I_L_RH_SOMPR+il],(string("RHSOMPR") +str2).c_str() );   // soil rh
+		strcpy(predstr_soi[I_L_RH_SOMCR+il],(string("RHSOMCR") +str2).c_str() );   // soil rh
+
+		strcpy(predstr_soi[I_L_ORGN+il],(string("ORGN") +str2).c_str() );  // soil organic nitrogen
+	    strcpy(predstr_soi[I_L_AVLN+il],(string("AVLN") +str2).c_str() );  // soil available nitrogen
+
+	    strcpy(predstr_soi[I_L_NMIN+il],(string("NMIN") +str2).c_str() );   // soil net N minerization
+	    strcpy(predstr_soi[I_L_NIMMOB+il],(string("NIMMOB") +str2).c_str() );   // soil net N minerization
+
+	}
+	strcpy(predstr_soi[I_RH_WD],"RHWD" );   // woody debris respiration
+
+  	// Total Ecosystem N loss
+	strcpy(predstr_soi[I_AVLNLOSS],"AVLNLOSS" );   // total inorganic nitrogen loss
+	strcpy(predstr_soi[I_ORGNLOSS],"ORGNLOSS" );   // total organic nitrogen loss
+*/
+};
+
+Integrator::~Integrator(){
 
 };
 
+void Integrator::setBgcData(BgcData * bdp){
+   	 bd = bdp;
+};
+
+void Integrator::setSoil_Bgc(Soil_Bgc * soip){
+   	 ssl = soip;
+};
+
+void Integrator::setVegetation_Bgc(Vegetation_Bgc * vegp){
+   	 veg = vegp;
+};
  
-void Integrator::updateMonthly(){
-	//before integration , initialize the state and flux
-	// from ssl, veg;
-	 // first reset all the fluxes variables to zero
-	 nfeed = bd->nfeed;
-     NUMSL = ed->m_soid.actual_num_soil;
-     for (int iv = 0; iv < NUMEQ; iv++ ){ 
+void Integrator::updateMonthlyVbgc(){
+	 vegbgc = true;      // these two switches will only allow vegetation_bgc call in 'delta'
+	 soibgc = false;
+
+	// first reset all the variables to zero
+     for (int iv = 0; iv < NUMEQ; iv++){
+     	y[iv] = 0.0;
+     }
+
+     // initialize the state from 'bd'
+     c2ystate_veg(y);
+
+     // integration
+	 adapt(y, NUMEQ_VEG);
+
+    // after integration , save results back to 'bd';
+	 y2cstate_veg(y);
+	 y2cflux_veg(y);
+
+};
+
+void Integrator::updateMonthlySbgc(const int & numsoillayer){
+	 vegbgc = false;
+	 soibgc = true;      // these two switches will only allow soil_bgc call in 'delta'
+
+     numsl = numsoillayer;
+
+	// first reset all the variables to zero
+     for (int iv = 0; iv < NUMEQ; iv++ ){
      	y[iv] = 0.0; 
      }
-     
-     c2ystate(y);
-	
-	 adapt(y);
 
-    // after integration , save results back to veg and ssl;	
-	 y2cstate(y);
-     y2cflux(y);
-     
-     /*ssl->soil.sn2sl = ssl->snow.sn2sl;*/
+     // initialize the state from 'bd';
+     c2ystate_soi(y);
 	
-	// after adaptation, store back state and flux to ssl and veg
+     // integration
+	 adapt(y, NUMEQ_SOI);
+
+    // after integration , save results back to 'bd';
+	 y2cstate_soi(y);
+	 y2cflux_soi(y);
+     
 };
 
-int Integrator::adapt(float pstate[]){
+void Integrator::c2ystate_veg(float y[]){
+
+	for (int i=0; i<NUM_PFT_PART; i++) {
+		y[I_VEGC+i] = bd->m_vegs.c[i];
+		y[I_STRN+i] = bd->m_vegs.strn[i];
+	}
+
+    y[I_LABN]       = bd->m_vegs.labn;
+
+    y[I_DEADC]      = bd->m_vegs.deadc;
+    y[I_DEADN]      = bd->m_vegs.deadn;
+};
+
+void Integrator::c2ystate_soi(float y[]){
+    for(int il =0; il<numsl; il++){
+      	y[I_L_RAWC+il] = bd->m_sois.rawc[il];
+      	y[I_L_SOMA+il] = bd->m_sois.soma[il];
+      	y[I_L_SOMPR+il]= bd->m_sois.sompr[il];
+      	y[I_L_SOMCR+il]= bd->m_sois.somcr[il];
+        y[I_L_ORGN+il] = bd->m_sois.orgn[il];
+        y[I_L_AVLN+il] = bd->m_sois.avln[il];
+    }
+    y[I_WDEBRIS] = bd->m_sois.wdebrisc;
+
+};
+
+int Integrator::adapt(float pstate[], const int & numeq){
   	int i;
   	float ipart;
   	float fpart;
@@ -131,24 +225,24 @@ int Integrator::adapt(float pstate[]){
   	float dt = 1.0;
   	int mflag = 0;
   	long nintmon = 0;
-  	float oldstate[NUMEQ];
+  	float oldstate[numeq];
   	float  ptol =0.01;
- // temporary
- 	int numeq = NUMEQ;
 
- //
-
-  	blackhol = 0;
+   	blackhol = 0;
   	while ( time != 1.0 ){
     	test = REJECT;
     	if ( syint == 1 ){
       		while ( test != ACCEPT ){
-      			// cout << "integration time step " << dt << "\n";
-				bool testavln = rkf45( numeq,pstate,dt);
+      			if (dt<1.e-7) {
+      				cout << "integration time step " << dt << "\n";
+      			}
+
+      			bool testavln = rkf45(numeq,pstate,dt);
+
 				if(testavln){
 					test = boundcon( dum4,error,ptol );
 				}else{
-	 				test =testavln;	
+	 				test = testavln;
 				}
 				
 				//if(test>1)cout <<predstr[test-1] << " error is " << error[test-1] <<"------Integrator-------\n";
@@ -183,16 +277,7 @@ int Integrator::adapt(float pstate[]){
 
 };
 
-bool Integrator::checkPools(){
-   	bool negativepool =false;
-   	if(ydum[I_AVLN]<0 ||ydum[I_VEGC]<0||ydum[I_STRN]<0 || ydum[I_STON]<0){
-   	 	negativepool =true;
-   	}
-   	return negativepool;
-}
-
-bool Integrator::rkf45( const int& numeq, float pstate[], 
-                   float& pdt ) {
+bool Integrator::rkf45( const int& numeq, float pstate[], float& pdt) {
   	bool negativepool =false;
   	int i;
   	float ptdt = 0;
@@ -203,8 +288,9 @@ bool Integrator::rkf45( const int& numeq, float pstate[],
     	f11[i]=f3[i]=f4[i]=f5[i]=f6[i] = 0.0;
   	}
 
+  	//
   	ptdt = pdt * 0.25;
-  	delta(dum4,f11 );
+  	delta(dum4,f11);
   	
   	step( numeq,yprime,f11,yprime,a1 );
   	step( numeq,rk45,f11,rk45,b1 );
@@ -214,7 +300,7 @@ bool Integrator::rkf45( const int& numeq, float pstate[],
   	  	return false;	
   	}
   	
-  	delta(ydum,f2 );
+  	delta(ydum,f2);
   	for ( i = 0; i < numeq; i++ ) {
     	f13[i] = a31*f11[i] + a32*f2[i];
   	}
@@ -275,8 +361,242 @@ bool Integrator::rkf45( const int& numeq, float pstate[],
     return true;
 };
 
-/***************************************************************
- ***************************************************************/
+void Integrator::y2cstate_veg(float y[]){
+
+	for (int i=0; i<NUM_PFT_PART; i++) {
+		bd->m_vegs.c[i] = y[I_VEGC+i];
+		bd->m_vegs.strn[i] = y[I_STRN+i] ;
+	}
+
+    if(y[I_LABN]<0){
+    	 y[I_STRN] += y[I_LABN] -0.001;
+    	 y[I_LABN]= 0.001;
+	}
+    bd->m_vegs.labn  = y[I_LABN] ;
+
+	bd->m_vegs.deadc = y[I_DEADC];
+    bd->m_vegs.deadn = y[I_DEADN];
+
+};
+
+void Integrator::y2cstate_soi(float y[]){
+
+    for(int il=0; il<numsl; il++){
+     	bd->m_sois.rawc[il] = y[I_L_RAWC +il];
+        bd->m_sois.soma[il] = y[I_L_SOMA +il];
+        bd->m_sois.sompr[il]= y[I_L_SOMPR +il];
+        bd->m_sois.somcr[il]= y[I_L_SOMCR +il];
+
+        if(y[I_L_AVLN+il]<0){//add by shuhua Dec 8 2007
+        	y[I_L_ORGN+il]+=y[I_L_AVLN+il] -0.001;
+        	y[I_L_AVLN+il]=0.001;
+        }
+        bd->m_sois.orgn[il] = y[I_L_ORGN+il];
+        bd->m_sois.avln[il] = y[I_L_AVLN+il];
+    }
+
+	bd->m_sois.wdebrisc = y[I_WDEBRIS];
+
+};
+
+void Integrator::y2cflux_veg(float y[]){
+
+	for (int i=0; i<NUM_PFT_PART; i++) {
+		bd->m_a2v.ingpp[i] = y[I_INGPP+i];
+		bd->m_a2v.innpp[i] = y[I_INNPP+i];
+		bd->m_a2v.gpp[i]   = y[I_GPP+i];
+		bd->m_a2v.npp[i]   = y[I_NPP+i];
+
+		bd->m_v2a.rm[i] = y[I_RM+i];
+		bd->m_v2a.rg[i] = y[I_RG+i];
+
+		bd->m_v2soi.ltrfalc[i] = y[I_LTRC+i];
+
+		bd->m_soi2v.snuptake[i]  = y[I_SNUP+i];
+		bd->m_v2v.nmobil[i]      = y[I_NMBOL+i];
+		bd->m_v2v.nresorb[i]     = y[I_NRSRB+i];
+
+		bd->m_v2soi.ltrfaln[i]   = y[I_LTRN+i];
+	}
+
+	bd->m_soi2v.innuptake = y[I_INNUP];
+	bd->m_soi2v.lnuptake  = y[I_LNUP];
+
+};
+
+void Integrator::y2cflux_soi(float y[]){
+
+  	for(int il =0; il<numsl; il++){
+  		bd->m_soi2a.rhrawc[il]    = y[I_L_RH_RAW +il];
+  		bd->m_soi2a.rhsoma[il]    = y[I_L_RH_SOMA +il];
+  		bd->m_soi2a.rhsompr[il]   = y[I_L_RH_SOMPR +il];
+  		bd->m_soi2a.rhsomcr[il]   = y[I_L_RH_SOMCR +il];
+  	  	bd->m_soi2soi.nimmob[il]  = y[I_L_NIMMOB+il];
+  	  	bd->m_soi2soi.netnmin[il] = y[I_L_NMIN+il];
+  	}
+  	bd->m_soi2a.rhwdeb = y[I_RH_WD];
+
+  	//
+    bd->m_soi2l.avlnlost = y[I_AVLNLOSS];
+    bd->m_soi2l.orgnlost = y[I_ORGNLOSS];
+
+};
+
+/****************************************************************/
+void Integrator::delta(float pstate[], float pdstate[]){
+	time_t start;
+	time_t end;
+	double period = 0.;
+
+	if (vegbgc) {
+		// assign value from pstate to temporate variables in veg
+		// only state variabls are needed, since fluxes and diagnostic variables will
+		// be recalculated again based on state variabels
+		y2tcstate_veg(pstate);
+
+		// calculate the fluxes
+		start=time(0);
+		veg->delta();
+		end=time(0);
+		period = difftime(start, end);
+
+		start=time(0);
+		veg->deltanfeed();
+		end=time(0);
+		period = difftime(start, end);
+
+		// update the delta of state variables
+		start=time(0);
+		veg->deltastate();
+		end=time(0);
+		period = difftime(start, end);
+
+		// assign fluxes and state back to pdstate
+		dc2ystate_veg(pdstate);
+		dc2yflux_veg(pdstate);
+	}
+
+//   ssl->del_soi2v = veg->del_soi2v;  // These two will be done out of this module, because veg-> has to integrate
+//   ssl->del_v2soi = veg->del_v2soi;
+
+	if (soibgc) {
+		// assign value from pstate to temporate variables in ssl
+		// only state variabls are needed, since fluxes and diagnostic variables will
+		// be recalculated again based on state variabels
+		y2tcstate_soi(pstate);
+
+		// calculate the fluxes
+		ssl->deltac();
+		ssl->deltan();
+
+		// update the delta of state
+		ssl->deltastate();
+
+		// assign fluxes and state back to pdstate
+		dc2ystate_soi(pdstate);
+		dc2yflux_soi(pdstate);
+	}
+
+};
+
+void Integrator::y2tcstate_veg(float pstate[]){
+
+	for (int i=0; i<NUM_PFT_PART; i++){
+     veg->tmp_vegs.c[i]   = pstate[I_VEGC+i];
+     veg->tmp_vegs.strn[i]= pstate[I_STRN+i];
+	}
+
+    veg->tmp_vegs.labn  = pstate[I_LABN];
+    veg->tmp_vegs.deadc = pstate[I_DEADC];
+    veg->tmp_vegs.deadn = pstate[I_DEADN];
+
+};
+
+void Integrator::y2tcstate_soi(float pstate[]){
+
+     for(int il =0; il<numsl; il++){
+     	ssl->tmp_sois.rawc[il] = pstate[I_L_RAWC+il];
+        ssl->tmp_sois.soma[il] = pstate[I_L_SOMA+il];
+        ssl->tmp_sois.sompr[il]= pstate[I_L_SOMPR+il];
+        ssl->tmp_sois.somcr[il]= pstate[I_L_SOMCR+il];
+
+        ssl->tmp_sois.orgn[il] = pstate[I_L_ORGN+il];
+        ssl->tmp_sois.avln[il] = pstate[I_L_AVLN+il];
+
+     }
+     ssl->tmp_sois.wdebrisc= pstate[I_WDEBRIS];
+
+};
+
+// assign fluxes and state back to pdstate
+void Integrator::dc2ystate_veg(float pdstate[]){
+
+	for (int i=0; i<NUM_PFT_PART; i++){
+		pdstate[I_VEGC+i] = veg->del_vegs.c[i];
+		pdstate[I_STRN+i] = veg->del_vegs.strn[i];
+	}
+
+    pdstate[I_LABN]       = veg->del_vegs.labn;
+	pdstate[I_DEADC]      = veg->del_vegs.deadc;
+	pdstate[I_DEADN]      = veg->del_vegs.deadn;
+
+};
+
+void Integrator::dc2ystate_soi(float pdstate[]){
+
+    for (int il =0; il<numsl; il++){
+    	pdstate[I_L_RAWC+il]  = ssl->del_sois.rawc[il];
+        pdstate[I_L_SOMA+il]  = ssl->del_sois.soma[il];
+        pdstate[I_L_SOMPR+il] = ssl->del_sois.sompr[il];
+        pdstate[I_L_SOMCR+il] = ssl->del_sois.somcr[il];
+        pdstate[I_L_ORGN+il]  = ssl->del_sois.orgn[il];
+        pdstate[I_L_AVLN+il]  = ssl->del_sois.avln[il];
+
+    }
+
+	pdstate[I_WDEBRIS] = ssl->del_sois.wdebrisc;
+
+};
+
+void Integrator::dc2yflux_veg(float pdstate[]){
+
+	for (int i=0; i<NUM_PFT_PART; i++){
+		pdstate[I_INGPP+i] = veg->del_a2v.ingpp[i];
+		pdstate[I_INNPP+i] = veg->del_a2v.innpp[i];
+		pdstate[I_GPP+i]   = veg->del_a2v.gpp[i];
+		pdstate[I_NPP+i]   = veg->del_a2v.npp[i];
+		pdstate[I_RG+i]    = veg->del_v2a.rg[i];
+		pdstate[I_RM+i]    = veg->del_v2a.rm[i];
+		pdstate[I_LTRC+i]  = veg->del_v2soi.ltrfalc[i];
+		pdstate[I_SNUP+i]  = veg->del_soi2v.snuptake[i];
+		pdstate[I_NMBOL+i] = veg->del_v2v.nmobil[i];
+		pdstate[I_NRSRB+i] = veg->del_v2v.nresorb[i];
+		pdstate[I_LTRN+i]  = veg->del_v2soi.ltrfaln[i];
+	}
+
+  	pdstate[I_INNUP] = veg->del_soi2v.innuptake;
+    pdstate[I_LNUP]  = veg->del_soi2v.lnuptake;
+
+};
+
+void Integrator::dc2yflux_soi(float pdstate[]){
+
+	 for (int il =0; il<numsl; il++){
+		pdstate[I_L_RH_RAW +il]  = ssl->del_soi2a.rhrawc[il];
+		pdstate[I_L_RH_SOMA +il] = ssl->del_soi2a.rhsoma[il];
+		pdstate[I_L_RH_SOMPR+il] = ssl->del_soi2a.rhsompr[il];
+		pdstate[I_L_RH_SOMCR+il] = ssl->del_soi2a.rhsomcr[il];
+
+		pdstate[I_L_NIMMOB+il]   = ssl->del_soi2soi.nimmob[il];
+		pdstate[I_L_NMIN+il]     = ssl->del_soi2soi.netnmin[il];
+	 }
+
+ 	 pdstate[I_RH_WD]  = ssl->del_soi2a.rhwdeb;
+
+	 pdstate[I_ORGNLOSS] = ssl->del_soi2l.orgnlost;
+     pdstate[I_AVLNLOSS] = ssl->del_soi2l.avlnlost;
+
+};
 
 void Integrator::step( const int& numeq, float pstate[], 
                     float pdstate[], float ptstate[],
@@ -286,295 +606,194 @@ void Integrator::step( const int& numeq, float pstate[],
     	ptstate[i] = pstate[i] + (pdt * pdstate[i]);
   	}
 	
-}
+};
+
+bool Integrator::checkPools(){
+
+	bool negativepool =false;
+
+	/////
+   	if (vegbgc) {
+   		for (int i=0; i<NUM_PFT_PART; i++) {
+   			if(ydum[I_VEGC+i]<0) return true;
+
+   			if (veg->nfeed) {
+   				if(ydum[I_STRN+i]<0) return true;
+   			}
+   		}
+
+   		if(ydum[I_DEADC]<0){
+   			return true;
+   		}
+
+		if (veg->nfeed) {
+			if(ydum[I_LABN]<0 || ydum[I_DEADN]<0) return true;
+   		}
+
+
+   	}
+
+   	////
+   	if (soibgc) {
+
+   		for (int il=0; il<numsl; il++){
+   			if(ydum[I_L_RAWC+il]<0 || ydum[I_L_SOMA+il]<0
+   				 || ydum[I_L_SOMPR+il]<0 || ydum[I_L_SOMCR+il]<0) {
+   				return true;
+   			}
+
+   			if (ssl->nfeed) {
+   				if(ydum[I_L_AVLN+il]<0 || ydum[I_L_ORGN+il]<0) return true;
+   			}
+
+   		}
+
+   		if(ydum[I_WDEBRIS]<0) {
+			return true;
+		}
+   	}
+
+   	return negativepool;
+};
 
 int Integrator::boundcon( float ptstate[], float err[], float& ptol ) {
 
   	int test = ACCEPT;
 
-	// Check carbon and nitrogen state variables
- 	//extra check
-  	if ( nfeed == 1 && ptstate[I_AVLN] <0 )
-  {
-    return test = temkey( I_AVLN )+1;
-  }
-  if ( err[I_VEGC] > fabs( ptol * ptstate[I_VEGC] ) )
-  {
-    return test = temkey( I_VEGC )+1;
-  }
-  if ( nfeed == 1 && err[I_STRN] > fabs( ptol * ptstate[I_STRN] ) )
-  {
-    return test = temkey( I_STRN )+1;
-  }
-  
-    if ( nfeed == 1 && err[I_MNUP] > fabs( ptol * ptstate[I_MNUP] ) )
-  {
-    return test = temkey( I_MNUP  )+1;
-  }
-  
-  if ( nfeed == 1 && err[I_SOLN] > fabs( ptol * ptstate[I_SOLN] ) )
-  {
-    return test = temkey( I_SOLN )+1;
-  }
-  if ( nfeed == 1 && err[I_AVLN] > fabs( ptol * ptstate[I_AVLN] ) )
-  {
-    return test = temkey( I_AVLN )+1;
-  }
- 
-  
-  
-  
-  if ( nfeed == 1 && err[I_NMIN] > fabs( ptol * ptstate[I_NMIN] ) )
-  {
-    return test = temkey( I_NMIN  )+1;
-  }
-  
-  if ( nfeed == 1 && err[I_SNUP] > fabs( ptol * ptstate[I_SNUP] ) )
-  {
-    return test = temkey( I_SNUP  )+1;
-  }
-  
-  
-  // begin of layered variables
-  for(int il =0; il<NUMSL; il++){
-  if ( err[I_L_REAC+il] > fabs( ptol * ptstate[I_L_REAC+il] ) )
-  {
-    return test = temkey( I_L_REAC+il )+1;
-  }
-  
-  if ( err[I_L_NONC+il] > fabs( ptol * ptstate[I_L_NONC+il] ) )
-  {
-    return test = temkey( I_L_NONC+il )+1;
-  }
-  if ( nfeed == 1 && err[I_L_RRH+il] > fabs( ptol * ptstate[I_L_RRH+il] ) )
-  {
-    return test = temkey( I_L_RRH  +il )+1;
-  }
-   if ( nfeed == 1 && err[I_L_NRH+il] > fabs( ptol * ptstate[I_L_NRH+il] ) )
-  {
-    return test = temkey( I_L_NRH  +il )+1;
-  }
+  	double same = 0.;
+  	double zero = 1.e-10;
 
-  }
-  //end of layered variables
-  if ( err[I_GPP] > fabs( ptol * ptstate[I_GPP] ) )
-  {
-    return test = temkey( I_GPP )+1;
-  }
-  if ( err[I_NPP] > fabs( ptol * ptstate[I_NPP] ) )
-  {
-    return test = temkey( I_NPP )+1;
-  }
-  if ( nfeed == 1 && err[I_VNUP] > fabs( ptol * ptstate[I_VNUP] ) )
-  {
-    return test = temkey( I_VNUP )+1;
-  }
-  if ( nfeed == 1 && err[I_VSUP] > fabs( ptol * ptstate[I_VSUP] ) )
-  {
-    return test = temkey( I_VSUP )+1;
-  }
-  if ( nfeed == 1 && err[I_STON] > fabs( ptol * ptstate[I_STON] ) )
-  {
-    return test = temkey( I_STON )+1;
-  }
-  if ( nfeed == 1 && err[I_VNMBL] > fabs( ptol * ptstate[I_VNMBL] ) )
-  {
-    return test = temkey( I_VNMBL )+1;
-  }
+	// Check carbon and nitrogen state/flux variables
+   	if (vegbgc) {
+   		//veg C
+   		for (int i=0; i<NUM_PFT_PART; i++) {
+
+ //  			if (err[I_VEGC+i] > fabs( ptol * ptstate[I_VEGC+i] ) ){ // this may have issues if the err is very small while ptstate is 0
+   	   		same = err[I_VEGC+i] - fabs(ptol * ptstate[I_VEGC+i]);
+   			if (same>zero) return test = vegvarkey(I_VEGC)+1+i;
+
+   		    same = err[I_INGPP+i] - fabs(ptol * ptstate[I_INGPP+i]);
+   		    if (same>zero) return test = vegvarkey(I_INGPP)+1+i;
+
+   		    same = err[I_INNPP+i] - fabs(ptol * ptstate[I_INNPP+i]);
+   		    if (same>zero) return test = vegvarkey(I_INNPP)+1+i;
+
+   		    same = err[I_GPP+i] - fabs(ptol * ptstate[I_GPP+i]);
+   		    if (same>zero) return test = vegvarkey(I_GPP)+1+i;
+
+   		    same = err[I_NPP+i] - fabs(ptol * ptstate[I_NPP+i]);
+   		    if (same>zero) return test = vegvarkey(I_NPP)+1+i;
+
+   		    same = err[I_RM+i] - fabs(ptol * ptstate[I_RM+i]);
+   		    if (same>zero) return test = vegvarkey(I_RM)+1+i;
+
+   		    same = err[I_RG+i] - fabs(ptol * ptstate[I_RG+i]);
+   		    if (same>zero) return test = vegvarkey(I_RG)+1+i;
+
+   		    same = err[I_LTRC+i] - fabs(ptol * ptstate[I_LTRC+i]);
+   		    if (same>zero) return test = vegvarkey(I_LTRC)+1+i;
+
+   		}
+
+   		same = err[I_DEADC] - fabs( ptol * ptstate[I_DEADC]);
+   		if (same>zero) return test = vegvarkey(I_DEADC)+1;
+
+   		//Veg N
+   		if (veg->nfeed) {
+   			for (int i=0; i<NUM_PFT_PART; i++) {
+   				same = err[I_STRN+i] - fabs( ptol * ptstate[I_STRN+i]);
+   				if (same>zero) return test = vegvarkey(I_STRN)+1+i;
+
+   				same = err[I_SNUP+i] - fabs( ptol * ptstate[I_SNUP+i]);
+   				if (same>zero) return test = vegvarkey(I_SNUP)+1+i;
+
+   				same = err[I_NMBOL+i] - fabs( ptol * ptstate[I_NMBOL+i]);
+   				if (same>zero) return test = vegvarkey(I_NMBOL)+1+i;
+
+   				same = err[I_NRSRB+i] - fabs( ptol * ptstate[I_NRSRB+i]);
+   				if (same>zero) return test = vegvarkey(I_NRSRB)+1+i;
+
+   				same = err[I_LTRN+i] - fabs( ptol * ptstate[I_LTRN+i]);
+   				if (same>zero) return test = vegvarkey(I_LTRN)+1+i;
+
+   			}
+
+   			same = err[I_LABN] - fabs( ptol * ptstate[I_LABN]);
+   			if (same>zero) return test = vegvarkey(I_LABN)+1;
+
+   			same = err[I_DEADN] - fabs( ptol * ptstate[I_DEADN]);
+   			if (same>zero) return test = vegvarkey(I_DEADN)+1;
+
+   			same = err[I_INNUP] - fabs( ptol * ptstate[I_INNUP]);
+   			if (same>zero) return test = vegvarkey( I_INNUP )+1;
+
+   			same = err[I_LNUP] - fabs(ptol * ptstate[I_LNUP]);
+  			if (same>zero) return test = vegvarkey( I_LNUP )+1;
+
+   		}
+   	} // end of veg_bgc checking
 
   
-  return test;
+    //soil_bgc
+   	if (soibgc) {
+   		//soil C
+   		for(int il =0; il<numsl; il++){
+
+   			same = err[I_L_RAWC+il] - fabs( ptol * ptstate[I_L_RAWC+il]);
+   			if (same>zero) return test = soivarkey( I_L_RAWC)+1 +il;
+
+   			same = err[I_L_SOMA+il] - fabs( ptol * ptstate[I_L_SOMA+il]);
+   			if (same>zero) return test = soivarkey(I_L_SOMA)+1 +il;
+
+   			same = err[I_L_SOMPR+il] - fabs( ptol * ptstate[I_L_SOMPR+il]);
+   			if (same>zero) return test = soivarkey(I_L_SOMPR) +1 + il;
+
+   			same = err[I_L_SOMCR+il] - fabs( ptol * ptstate[I_L_SOMCR+il]);
+   			if (same>zero) return test = soivarkey(I_L_SOMCR)+1 + il;
+
+   		    //
+   			same = err[I_L_RH_RAW+il] - fabs( ptol * ptstate[I_L_RH_RAW+il]);
+   		    if (same>zero) return test = soivarkey(I_L_RH_RAW)+1+il;
+
+   			same = err[I_L_RH_SOMA+il] - fabs( ptol * ptstate[I_L_RH_SOMA+il]);
+   		    if (same>zero) return test = soivarkey( I_L_RH_SOMA)+1+il;
+
+   		    same = err[I_L_RH_SOMPR+il] - fabs( ptol * ptstate[I_L_RH_SOMPR+il]);
+   		    if (same>zero) return test = soivarkey( I_L_RH_SOMPR)+1+il;
+
+   		    same = err[I_L_RH_SOMCR+il] - fabs( ptol * ptstate[I_L_RH_SOMCR+il]);
+   		    if (same>zero) return test = soivarkey( I_L_RH_SOMCR)+1+il;
+
+   		}
+
+   		same = err[I_WDEBRIS] - fabs( ptol * ptstate[I_WDEBRIS]);
+		if (same>zero) return test = soivarkey(I_WDEBRIS)+1;
+
+		same = err[I_RH_WD] - fabs( ptol * ptstate[I_RH_WD]);
+		if (same>zero) return test = soivarkey(I_RH_WD)+1;
+
+   		// soil N
+   		if (ssl->nfeed) {
+   			for(int il =0; il<numsl; il++){
+   				same = err[I_L_ORGN+il] - fabs(ptol * ptstate[I_L_ORGN+il]);
+   				if (same>zero) return test = soivarkey(I_L_ORGN)+1+il;
+
+   				same = err[I_L_AVLN+il] - fabs(ptol * ptstate[I_L_AVLN+il]);
+   				if (same>zero) return test = soivarkey(I_L_AVLN)+1+il;
+
+   				//
+   				same = err[I_L_NIMMOB+il] - fabs( ptol * ptstate[I_L_NIMMOB+il]);
+   				if (same>zero) return test = soivarkey(I_L_NIMMOB)+1+il;
+
+   				same = err[I_L_NMIN+il] - fabs( ptol * ptstate[I_L_NMIN+il]);
+   				if (same>zero) return test = soivarkey(I_L_NMIN)+1+il;
+
+   			}
+		} // end of soil N module
+
+   	} // end of soil_bgc checking
+
+    return test;
 
 };
                             
-void Integrator::dc2ystate(float pdstate[]){
-	
-	   // assign fluxes and state back to pdstate
-    pdstate[I_VEGC] = veg->del_vegs.c;
-    pdstate[I_STRN] = veg->del_vegs.strn;
-    pdstate[I_STON] = veg->del_vegs.ston;
-	pdstate[I_UNNORMLEAF] = veg->del_vegs.unnormleaf;
-   
-    for (int il =0; il<NUMSL; il++){
-    	pdstate[I_L_REAC+il] = ssl->del_sois.reac[il];
-        pdstate[I_L_NONC+il] = ssl->del_sois.nonc[il];
-       
-    }
-    
-		pdstate[I_SOLN] = ssl->del_sois.orgn;
-    	pdstate[I_AVLN] = ssl->del_sois.avln;
-    	pdstate[I_WDEBRIS] = ssl->del_sois.wdebris;
-}   
-
-void Integrator::dc2yflux(float pdstate[]){
-
-	 pdstate[I_INGPP] = veg->del_a2v.ingpp  ;
-	 pdstate[I_GPP] = veg->del_a2v.gpp   ;
-	 pdstate[I_INNPP] = veg->del_a2v.innpp   ;
-	 pdstate[I_NPP] = veg->del_a2v.npp ;
-	 
-	 pdstate[I_RG] = veg->del_v2a.rg ;
-	 pdstate[I_RM] = veg->del_v2a.rm ;
-	 
-	 pdstate[I_LTRC] = veg->del_v2soi.ltrfalc   ;
-     pdstate[I_NINP] = ssl->del_a2soi.ninput  ;
-     pdstate[I_INNUP] =  veg->del_soi2v.innuptake   ;
-     pdstate[I_VNUP] =  veg->del_soi2v.nuptake  ;
-  	 pdstate[I_VSUP] = veg->del_soi2v.suptake ;
-     pdstate[I_VLUP] = veg->del_soi2v.luptake  ;
-  	 pdstate[I_VNMBL] = veg->del_v2v.nmobil  ;
-  	 pdstate[I_VNRSRB] =veg->del_v2v.nresorb  ;
-  	 pdstate[I_LTRN] = veg->del_v2soi.ltrfaln  ;
-    
- 	pdstate[I_RH_WD] = ssl->del_soi2a.wdrh  ;
-	for (int il =0; il<NUMSL; il++){
-		pdstate[I_L_RRH +il] = ssl->del_soi2a.rrh[il];
-	    pdstate[I_L_NRH +il] = ssl->del_soi2a.nrh[il];
-	}
-	pdstate[I_MNUP] =ssl->del_soi2soi.nimmob  ;
- 	    pdstate[I_NMIN  ] =ssl->del_soi2soi.netnmin  ;
- 	    pdstate[I_NLST] =ssl->del_soi2l.nlost   ;//30
- 	    pdstate[I_SNUP] =ssl->del_soi2v.nuptake   ;//30
-   
-}                         
-void Integrator::y2tcstate(float pstate[]){
- 	 veg->tmp_vegs.c=   pstate[I_VEGC]  ;
-     veg->tmp_vegs.strn =pstate[I_STRN] ;
-     veg->tmp_vegs.ston = pstate[I_STON] ;
-     veg->tmp_vegs.unnormleaf = pstate[I_UNNORMLEAF] ;
-     for(int il =0; il<NUMSL; il++){
-     	ssl->tmp_sois.reac[il] =pstate[I_L_REAC+il];
-        ssl->tmp_sois.nonc[il] =pstate[I_L_NONC+il];
-     
-     } 
-     
-    ssl->tmp_sois.orgn =pstate[I_SOLN];
-    ssl->tmp_sois.avln= pstate[I_AVLN];
-    ssl->tmp_sois.wdebris= pstate[I_WDEBRIS];
-   
-}                         
-void Integrator::y2cstate(float y[]){
-	 bd->m_vegs.c=  y[I_VEGC]  ;
-     
-     if(y[I_STON]<0){//add by shuhua Dec 8 2007
-	  y[I_STRN]+=y[I_STON] -0.001;	
-	  y[I_STON]=0.001;	
-	 }
-	 bd->m_vegs.strn =y[I_STRN] ;
-     bd->m_vegs.ston = y[I_STON] ;
-     bd->m_vegs.unnormleaf = y[I_UNNORMLEAF] ;
-     
-     for(int il=0; il<NUMSL; il++){
-     	
-     	bd->m_sois.reac[il] =y[I_L_REAC +il];
-        bd->m_sois.nonc[il] =y[I_L_NONC +il];
-     }
-	
-	if(y[I_AVLN]<0){//add by shuhua Dec 8 2007
-	  y[I_SOLN]+=y[I_AVLN] -0.001;	
-	  y[I_AVLN]=0.001;	
-	}
-	bd->m_sois.orgn =  y[I_SOLN];
-    bd->m_sois.avln= y[I_AVLN];
-    
-    bd->m_sois.wdebris= y[I_WDEBRIS];
-}
-
-void Integrator::c2ystate(float dy[]){
-	dy[I_VEGC] = bd->m_vegs.c;
-    dy[I_STRN] = bd->m_vegs.strn;
-    dy[I_STON] = bd->m_vegs.ston;
- 	dy[I_UNNORMLEAF] = bd->m_vegs.unnormleaf;
-    
-    for(int il =0; il<NUMSL; il++){
-      	dy[I_L_REAC+il] = bd->m_sois.reac[il];
-      	dy[I_L_NONC+il] = bd->m_sois.nonc[il];
-    }
-    
-    dy[I_SOLN] = bd->m_sois.orgn;
-    dy[I_AVLN] = bd->m_sois.avln;
-    dy[I_WDEBRIS] = bd->m_sois.wdebris;
-};
-
-void Integrator::y2cflux(float dy[]){
-	 bd->m_v2soi.ltrfalc = dy[I_LTRC];
-     bd->m_a2soi.ninput = dy[I_NINP];
-     bd->m_soi2v.innuptake =  dy[I_INNUP];
-     bd->m_soi2v.nuptake = dy[I_VNUP];
-  	 bd->m_soi2v.suptake = dy[I_VSUP];
-  	 bd->m_soi2v.luptake = dy[I_VLUP];
-  	 bd->m_v2v.nmobil = dy[I_VNMBL];
-  	 bd->m_v2v.nresorb = dy[I_VNRSRB];
-  	 bd->m_v2soi.ltrfaln = dy[I_LTRN];
-
-  	
-  	
-  	bd->m_a2v.ingpp = dy[I_INGPP];
-  	bd->m_a2v.gpp = dy[I_GPP];
-  	bd->m_a2v.innpp = dy[I_INNPP];
-  	bd->m_a2v.npp = dy[I_NPP];
-  	bd->m_v2a.rm = dy[I_RM];
-  	bd->m_v2a.rg = dy[I_RG];
-  	
-  	bd->m_soi2a.wdrh = dy[I_RH_WD];
-  	for(int il =0; il<NUMSL; il++){
-  		
-  		bd->m_soi2a.rrh[il] = dy[I_L_RRH +il];
-  		bd->m_soi2a.nrh[il] = dy[I_L_NRH +il];
-  	}
-   
-  	bd->m_soi2soi.nimmob = dy[I_MNUP];
-  	bd->m_soi2soi.netnmin = dy[I_NMIN];
-  	bd->m_soi2l.nlost = dy[I_NLST];
-  	bd->m_soi2v.nuptake = dy[I_SNUP];
-};
-
-void Integrator::c2yflux(float dy[]){
-	
-};
-                            
-void Integrator::delta(  float pstate[], 
-                          float pdstate[] ){
-   
-   // first assign value from pstate to temporate variables in veg, atm,and ssl
-   // only state variabls are needed, since fluxes and diagnostic variables will 
-   // be recalculated again based on state variabels	
-  
-   y2tcstate(pstate);
-   
-   ssl->delta();
-    
-   veg->delta();
-   veg->deltanfeed(); //the updated ds2v.nuptake will be used by microbe.delta
-   
-   ssl->del_soi2v = veg->del_soi2v;
-   ssl->del_v2soi = veg->del_v2soi;
-   
-   ssl->deltaavln();
-   // after the delta of fluxes have been updated
-   // update the delta of state
-   ssl->deltastate();
-   veg->deltastate();
-    
-   // assign fluxes and state back to pdstate
-   dc2ystate(pdstate);
-   dc2yflux(pdstate);
-                     	
- };
-  
- void Integrator::setSoil_Bgc( Soil_Bgc * soip){
-       	 ssl = soip;
- };
-       
- void Integrator::setVegetation_Bgc( Vegetation_Bgc * vegp){
-       	 veg = vegp;
- };
- 
- void Integrator::setBgcData(BgcData* bdp){
-       	 bd = bdp;
- }
-       
- void Integrator::setEnvData(EnvData* edp){
-    	 ed = edp;
- }
-       

@@ -6,147 +6,106 @@
 
 #include<string>
 #include <iostream>
-//#include "../inoutput/Logger.h"
 #include <sstream>
 #include <cmath>
-#include <vector>
+
 using namespace std;
 
-#include "../../inc/PhysicalConstants.h"
+#include "../../inc/ErrorCode.h"
+#include "../../inc/physicalconst.h"
+#include "../../inc/layerconst.h"
 
 class Layer {
 	public:
-	 Layer();
-	 virtual ~Layer();
-	 enum typekey {I_LAY, I_SOIL, I_SNOW, I_MOSS, I_PEAT, I_MINE, I_ROCK};
+		Layer();
+		virtual ~Layer();
+		enum TYPEKEY {I_SNOW, I_MOSS, I_FIB, I_HUM, I_MINE, I_ROCK};
+		/*! the texture class - see the 'SoilLookup.cpp'*/
+		enum STKEY {I_SAND, I_LOAMY_SAND,  I_SANDY_LOAM,
+	         I_LOAM, I_SILTY_LOAM, I_SANDY_CLAY_LOAM, I_CLAY_LOAM,
+	         I_SILTY_CLAY_LOAM, I_SANDY_CLAY, I_SILTY_CLAY, I_CLAY};
 	 
-	 /*! thickness of layer (unit : \f$ m \f$)*/
-	 double dz;
-	 /*! distance to the ground surface 
-	  * <ol>
-	  * <li>+ means below surface, for soil layer
-	  * <li>- means above surface, for snow layer
-	  * </ol>
-	  */
-	  double z;
-	 /*! density of this layer (unit : \f$ kg m^{-3} \f$)*/
-	 double rho;
-	 
-	  
-    /*! point to next layer */
-	Layer* nextl;
-	/*! point to previous layer */
-	Layer* prevl;
+		Layer* nextl;   /*! point to next layer */
+		Layer* prevl;   /*! point to previous layer */
 
-    /*! layer index, start from 1 */
-    int indl;
-    
-    /*! soil layer index, start from 1*/
-    int solind;
+		TYPEKEY tkey;   // layer type key
+	    STKEY stkey;    // soil layer's texture key
 
-    /*! thermal state of soil, 0: undetermined, 1: frozen, -1: unfrozen*/
-    int frozen;
-    
-    /*! age of a layer (year)*/
-    double age;
-    
-   
-    void check();
-    
-    double minliq; // minimum liq water content//kg/m2
-    
-    double maxliq; // maximum liq water content
-    
-    double maxice; // maximum ice content
-    
-    double tcmin; // minimum thermal conductivity, to consider the effect of air and water convection
-    /* color of layer*/
-    int color;
+	    // layer type controls for processes
+		bool isSnow;
+		bool isSoil;
+		bool isRock;
+		bool isMoss;
+		bool isMineral;
+		bool isOrganic;
+	    bool isFibric;
+	    bool isHumic;
 
+		int indl;      /*! layer index, start from 1 */
+		int solind;    /*! soil layer index, start from 1*/
+		double age;    /*! age of a layer (year)*/
+		double dz;     /*! thickness of layer (unit : \f$ m \f$)*/
+		double z;      /*! distance to the ground surface: */
+	                   // + means below surface, for soil layer
+	                   // - means above surface, for snow layer
 
-    void advanceOneDay();
+		double rho;    /*! density of this layer (unit : \f$ kg m^{-3} \f$)*/
+		double bulkden;/*! bulk density: the kg solid/ volume of whole layer*/
+		double poro;   /*! porosity*/
 
-   // virtual void updateDensity()=0;
+		double tcmin;  // minimum thermal conductivity, to consider the effect of air and water convection
+		double tcdry;/*! dry matter thermal conductivity W/mK*/
+		double tcsolid;/*! solid thermal conductivity W/mK*/
+		double tcsatfrz;/*! saturated frozen soil thermal conductivity*/
+		double tcsatunf;/*! saturated unfrozen soil thermal conductivity*/
+		double vhcsolid;/*! solid volumetric heat capacity*/
 
-     double getHeatCapacity();
+		double albdryvis;  //visiable light albedo at dry
+		double albdrynir;  //nir light albedo at dry
+		double albsatvis;  //visiable light albedo at saturation
+		double albsatnir;  //nir light albedo at saturation
 
-     double getThermalConductivity();
+		double minliq; // minimum liq water content//kg/m2
+		double maxliq; // maximum liq water content
+		double maxice; // maximum ice content
 
- 
-    virtual bool isSnow()=0;
-    virtual bool isSoil()=0; 
-    virtual bool isRock()=0; 
-    
-    void addOneMoreFront(const double & deltaz,const int & frzing);
-    void addOneMoreFront5Bot(const double & deltaz,const int & frzing);
-    void removeAllFronts(const int & frzing);
-    void moveFrontDown(const double & partd, const int & fntind);
-    void moveFrontUp(const double & partd, const int & fntind);
+		double psisat; /*! saturated matric potential*/
+		double hksat;  /*! saturated matric potential*/
+		double bsw;    /*! Clap and Hornberger consant*/
 
-/// variables 	
-	/*! temperature, Note: here the temperature of one layer
-	 * means the temperature at the bottom of one layer.
-	 * This definition is for Goodrich method */
-	double tem;
+		// thermal status
+		int frozen;    /*! thermal state of a layer, 0: partially frozen, 1: frozen, -1: unfrozen*/
+		double frozenfrac; // frozen fraction of a layer (0 - 1)
+		double tem;
+		double tcond;  // thermal conductivity
 
-	   	
-	// get frozen layer thermal conductivity
-	   virtual double getFrzThermCond()=0;
-	// get unfrozen layer thermal conductivity
-	   virtual double getUnfThermCond()=0;
-	// get frozen layer specific heat capcity
-	   virtual double getFrzVolHeatCapa()=0;
-	// get unfrozen layer specific heat capacity
-	   virtual double getUnfVolHeatCapa()=0;
-	   virtual double getMixVolHeatCapa()=0;   //Yuan
-    // get albedo of visible radition
-       virtual double getAlbedoVis()=0;
-    // get albedo of Nir radition
-       virtual double getAlbedoNir()=0;
-	/*!liquid water kg/m2*/
-	double liq;
-	/*!ice content kg/m2*/
-	double ice;
-	
-	/*! total water conent*/
-	double wat;
-	
-	/*! porosity*/
-	double poro;
-	
-	/*! bulk density: the kg solid/ volume of whole layer*/
-	double bulkden;
-	
-	/*!bulk density /density of water*/
-	double dbdw;
-	
+		// hydrological status
+		double liq;   /*!liquid water kg/m2*/
+		double ice;   /*!ice content kg/m2*/
+		double hcond;  // hydraulic conductivity
 
-	
+		/*! soil carbon pool unit : \{kgC}{m^2 */
+		double rawc;
+		double soma;
+		double sompr;
+		double somcr;
 
-	//double mass; //the mass of a layer
-	/*! the name of class for the distinction between moss, peat and mineral soil layer*/
-	typekey tkey;
+		// misc.
+		double cfrac; //fraction of carbon, relative to total SOM weight (mass) - not used but should be useful in future
 
-	void printFrontsInfo();
-	
-	//void logLayerInfo(Logger * logger);
-	
-	int checkFrontsValidity();
-	
-	void updateNumberOfFronts(int & numfrz, int & numthw);
-	
-	/*!get volumetric soil water content*/
-	double getVolWater();
-	 
-	double getVolLiq();
-	
-	double getVolIce();
-	
-	double getEffVolWater();
-	
-	//Yuan:
-	double tcond;
-	double hcond;
+		void advanceOneDay();
+		double getHeatCapacity();
+		double getThermalConductivity();
+		double getVolWater();  /*!get volumetric soil water content*/
+		double getEffVolWater();
+		double getVolLiq();
+		double getVolIce();
+
+		virtual double getFrzThermCond()=0;     // get frozen layer thermal conductivity
+		virtual double getUnfThermCond()=0;     // get unfrozen layer thermal conductivity
+		virtual double getFrzVolHeatCapa()=0;   // get frozen layer specific heat capcity
+		virtual double getUnfVolHeatCapa()=0;   // get unfrozen layer specific heat capacity
+		virtual double getMixVolHeatCapa()=0;   //Yuan
 	
 };
 #endif /*LAYER_H_*/

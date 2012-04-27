@@ -7,34 +7,31 @@ using namespace std;
 
 #include "../atmosphere/Atmosphere.h"
 
-#include "../data/EnvData.h"
 #include "../data/GridData.h"
 #include "../data/RegionData.h"
+#include "../data/EnvData.h"
+#include "../data/BgcData.h"
 
-#include "../util/Exception.h"
 #include "../inc/ErrorCode.h"
 
 class Grid{
 	public :
 	Grid();
 	~Grid();
-	
-	int gid;
-	
-	
-	int reinit(const int &gid1);
+
+	int reinit();
 	
  	void setEnvData(EnvData * ed);
+ 	void setBgcData(BgcData * bd);
  	void setRegionData(RegionData *rd);
- 	void setGridData(GridData * gd);
 
- 	// 	protected:
-
- 	Atmosphere atm; 	
+ 	//Atmosphere atm;
 	
-    EnvData* ed;
+    EnvData *grded;   // 'ed' integrated over whole grid
+    BgcData *grdbd;   // 'bd' integrated over whole grid
     RegionData* rd;
-    GridData* gd;
+
+    GridData gd;
 
 };
 #endif /*GRID_H_*/

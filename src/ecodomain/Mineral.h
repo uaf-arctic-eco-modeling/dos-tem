@@ -9,20 +9,17 @@ using namespace std;
 
 class Mineral{
 	public:
-	Mineral();
-	/*! number of mineral layer*/
-	int num;
-  
-	double dza[MAX_MIN_LAY]; // there are maximum 2 layers
- 
- 	int type[MAX_MIN_LAY]; // there are maximum 2 layers
-   
-	double thick;
+		Mineral();
+		~Mineral();
 
-	void initThicknesses(const double & thickness);
-	void updateThicknesses(int type[], double dz[],const int & maxnum);
-	
-	void updateType(int types[], const int & numtype);
+		int num;	    /*! number of mineral layer*/
+		double thick;   // total thickness of mineral soils (m)
+ 
+		double dz[MAX_MIN_LAY];  // thickness of each mineral layer (m)
+		int texture[MAX_MIN_LAY];   // soil texture of each layer
+   
+		void setDefaultThick(const double & thickness);
+		void set5Soilprofile(int soiltype[], double dz[],int textures[], const int & maxnum);
 	
 };
 #endif /*MINERAL_H_*/

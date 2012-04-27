@@ -14,11 +14,11 @@ class DoubleLinkedList {
 	public:
 		DoubleLinkedList();
 
-		/*! layer on the ground, could be snow layer, moss layer , peat
+		/*! layer on the ground top, could be snow layer, moss layer , peat
 		 * layer, or mineral layer, stored in front of list */
-		Layer* frontl; 
-		/*! layer at back of list */
-		Layer* backl; 
+		Layer* toplayer;
+		/*! layer at bottom of list */
+		Layer* botlayer;
 		
 	protected:
 		void insertFront(Layer *l);             

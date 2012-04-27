@@ -9,659 +9,421 @@
 #include "RunCohort.h"
 
 RunCohort::RunCohort(){
-	jcalifilein = true;    // switch for reading calibrated parameters; can be reset outside
-	ccdriverout = false;  // switch for output calirestart.nc; can be reset outside
+
+    dstepcnt = 0;
+    mstepcnt = 0;
+    ystepcnt = 0;
+
+	cohortcount = 0;   // counter for cohort have been run
 }
 
-void RunCohort::setGridInputer(GridInputer * gin){
-  	ginputer= gin;
+RunCohort::~RunCohort(){
+
+}
+
+void RunCohort::setModelData(ModelData * mdp){
+  	md = mdp;
+}
+
+// data connections in modules
+void RunCohort::initData(string & cmttype){
+
+	 // read-in parameters AND initial conditions as inputs
+	 string configdir = "config/";
+	 cht.chtlu.dircmtname = configdir+cmttype;
+	 cht.chtlu.init();   //put the parameter files in 'config/' with same directory of model
+
+	// output (buffer) data connection
+	 if (md->outRegn) {
+		 cht.outbuffer.setRegnOutData(&regnod);
+	 }
+
+	 cht.outbuffer.setRestartOutData(&resod);   //restart output data sets connenction
+
+	 // output operators
+	 regnouter.setOutData(&regnod);
+	 resouter.setRestartOutData(&resod);
+}
+
+//read-in data for a cohort
+int RunCohort::readData(){
+
+	// record ids in '.nc' datasets
+	int clmrecid = MISSING_I;
+	int vegrecid = MISSING_I;
+	int firerecid= MISSING_I;
+
+	//reading the climate data
+	cht.cd.act_atm_drv_yr = cinputer.act_clmyr;
+  	clmrecid = cinputer.getClmRec(cht.cd.clmid);
+  	if (clmrecid<0) return -1;
+	cinputer.getClimate(cht.cd.tair, cht.cd.prec, cht.cd.nirr, cht.cd.vapo, cht.cd.act_atm_drv_yr, clmrecid);
+
+  	if (md->runmode==2) {
+  		//reading the vegetation community type data from '.nc', otherwise from 'chtlu' for site-run
+  		cht.cd.act_vegset = cinputer.act_vegset;
+
+  		vegrecid = cinputer.getVegRec(cht.cd.vegid);
+  		if (vegrecid<0) return -2;
+  		cinputer.getVegetation(cht.cd.vegyear, cht.cd.vegtype, cht.cd.vegfrac, vegrecid);
+
+  		cht.cd.cmttype = cht.cd.vegtype[0];  //default, i.e., the first set of data
+  		cht.cd.cmtfrac = cht.cd.vegfrac[0];
+
+  		//reading the fire occurence data from '.nc', otherwise from 'chtlu' for site-run
+  		cht.cd.act_fireset = cinputer.act_fireset;
+  		firerecid = cinputer.getFireRec(cht.cd.vegid);
+  		if (firerecid<0) return -3;
+		cinputer.getFire(cht.cd.fireyear, cht.cd.fireseason, cht.cd.firesize, firerecid);
+  		if (md->useseverity) {
+  			cinputer.getFireSeverity(cht.cd.fireseverity, firerecid);
+  		}
+  	} else {
+  		cht.cd.cmttype = 0;   // means for one input 'community type'
+  		cht.cd.cmtfrac = 1.0;  // means the whole community is fully occupied by one single type
+
+  		//fire occurence data from 'chtlu'
+  		for (int i=0; i<MAX_FIR_OCRNUM; i++){
+  			cht.cd.fireyear[i]    = cht.chtlu.fireyear[i];
+  			cht.cd.fireseason[i]  = cht.chtlu.fireseason[i];
+  			cht.cd.firesize[i]    = cht.chtlu.firesize[i];
+  			cht.cd.fireseverity[i]= cht.chtlu.fireseverity[i];
+  		}
+
+  	}
+
+    return 0;
 };
 
-void RunCohort::setCohortInputer(CohortInputer * cin){
-  	cinputer= cin;
-};
+// when initializing a cohort, using its record ids RATHER THAN chtids
+// cid - the record id for chort;
+int RunCohort::reinit(const int &cid){
 
-void RunCohort::setRestartInputer(RestartInputer * resin){
-  	resinputer= resin;
-};
-
-void RunCohort::setSiteinInputer(SiteinInputer * sin){
-  	sinputer= sin;
-};
-
-//ONLY update Calibrated Pars ONLY
-void RunCohort::setCalibrationParameters(CohortLookup* chtlu, string& jtxtfile){
-	
-	string califile = jtxtfile; 
- 
- 	ifstream fctr;
- 	fctr.open(califile.c_str(),ios::in );
- 	bool isOpen = fctr.is_open();
-    if ( !isOpen ) {
-      	cout << "\nCannot open " << califile << "  \n" ;
-      	exit( -1 );
-    }
-
- 	int drgtypei;
- 	int vegtypei; 
- 	double dummy;
-
- 	fctr >> vegtypei;  //cht.cd->vegtype ;  //Yuan: DON'T change them to mess up with input
- 	fctr >> drgtypei;  //cht.cd->drgtype ;
-
-	fctr >> dummy; //chtlu->fibthick[drgtypei][vegtypei];
-	fctr >> dummy; //chtlu->humthick[drgtypei][vegtypei];
- 	fctr >> dummy; //chtlu->initvegc[drgtypei][vegtypei];
- 	fctr >> dummy;
- 	//chtlu->initstrn[drgtypei][vegtypei] = dummy* 0.96 ;
- 	//chtlu->initston[drgtypei][vegtypei] = dummy* 0.04 ;
- 	fctr >> dummy; //chtlu->initavln[drgtypei][vegtypei];
- 	fctr >> dummy; //chtlu->initsoln[drgtypei][vegtypei];
-
-  	fctr >> chtlu->cmax[drgtypei][vegtypei];
-    fctr >> chtlu->nmax[drgtypei][vegtypei];
-    fctr >> chtlu->krb[drgtypei][vegtypei];
-    fctr >> chtlu->nup[drgtypei][vegtypei];  
-  	fctr >> chtlu->cfall[drgtypei][vegtypei]; 
-  	fctr >> chtlu->nfall[drgtypei][vegtypei]; 
-	fctr >> chtlu->kdcfib[drgtypei][vegtypei];
-	fctr >> chtlu->kdchum[drgtypei][vegtypei];
-	fctr >> chtlu->kdcmin[drgtypei][vegtypei];
-	fctr >> chtlu->kdcslow[drgtypei][vegtypei];
-	
- 	fctr.close();
-	
-};
-
-//update Initial conditions from Jcalinput.txt ONLY
-void RunCohort::setCalibrationInits(CohortLookup* chtlu, string& jtxtfile){
-
-	string califile = jtxtfile;
-
- 	ifstream fctr;
- 	fctr.open(califile.c_str(),ios::in );
- 	bool isOpen = fctr.is_open();
-    if ( !isOpen ) {
-      	cout << "\nCannot open " << califile << "  \n" ;
-      	exit( -1 );
-    }
-
- 	int drgtypei;
- 	int vegtypei;
- 	double dummy;
-
- 	fctr >> vegtypei;  //cht.cd->vegtype ;  //Yuan: DON'T change them to mess up with input
- 	fctr >> drgtypei;  //cht.cd->drgtype ;
-
-	fctr >> chtlu->fibthick[drgtypei][vegtypei];
-	fctr >> chtlu->humthick[drgtypei][vegtypei];
- 	fctr >> chtlu->initvegc[drgtypei][vegtypei];
- 	fctr >> dummy;
- 	chtlu->initstrn[drgtypei][vegtypei] = dummy* 0.96 ;
- 	chtlu->initston[drgtypei][vegtypei] = dummy* 0.04 ;
- 	fctr >> chtlu->initavln[drgtypei][vegtypei];
- 	fctr >> chtlu->initsoln[drgtypei][vegtypei];
-
-  	fctr >> dummy; //chtlu->cmax[drgtypei][vegtypei];
-    fctr >> dummy; //chtlu->nmax[drgtypei][vegtypei];
-    fctr >> dummy; //chtlu->krb[drgtypei][vegtypei];
-    fctr >> dummy; //chtlu->nup[drgtypei][vegtypei];
-  	fctr >> dummy; //chtlu->cfall[drgtypei][vegtypei];
-  	fctr >> dummy; //chtlu->nfall[drgtypei][vegtypei];
-	fctr >> dummy; //chtlu->kdcfib[drgtypei][vegtypei];
-	fctr >> dummy; //chtlu->kdchum[drgtypei][vegtypei];
-	fctr >> dummy; //chtlu->kdcminfast[drgtypei][vegtypei];
-	fctr >> dummy; //chtlu->kdcminslow[drgtypei][vegtypei];
-
- 	fctr.close();
-
-};
-
-//when initializing a cohort, using its record ids RATHER THAN chtids
-int RunCohort::reinit(const int &cid, const int &eqcid, const int &rescid){
-    // initializing module-calling controls     
-	
-	cht.equiled = false;
-	cht.spined 	= false;
-	cht.transed = false;
-	 
+	// initializing module-calling controls
 	cht.failed  = false;
 	cht.errorid = 0;
-	     
-	cht.envmodule = false;
-	cht.ecomodule = false;
-	cht.dslmodule = false;
-	cht.dsbmodule = false;
-    	
+
 	int errcode = 0;
 	
-	//common static data from input files 
-    if (eqcid<0) return -1;
-    cinputer->getVegetation(cht.cd->vegtype, eqcid);
-	cinputer->getDrainage( cht.cd->drgtype, eqcid);
-	if (cht.cd->vegtype<0 || cht.cd->vegtype>3) return -2;
-	if (cht.cd->drgtype<0 || cht.cd->drgtype>1) return -3;
-	
-	if(cht.md->runsp){
-	    if (cid<0) return -4;
-
-		cinputer->getSpinupFireOccur(cht.cd->spfireyear,cid);
-	  	cinputer->getSpinupFireSeason(cht.cd->spseason,cid);
-	  	if(cht.fd->useseverity){
-	  		cinputer->getSpinupSeverity(cht.cd->spseverity,cid);
-	  	}
-	}
-
-	if(cht.md->runtr){
-	    if (cid<0) return -5;
-
-		cinputer->getTransientFireOccur(cht.cd->trfireyear,cid);
-	  	cinputer->getTransientFireSeason(cht.cd->trseason,cid);
-	   	if(cht.fd->useseverity){
-	  		cinputer->getTransientSeverity(cht.cd->trseverity,cid);
-	  	}
-	 }
-
-	 // may update the calibrated pars from Jcalinput.txt file, which from calibration run
-	 if (jcalifilein) {
-		 if (jcalparfile.compare("")==0) {
-			 svegtype.str("");  //clear-up before use
-			 svegtype<<cht.cd->vegtype;   //convert vegtype to string
-			 sdrgtype.str("");
-			 sdrgtype<<cht.cd->drgtype;   //convert drgtype to string
-			 jcalparfile = "config/Jcalinput"
-		                     +svegtype.str()+sdrgtype.str()+".txt";
-		 }
-			
-		 setCalibrationParameters(&cht.chtlu, jcalparfile);
-		 if (cht.md->consoledebug) {
-			 cout<<"Cohort dependend parameters reading from:"+jcalparfile+"\n";
-		 }
-	 }
-
-	 //fire driving data 
-	 cht.fireDrivingData(cht.md->runsp, cht.md->runtr, cht.md->runsc);
+    if (cid < 0) return -1;
 	 
-	 //initial modes other than lookup (initmode = 1)
-	 if (cht.md->initmode==2) {
-		 //note: the cohort order in sitein.nc must be exactly same as eq/sp/tr cohort in cruid.nc/cohortid.nc
-		 int err=0;
+	 //initial modes other than lookup (i.e., initmode = 1)
+	 if (md->initmode==2) {
+		 //note: the cohort order in sitein.nc must be exactly same as cohort in cohortid.nc
+/*		 int err=0;
+		 err=sinputer->getSiteinData(cht.md->chtinputdir,&cht.sitein, cid);
+		 if (err!=0) return -1;
+*/
+	 } else if (md->initmode == 3) {
 
-		 err=sinputer->getSiteinData(&cht.sitein, cid);
-		 if (err!=0) return -6;
-		 		 
-	 } else if (cht.md->initmode == 3) {
-		 if (rescid<0) return -7;
- 
-		 resinputer->getERRCODE(errcode, rescid);
-		 if (errcode!=0) return -8;
-
-		 resinputer->getPERMAFROST(cht.resid.perma, rescid);
-		 	 
-		 resinputer->getDZsnow(cht.resid.DZsnow, rescid);
-		 resinputer->getTSsnow(cht.resid.TSsnow, rescid);
-		 resinputer->getICEsnow(cht.resid.ICEsnow, rescid);
-		 resinputer->getICEsnow(cht.resid.LIQsnow, rescid);
-		 resinputer->getAGEsnow(cht.resid.AGEsnow, rescid);
-		 resinputer->getRHOsnow(cht.resid.RHOsnow, rescid);
-		 
-		 resinputer->getTYPEsoil(cht.resid.TYPEsoil, rescid);
-		 resinputer->getFROZENsoil(cht.resid.FROZENsoil, rescid);
-		 resinputer->getDZsoil(cht.resid.DZsoil, rescid);
-		 resinputer->getTSsoil(cht.resid.TSsoil, rescid);
-		 resinputer->getLIQsoil(cht.resid.LIQsoil, rescid);
-		 resinputer->getICEsoil(cht.resid.ICEsoil, rescid);
-		 resinputer->getNONC(cht.resid.NONCsoil, rescid);
-		 resinputer->getREAC(cht.resid.REACsoil, rescid);
-		 
-		 resinputer->getTYPEmin(cht.resid.TYPEmin, rescid);
-		 resinputer->getDZrock(cht.resid.DZrock, rescid);
-		 resinputer->getTSrock(cht.resid.TSrock, rescid);
-		 resinputer->getFrontZ(cht.resid.frontZ, rescid);
-		 resinputer->getFrontFT(cht.resid.frontFT, rescid);
-
-		 resinputer->getVEGC(cht.resid.vegc, rescid);
-		 resinputer->getDEADC(cht.resid.deadc, rescid);
-		 resinputer->getWDEBRIS(cht.resid.wdebris, rescid);
-		 resinputer->getSTRN(cht.resid.strn, rescid);
-		 resinputer->getSTON(cht.resid.ston, rescid);
-		 resinputer->getDEADN(cht.resid.deadn, rescid);
-		 resinputer->getC2N(cht.resid.c2n, rescid);
-		 resinputer->getSOLN(cht.resid.soln, rescid);
-		 resinputer->getAVLN(cht.resid.avln, rescid);
-		 
-		 resinputer->getLAI(cht.resid.lai, rescid);
-		 resinputer->getFOLIAGEMX(cht.resid.foliagemx, rescid);
-		 resinputer->getUNNORMLEAF(cht.resid.unnormleaf, rescid);
-		 resinputer->getPRVUNNORMLEAFMX(cht.resid.prvunnormleafmx, rescid);
-		 resinputer->getPRVEETMX(cht.resid.prveetmx, rescid);
-		 resinputer->getPRVPETMX(cht.resid.prvpetmx, rescid);
-		 resinputer->getPRVTOPT(cht.resid.prvtopt, rescid);
-		 
-		 resinputer->getKDFIB(cht.resid.kdfib, rescid);
-		 resinputer->getKDHUM(cht.resid.kdhum, rescid);
-		 resinputer->getKDMIN(cht.resid.kdmin, rescid);
-		 resinputer->getKDSLOW(cht.resid.kdslow, rescid);
-		 
-		 resinputer->getYSF(cht.resid.ysf, rescid);
-		 resinputer->getBURNEDN(cht.resid.burnedn, rescid);
-
-		 resinputer->getTOPTA(cht.resid.toptA, rescid);
-		 resinputer->getEETMXA(cht.resid.eetmxA, rescid);
-		 resinputer->getPETMXA(cht.resid.petmxA, rescid);
-		 resinputer->getUNNORMLEAFMXA(cht.resid.unnormleafmxA, rescid);
-
-	 }
-
-	 //reset other initial state variables
-	 cht.reset();
-	 	 
-	 //output options
-     cht.outputSpinup = false;
-     if (cht.md->runsp && cht.md->runtr) cht.outputSpinup = true;
-
-	 cht.outSoilClm   = OSOILCLM;
-	 
-     if (SITEMODE) {
-		 cht.outRegn=false;
-		 if (OYEAR) cht.outSiteYear=true;
-		 if (OMONTH) cht.outSiteMonth=true;
-		 #ifdef ODAY
-		 	cht.outSiteDay=true;
-		 #endif
-	 } else if (REGNMODE){
-		 if (cht.md->runeq || cht.md->runsp) {
-		 //if (cht.md->runeq) {
-			 cht.outRegn=false;
+		 resinputer.getErrcode(errcode, inichtind);
+		 if (errcode!=0) {
+			 return -1;
 		 } else {
-			 cht.outRegn=true;
+
+			 cht.resid.chtid = inichtind;
+			 resinputer.getRestartData(&cht.resid, inichtind);
 		 }
-		 cht.outSiteYear=false;
-		 cht.outSiteDay=false;
-		 cht.outSiteMonth=false;
-	 } else {
-		 cht.outRegn=false;
-		 cht.outSiteYear=false;
-		 cht.outSiteDay=false;
-		 cht.outSiteMonth=false;
+
 	 }
-  
+	 
+	 //set initial state variables and parameters read-in from above
+	 cht.initStatePar();
+
+	 //clm/fire driving data (monthly/all years)
+	 cht.prepareAllDrivingData();
+
      return 0;
 };
 
 void RunCohort::run(){
 
-	try {
-	
+		// N cycles
+	    md->nfeed   = 1;
+		md->baseline= 1;
+	    md->avlnflg = 1;
+
+	    //
+	    cht.timer->reset();
+
+	    //module testing
+//		moduletest();
+///*
 		if(cht.md->runeq){
-    		runEquilibrium();
-    		cht.updateRestartOutputBuffer(1);
+			cht.timer->stageyrind = 0;
+    		runEquilibrium();               //module options included
 		}
-		
+
+		md->envmodule = true;
+	    md->bgcmodule = true;
+	    md->dsbmodule = true;
+	    md->dslmodule = true;
+	    md->dvmmodule = true;
+
 		if(cht.md->runsp){
+			cht.timer->stageyrind = 0;
+			cht.timer->eqend = true;
     		runSpinup();
-    		cht.updateRestartOutputBuffer(2);
-    		
 		}
 		
-		if(cht.md->runtr){
-			if (!cht.md->runsc) {
-				runTransit();
-				cht.updateRestartOutputBuffer(3);
-
-			//Yuan: scenario run is exactly same as transient run, except for period
-		    //  So, the climate/co2/fire data are put these two together
-			} else {
-				runScenario();
-			}
+		if(cht.md->runtr){	
+			cht.timer->stageyrind = 0;
+			cht.timer->eqend = true;
+			cht.timer->spend = true;
+			runTransit();
 		}
 
+		if(cht.md->runsc){
+			cht.timer->stageyrind = 0;
+			cht.timer->eqend = true;
+			cht.timer->spend = true;
+			cht.timer->trend = true;
+			runScenario();
+		}
+//*/
 		//restart.nc always output
-		resout->outputVariables(cht.cohortcount);
-	
-  	} catch (Exception &exception){
-  		cout <<"problem in run for cohort"<<cht.cohortcount<<"\n";
-  		cht.failed =true;
-  		cht.errorid = exception.getErrorCode();
-  		exception.mesg();
-  	}
+		resouter.outputVariables(cohortcount);
 	
 }; 
 
 void RunCohort::runEquilibrium(){
-	cht.timer->reset();
 
-	/*
-	cht.bd->baseline=1;
-    cht.bd->nfeed   =0;
-	cht.bd->avlnflg =0;
- 
-	cht.equiled =false;
-  	cht.spined  =false;
-  	cht.transed =false;
-     	 
-//	int outputyrind= cht.timer->getOutputYearIndex(cht.equiled, cht.spined, cht.outputSpinup);
-	
-	//at first run TEM 500 years, with only env module is on
-	 cht.envmodule =true;
-     cht.ecomodule =false;
-     cht.dsbmodule =false;
-     cht.dslmodule= false;
-     cht.veupdateLAI5Vegc =false;
-   	 cht.friderived = false;
+	// first, run model with "ENV module" only
+
+	 md->envmodule = true;
+     md->bgcmodule = false;
+     md->dsbmodule = false;
+     md->dslmodule = false;
+     md->dvmmodule = false;
+
+     dstepcnt = 0;
+     mstepcnt = 0;
+     ystepcnt = 0;
+
      cht.fd->ysf =1000;
-     bool assigneq =false;
-     bool useeq=false;
-	 for (int iy=0; iy<500; iy++){
-	   int yrcnt =iy;
-	   if(iy==499)assigneq =true;
-	   for (int im=0; im<12;im++){
-	  
-		   int currmind=  im;
-		   int dinmcurr = cht.timer->getDaysInMonth(im);;
-	   
-		   cht.updateMonthly(iy, yrcnt, currmind, dinmcurr, assigneq, useeq);
-	   }
 
-	   if(cht.md->consoledebug) {
-		   cout <<" ENV module ONLY run: year "<<iy <<" @cohort "<<cht.cd->eqchtid<<"\n";
-	   }
+     yrstart = 0;
+     yrend   = 100;
+     modulerun();
 
-	} 
+	 //Then, use equilibrium environment driver to run model with all modules ON
+///*
+     cht.timer->reset();
 
-	 //Then, use equilibrium environment to run eco module only
-	 cht.envmodule =false;
-     cht.ecomodule =true;
-     cht.dsbmodule =false;
-     cht.dslmodule =false;
+ 	 md->envmodule = true;
+     md->bgcmodule = true;
+     md->dsbmodule = true;
+     md->dslmodule = true;
+     md->dvmmodule = true;
 
-     cht.bd->baseline=1;
-     cht.bd->nfeed   =1;
-	 cht.bd->avlnflg =1;
-     useeq =true;
-	 int outputyrind =0;
-	 for (int iy=0; iy<MAX_EQ_YR; iy++){
-	     cht.fd->ysf =1000;
+     dstepcnt = 0;
+     mstepcnt = 0;
+     ystepcnt = 0;
+     cht.fd->ysf =0;
 
-	     int yrcnt =iy;
-		 for (int im=0; im<12;im++){
-	   		int currmind=  im;
-	   		int dinmcurr = cht.timer->getDaysInMonth(im);;
-	   		cht.updateMonthly(outputyrind, yrcnt, currmind, dinmcurr, false, useeq);
-
-	   		if (SITEMODE) {
-	   			siteoutput(outputyrind, currmind);
-	   		}
-
-	   		cht.timer->advanceOneMonth();
-		 }
-
-		 if (cht.outRegn){
-			rout->outputYearCohortVars(outputyrind, cht.cohortcount);
-		 }
-
-  	   	cht.equiled = cht.testEquilibrium();
-
- 		if(cht.md->consoledebug) {
- 			cout <<" ECO module ONLY run: year "<<iy <<" @cohort "<<cht.cd->eqchtid<<"\n";
- 		}
-		if(cht.equiled )break;
-
-		outputyrind++;
-
-	}
-*/
-	 //Finally, run all modules for 20 fire-cycles (FRI) to prepare spin-up run (Yuan)
-	 cht.equiled   = true;
-
-	 cht.envmodule = true;
-     cht.ecomodule = true;
-     cht.dsbmodule = true;
-     cht.dslmodule = true;
-
-     cht.bd->baseline =1;
-     cht.bd->nfeed    =1;
-	 cht.bd->avlnflg  =1;
-
-  	 cht.friderived = true;    //When call DSB module (fire), using FRI to determine fire year
-  	                  // and the fire season/size use the FIRST one in the gd.season[]/gd.size[]
-  	 int outputyrind = 0;
-  	 int nfri = min((int)(MAX_EQ_YR/cht.fd->gd->fri), 20);   //max. 10000+1FRI yrs or 20 FRI
-
-	 for (int iy=0; iy<(nfri+1)*cht.fd->gd->fri-2; iy++){   //Yuan: -2 will make the final restart.nc not the fire year, but two years ago
-		 int yrcnt =iy;
-		 for (int im=0; im<12;im++){
-	   		int currmind=  im;
-	   		int dinmcurr = cht.timer->getDaysInMonth(im);;
-	   		cht.updateMonthly(outputyrind, yrcnt, currmind, dinmcurr, false, false);
-
-	   		if (SITEMODE) {
-	   			siteoutput(outputyrind, currmind);
-	   		}
-
-	   		cht.timer->advanceOneMonth();
-		 }
-
-		if (cht.outRegn){
-			rout->outputYearCohortVars(outputyrind, cht.cohortcount);
-		}
-
- 		if(cht.md->consoledebug) {
- 			cout <<" Equilibrium run: year "<<iy <<" @cohort "<<cht.cd->eqchtid<<"\n";
- 		}
-
-		outputyrind++;
-	}
-
+     yrstart = 0;
+     yrend   = min(MAX_EQ_YR, 20*cht.gd->fri-2);   //20 FRI or max. MAX_EQ_YR
+     md->friderived = true;
+     modulerun();
+//*/
 };
 
 void RunCohort::runSpinup(){
-	cht.timer->reset();
 
-	cht.bd->baseline =1;
-    cht.bd->nfeed =1;
-	cht.bd->avlnflg=1;
+    usedatmyr = min(MAX_ATM_NOM_YR, cht.cd.act_atm_drv_yr);
 
-	cht.dsbmodule =true;
-	cht.envmodule =true;
-    cht.ecomodule =true;
-    cht.dslmodule= true;
-    //cht.dslmodule= false;    //for testing
-	 
-    cht.veupdateLAI5Vegc =true;
-	cht.equiled =true;
-    cht.friderived =true;  //Yuan: will change after reaching the first fire year
-	 
-	for(int iy=cht.timer->spinbegyr; iy<=cht.timer->spinendyr; iy++){
-
-		if (iy>=cht.firstfireyr) cht.friderived = false;    //prior to the first fire, model spin-up with fire occurrence at FRI
-
-	    int outputyrind= cht.timer->getOutputYearIndex(cht.equiled, cht.spined , cht.outputSpinup);
-	    int yrcnt = cht.timer->getCurrentYearIndex();
-	    for(int im=0; im<12;im++){
- 		
-	        int currmind=  im;
-	        int dinmcurr = cht.timer->getDaysInMonth(im);;
-	   
-	   		cht.updateMonthly(outputyrind, yrcnt, currmind, dinmcurr , false,false);
-			
-	   		if (SITEMODE) {
-	   			siteoutput(outputyrind, currmind);
-	   		}
-	   		
-	   		cht.timer->advanceOneMonth();
-	   
-	    }
-
-	    if (cht.outRegn){
-			rout->outputYearCohortVars(outputyrind, cht.cohortcount);
-		}
-	    
-	    if(cht.md->consoledebug){	
-	    	cout <<"Spinup run: year " <<cht.timer->getCalendarYear(cht.equiled, cht.spined)-1
-	    	     <<" @cohort "<<cht.cd->spchtid<<"\n";
-	    }
-	}
-	
-	cht.spined =true;
+    yrstart = cht.timer->spbegyr;
+    yrend   = cht.timer->spendyr;
+    modulerun();
 	 
 };
 
 void RunCohort::runTransit(){
-	cht.timer->reset();
 
- 	cht.dsbmodule =true; 
- 	cht.envmodule =true;
-   	cht.ecomodule =true;
-   	cht.dslmodule =true;
-    
-	cht.bd->baseline =1;
-	cht.bd->nfeed    =1;
-	cht.bd->avlnflg  =1;
+    usedatmyr = cht.cd.act_atm_drv_yr;
 
-   	cht.equiled = true;
-   	cht.spined  = true;
-   	
-   	cht.veupdateLAI5Vegc = true;
-	cht.friderived       = true;
+    yrstart = cht.timer->trbegyr;
+    yrend   = cht.timer->trendyr;
+    modulerun();
 
-	for(int iy=cht.timer->trsbegyr; iy<=cht.timer->trsendyr; iy++){
-
-		if (iy>=cht.firstfireyr) cht.friderived = false;    //prior to the first fire, model runs with fire occurrence at FRI
-
-		int outputyrind= cht.timerOutputYearIndex
-		                 (cht.equiled, cht.spined, cht.outputSpinup);
-
-		int yrcnt = cht.timer->getCurrentYearIndex();
-	    for(int im=0; im<12;im++){
-	        int currmind=  im;
-	        int dinmcurr = cht.timer->getDaysInMonth(im);
-	        cht.updateMonthly(outputyrind, yrcnt, currmind, dinmcurr,false, false);
-			
-	        if (SITEMODE){
-	        	siteoutput(outputyrind, currmind);
-	        }
-
-	        cht.timer->advanceOneMonth();
-	    }
-	    
-		if (cht.outRegn){
-			rout->outputYearCohortVars(outputyrind, cht.cohortcount);
-		}
-
-	    if(cht.md->consoledebug){
-	    	cout <<"Transient run: year " 
-	    	<<cht.timer->getCalendarYear(cht.equiled, cht.spined)-1
-	    	<<" @cohort "<<cht.cd->trchtid<<"\n";
-	    }
-	}
-	
-	 
-	cht.transed =true;	
-	
 };
 
 void RunCohort::runScenario(){
-	cht.timer->reset();
 
- 	cht.dsbmodule =true;
- 	cht.envmodule =true;
-   	cht.ecomodule =true;
-   	cht.dslmodule =true;
+    usedatmyr = cht.cd.act_atm_drv_yr;
 
-	cht.bd->baseline =1;
-	cht.bd->nfeed    =1;
-	cht.bd->avlnflg  =1;
+    yrstart = cht.timer->scbegyr;
+    yrend   = cht.timer->scendyr;
+    modulerun();
 
-   	cht.equiled = true;
-   	cht.spined  = true;
+};
 
-   	cht.veupdateLAI5Vegc = true;
-	cht.friderived       = true;
+void RunCohort::modulerun(){
 
-	for(int iy=cht.timer->scbegyr; iy<=cht.timer->scendyr; iy++){
+	for (int icalyr=yrstart; icalyr<=yrend; icalyr++){
 
-		if (iy>=cht.firstfireyr) cht.friderived = false;    //prior to the first fire, model runs with fire occurrence at FRI
+		 int yrindex = cht.timer->getCurrentYearIndex();   //starting from 0
+		 cht.cd.year = cht.timer->getCalendarYear();
 
-		int outputyrind= cht.timerOutputYearIndex
-		                 (cht.equiled, cht.spined, cht.outputSpinup);
+		 cht.prepareDayDrivingData(yrindex, usedatmyr);
 
-		int yrcnt = cht.timer->yearind;
-	    for(int im=0; im<12;im++){
-	        int currmind=  im;
-	        int dinmcurr = cht.timer->getDaysInMonth(im);
-	        cht.updateMonthly(outputyrind, yrcnt, currmind, dinmcurr,false, false);
+		 int outputyrind = cht.timer->getOutputYearIndex();
+		 for (int im=0; im<12;im++){
 
-	        if (SITEMODE){
-	        	siteoutput(outputyrind, currmind);
-	        }
+		   int currmind=  im;
+		   cht.cd.month = im+1;
+		   int dinmcurr = cht.timer->getDaysInMonth(im);;
 
-	        cht.timer->advanceOneMonth();
+		   cht.updateMonthly(yrindex, currmind, dinmcurr);
+	       cht.timer->advanceOneMonth();
+
+	    	// site output module calling
+	       if (outputyrind >=0) {
+	    	   if (md->outSiteDay){
+	    		   for (int id=0; id<dinmcurr; id++) {
+	    			   for (int ip=0; ip<cht.cd.numpft; ip++) {
+	    				   cht.outbuffer.envoddly[ip][id].chtid = cht.cd.chtid;
+	    				   EnvDataDly *envoddly = &cht.outbuffer.envoddly[ip][id];
+	    				   envdlyouter.outputCohortEnvVars_dly(envoddly, icalyr, im, id, ip, dstepcnt);
+	    			   }
+
+	    			   dstepcnt++;
+	    		   }
+	    	   }
+
+	    	   //
+	    	   if (md->outSiteMonth){
+	    		   dimmlyouter.outputCohortDimVars_mly(&cht.cd, mstepcnt);
+	    		   for (int ip=0; ip<cht.cd.numpft; ip++) {
+	    			   envmlyouter.outputCohortEnvVars_mly(&cht.cd.m_snow, &cht.ed[ip], icalyr, im, ip, mstepcnt);
+	    			   bgcmlyouter.outputCohortBgcVars_mly(&cht.bd[ip], icalyr, im, ip, mstepcnt);
+	    		   }
+	    		   mstepcnt++;
+	    	   }
+
+	    		//
+	    	   if (md->outSiteYear && im==11){
+	    		   dimylyouter.outputCohortDimVars_yly(&cht.cd, ystepcnt);
+	    		   for (int ip=0; ip<cht.cd.numpft; ip++) {
+	    			   envylyouter.outputCohortEnvVars_yly(&cht.cd.y_snow, &cht.ed[ip], icalyr, ip, ystepcnt);
+	    			   bgcylyouter.outputCohortBgcVars_yly(&cht.bd[ip], icalyr, ip, ystepcnt);
+	    		   }
+	    		   ystepcnt++;
+
+	    	   }
+
+	       } // end of site calling output modules
+
 	    }
 
-		if (cht.outRegn){
-			rout->outputYearCohortVars(outputyrind, cht.cohortcount);
+		if (md->outRegn && outputyrind >=0){
+			regnouter.outputCohortVars(outputyrind, cohortcount, 0);  // "0" implies good data
 		}
 
-	    if(cht.md->consoledebug){
-	    	cout <<"Scenario run: year "
-	    	<<iy
-	    	<<" @cohort "<<cht.cd->trchtid<<"\n";
+		if(cht.md->consoledebug){
+	    	cout <<"TEM " << cht.md->runstages <<" run: year "
+	    	<<icalyr<<" @cohort "<<cht.cd.chtid<<"\n";
+
+	    	if (icalyr == 60) {
+	    		cout<<"checking! \n";
+	    	}
+
 	    }
+
+		// if EQ run,option for simulation break
+  	   	if (cht.md->runeq) {
+  	   		//cht.equiled = cht.testEquilibrium();
+  	   		//if(cht.equiled )break;
+  	   	}
 	}
 
+};
 
-	cht.transed =true;
+////////////////////////////////////////////////////////////////////////
+// the following is for testing modules
+void RunCohort::moduletest(){
+	cht.timer->reset();
+
+	//test modules by setting up the following switches or options
+	 md->baseline= 1;
+     md->nfeed   = 0;
+	 md->avlnflg = 1;
+
+	 md->envmodule = true;
+     md->bgcmodule = true;
+     md->dsbmodule = true;
+     md->dslmodule = true;
+     md->dvmmodule = true;
+     md->friderived= true;
+
+     usedatmyr = cht.cd.act_atm_drv_yr;
+
+     int dstepcnt = 0;
+     int mstepcnt = 0;
+     int ystepcnt = 0;
+	 for (int iy=0; iy<100; iy++){
+		 int yrcnt =iy;
+		 cht.prepareDayDrivingData(yrcnt, usedatmyr);
+
+		 int outputyrind= cht.timer->getOutputYearIndex();
+
+		 for (int im=0; im<12;im++){
+
+		   int currmind=  im;
+		   int dinmcurr = cht.timer->getDaysInMonth(im);;
+
+		   cht.updateMonthly(yrcnt, currmind, dinmcurr);
+	       cht.timer->advanceOneMonth();
+
+		   // output module calling
+		   if (outputyrind>=0) {
+			   if (md->outSiteDay){
+				   for (int id=0; id<dinmcurr; id++) {
+					   for (int ip=0; ip<cht.cd.numpft; ip++) {
+						   EnvDataDly *envoddly = &cht.outbuffer.envoddly[ip][id];
+						   envdlyouter.outputCohortEnvVars_dly(envoddly, iy, im, id, ip, dstepcnt);
+					   }
+
+					   dstepcnt++;
+				   }
+			   }
+
+			   //
+			   if (md->outSiteMonth){
+				   dimmlyouter.outputCohortDimVars_mly(&cht.cd, mstepcnt);
+				   for (int ip=0; ip<cht.cd.numpft; ip++) {
+					   envmlyouter.outputCohortEnvVars_mly(&cht.cd.m_snow, &cht.ed[ip], iy, im, ip, mstepcnt);
+					   bgcmlyouter.outputCohortBgcVars_mly(&cht.bd[ip], iy, im, ip, mstepcnt);
+				   }
+				   mstepcnt++;
+			   }
+
+			   //
+			   if (md->outSiteYear && im==11){
+				   dimylyouter.outputCohortDimVars_yly(&cht.cd, ystepcnt);
+				   for (int ip=0; ip<cht.cd.numpft; ip++) {
+					   envylyouter.outputCohortEnvVars_yly(&cht.cd.y_snow, &cht.ed[ip], iy, ip, ystepcnt);
+					   bgcmlyouter.outputCohortBgcVars_yly(&cht.bd[ip], iy, ip, ystepcnt);
+				   }
+				   ystepcnt++;
+
+			   }
+		   }
+
+	    }
+
+		if (md->outRegn && outputyrind>=0){
+			regnouter.outputCohortVars(outputyrind, cohortcount, 0);  // "0" implies good data
+		}
+
+		if(cht.md->consoledebug){
+	    	cout <<"TEM run: year "
+	    	<<iy<<" @cohort "<<cht.cd.chtid<<"\n";
+
+	    }
+
+	}
 
 };
 
-void RunCohort::siteoutput(const int & outputyrind, const int & currmind){
 
-  	if(currmind==11){//end ofyear
-  	
-   		#ifdef ODAY	
-  			if(cht.outSiteDay){
-  				svegout->outputDayCohortVars(outputyrind);
-  				ssslout->outputDayCohortVars(outputyrind);
-  				satmout->outputDayGridVars(outputyrind);
-  			}
-  		#endif
-  	
-  		if(cht.outSiteMonth){
-  			svegout->outputMonthCohortVars(outputyrind);
-  			ssslout->outputMonthCohortVars(outputyrind);
-  			satmout->outputMonthGridVars(outputyrind);
-  		}
-  	
-  		if(cht.outSiteYear) {
-  			svegout->outputYearCohortVars(outputyrind);
-  			ssslout->outputYearCohortVars(outputyrind);
-  			satmout->outputYearGridVars(outputyrind);
-  		}
-  	
-  	}
-  
-};
-
-void RunCohort::setOutputer(SiteOutputer *soutp, AtmosphereOutputer *satmoutp,
-  				VegetationOutputer * svegoutp, SnowSoilOutputer * sssloutp){
-    sout = soutp;
-    satmout= satmoutp;
-    svegout = svegoutp;
-    ssslout = sssloutp; 
-    	
-    satmout->atmod = cht.atmod;
-    svegout->vegod = cht.vegod;
-    ssslout->sslod = cht.sslod; 	
-
-};
-
-void RunCohort::setRegionalOutputer(RegnOutputer* routp){
- 	 rout = routp;
-};
-
-void RunCohort::setRestartOutputer(RestartOutputer * resoutp){
-  	
-	resout = resoutp;
-  	
-};
