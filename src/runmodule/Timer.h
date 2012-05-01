@@ -5,52 +5,50 @@
  */
 
 #include <iostream>
-using namespace std;
 
+#include "ModelData.h"
 #include "../inc/timeconst.h"
+#include "../inc/cohortconst.h"
+#include "../inc/ErrorCode.h"
 
 class Timer{
 	public:
 		Timer();
 		~Timer();
 
-		static int dinm[MINY];
-		static int doyindfst[MINY];
+		ModelData *md;
 
-		bool spinfinished ; // finished spinup
-		
 	 	int yearind;
 		int monind;
+		int stageyrind;
+		int outyrind;
 
-		int maxeqrunyrs;		/*! number of spin years*/
+		bool eqend;
+		bool spend;
+		bool trend;
+		bool scend;
 
-		int spinbegyr;		/*! beginning year of spinup*/
-		int spinendyr;		/*! end year of spin up*/
-		int spinnumyr;      /*! number of spin years*/
+		int maxeqrunyrs;		/*! number of eq-run years*/
 
-		int trsbegyr;
-		int trsendyr;
-		int trsnumyr;
+		int spbegyr;		/*! beginning year of spinup*/
+		int spendyr;		/*! end year of spin up*/
+		int spnumyr;      /*! number of spin years*/
+
+		int trbegyr;
+		int trendyr;
+		int trnumyr;
 				
 		int scbegyr;		/*! beginning year of scenrio simulation*/
 		int scendyr;		/*! end year of scenrio simulation*/
 		int scnumyr;		/*! number of scenrio simulation year*/
-		
-		int outbegyr;		/*! start of output year */
-		int outendyr;		/*! end of output year*/
-		int dlyinterval ;   /*! output interval (year) for daily time step simulation*/
-		
-		int numrunyr;		/*! actual number of years that TEM has run*/
 
-		int getInputYearIndex(bool & equiled, bool &spined);
-		int getOutputYearIndex(bool & equiled, bool &spined, bool & outputSpinup);
-		int getDOYIndex(const int &mon, const int &id);
-
+		void setModeldata(ModelData *mdp);
 		void reset();
 
-		int getTranNumberOfYears();
-		int getScenNumberOfYears();
+		int getOutputYearIndex();
+	    int getCalendarYear();
 
+	    int getDOYIndex(const int &mon, const int &id);
 		int getDaysInMonth(int & mon);
 		int getCurrentMonthIndex();
 		int getNextMonthIndex();
@@ -58,12 +56,7 @@ class Timer{
 
 		void advanceOneMonth();
 	
-	    int getCalendarYear( bool & equiled, bool &spined);
-
-
 	private:
-
-		void updateDiagnostic();
 
 };
 

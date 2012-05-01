@@ -1,178 +1,129 @@
 #ifndef COHORT_H_
 	#define COHORT_H_
 
-// headers for TEMcore/
+	#include "../ecodomain/Ground.h"
+	#include "../ecodomain/Vegetation.h"
+
 	#include "../atmosphere/Atmosphere.h"
 
 	#include "../vegetation/Vegetation_Env.h"
 	#include "../vegetation/Vegetation_Bgc.h"
 
-	#include "../ground/Ground.h"
-	#include "../ground/Snow_Env.h"
-	#include "../ground/Soil_Env.h"
-	#include "../ground/Soil_Bgc.h"
-	#include "../ground/layer/Layer.h"
-	#include "../ground/layer/SnowLayer.h"
-	#include "../ground/layer/SoilLayer.h"
-	#include "../ground/layer/PeatLayer.h"
+	#include "../snowsoil/Snow_Env.h"
+	#include "../snowsoil/Soil_Env.h"
+	#include "../snowsoil/SoilParent_Env.h"
+	#include "../snowsoil/Soil_Bgc.h"
 
 	#include "../disturb/WildFire.h"
+
+	#include "../data/RegionData.h"
+	#include "../data/GridData.h"
+	#include "../data/CohortData.h"
 
 	#include "../data/EnvData.h"
 	#include "../data/BgcData.h"
 	#include "../data/FirData.h"
-	#include "../data/RegionData.h"
-	#include "../data/GridData.h"
-	#include "../data/CohortData.h"
+
 	#include "../data/RestartData.h"
 
 	#include "../lookup/CohortLookup.h"
 
-	#include "../util/Integrator.h"
+	#include "Integrator.h"
 
-	#include "../inc/layerconst.h"
-	#include "../inc/parameters.h"   //Yuan: for resetting calibration parameters
-
-// headers for run interface
+// headers for run
 	#include "Timer.h"
 	#include "ModelData.h"
-	#include "Grid.h"
-
-	#include "SiteIn.h"
-    #include "SoilClm.h"
-
-	#include "AtmOutData.h"
-	#include "VegOutData.h"
-	#include "SnowSoilOutData.h"
-	#include "RegnOutData.h"
+	#include "OutRetrive.h"
 
 	class Cohort{
 		public :
 			Cohort();
 			~Cohort();
 	
-	    // model running status
-			bool equiled;   // whether one cohort has reached equlibrium state
-			bool spined;
-			bool transed;
-			bool watbaled;  // whether water balanced
-			bool failed;    // when an exception is caught, set failed to be true
+	        // model running status
 			int errorid;
-
-			int cohortcount;
-			bool outputSpinup;
+			bool failed;    // when an exception is caught, set failed to be true
 	
-			bool friderived;  //Yuan: option for switching Grid-level fire occurrence (upon FRI)
-			int firstfireyr;  //Yuan: prior to this, FRI controlled fire occurrence, otherwise as input from cohort fire.nc
+ 			//
+ 			Timer * timer;
 
-     	//different modules
-			bool envmodule;
-			bool ecomodule;
-			bool dsbmodule;
-			bool dslmodule;
-		
-		//output options
-			bool outRegn;
-			bool outSiteDay;
-			bool outSiteMonth;
-			bool outSiteYear;
+ 			//inputs
+			CohortLookup chtlu;
 
-			bool outSoilClm;
-		  
-	 	CohortLookup chtlu;	 	 
-	    Ground ground;
- 	    Vegetation_Env ve;
- 	    Vegetation_Bgc vb;
- 	    Soil_Bgc sb;
- 	    	        
-		Integrator integrator; 
+			// domain
+            Atmosphere atm;
+            Vegetation veg;
+            Ground ground;
 
-        WildFire fire;
+            // processes
+            Vegetation_Env vegenv[NUM_PFT];
+            Snow_Env snowenv;
+            Soil_Env soilenv;
+            SoilParent_Env solprntenv;
+
+            Vegetation_Bgc vegbgc[NUM_PFT];
+            Soil_Bgc soilbgc;
+
+            WildFire fire;
+
+            // output
+            OutRetrive outbuffer;
+
+		// data
+            EnvData ed[NUM_PFT];
+            BgcData bd[NUM_PFT];
+            EnvData * edall;
+            BgcData * bdall;
+
+            FirData * fd;   // this for all PFTs and their soil
     
-        Timer * timer;
-	 	Atmosphere * atm;
-	 	        
-        void init();
-        void reset();
-        void setTime(Timer * timerp);
-      	void setModelData(ModelData* md);
-      	void setInputData(RegionData * rd, GridData * gd, CohortData *cd);
-        void setProcessData(EnvData * ed, BgcData * bd, FirData *fd);
-	    void setAtmData(Grid *grid);
-		void setSiteOutData(AtmOutData *atmodp, VegOutData * vegodp, SnowSoilOutData * sslodp);
-		void setRegnOutData(RegnOutData * regnodp);
-		void setRestartOutData(RestartData *resodp);
-		
-		bool testEquilibrium();
-		
-		void fireDrivingData(bool runsp, bool runtr, bool runsc);
-		int  timerOutputYearIndex(bool equiled, bool spined, bool outputSpinup);
-		
- 	 	void updateMonthly(const int & yrcnt,const int &  curryr, const int & currmind,
- 	 					 const int & dinmcurr , const bool & assigneq, const bool & useeq);
-     	void updateMonthly_Env(const int & yrcnt,const int &  curryr, 
-     			const int & currmind, const int & dinmcurr , const bool & assigneq);
+            ModelData * md;
+            RegionData * rd;
+            GridData * gd;
 
- 	 	void updateMonthly_Bgc(const int & yrcnt,const int &  curryr, 
-     			const int & currmind, const int & dinmcurr, const bool & useeq );
-     	void updateMonthly_Fir(const int & yrcnt, const int & currmind  );
-     
-     	void updateMonthly_Dsl(const int & currmind);
-     	
-     	void getLitterFallRatio(double & deepvsshlw, double & minevsshlw);		
-		
-		void updateSiteDlyOutputBuffer_Env(const int &doy);
-		void updateSiteMlyOutputBuffer_Env(const int & im);
-		void updateSiteMlyOutputBuffer_Bgc(const int & im);
+            CohortData cd;
+            RestartData resid;    //for input
 
-		void updateSiteYlyOutputBuffer_Env();
-		void updateSiteYlyOutputBuffer_Bgc();
-		void updateSiteYlyOutputBuffer_Fir();
-		
-		void updateRestartOutputBuffer(const int & stage);
-		void updateRegionalOutputBuffer(const int &im);  //Yuan: monthly updated
-		
-		void updateSclmOutputBuffer(const int &im);
+ 		    void initSubmodules();
+ 		    void setTime(Timer * timerp);
 
-//  	protected:
- 		EnvData * ed;
-    	BgcData * bd;
-    	FirData * fd;   
-    
-    	ModelData * md;
-    	RegionData * rd;
-    	GridData * gd;
-    	CohortData * cd;
-    	
-    	RestartData resid;    //for input
-    	SiteIn sitein;
-    	
-    	AtmOutData * atmod;
-    	VegOutData * vegod;
-    	SnowSoilOutData * sslod;
-    	RegnOutData *regnod;
-    	
-    	RestartData * resod;  //for output
-    	SoilClm *sclmod;      //for output
+ 		    void setModelData(ModelData* md);
+ 		    void setInputData(RegionData * rd, GridData * gd);
+ 		    void setProcessData(EnvData * alledp, BgcData * allbdp, FirData *fdp);
 
-    	//Yuan: for java interface to do data exchange
-		bool veupdateLAI5Vegc;
-		double veenvlai[12];
-		void resetBgcPar(vegpar_bgc *vbbgcpar, soipar_bgc *sbbgcpar);
-		void getBgcPar(vegpar_bgc *vbbgcpar, soipar_bgc *sbbgcpar);
+ 		    void initStatePar();
+ 		    void prepareAllDrivingData();
+ 	        void prepareDayDrivingData(const int & yrcnt, const int &usedatmyr);
+ 		    void updateMonthly(const int & yrcnt, const int & currmind, const int & dinmcurr);
 
-		void resetCalPar(vegpar_cal * vegcalpar, soipar_cal * soicalpar);
-		void getCalPar(vegpar_cal * vegcalpar, soipar_cal * soicalpar);
-
-		void setSiteStates(SiteIn * initstate);
-		void getSiteStates(SiteIn * currstate);
-
-		void updateSoilLayerType(int TYPEsoil[], int TYPEmin[]);
-    	
 	private:
-   	 	double ctol;
- 	 	double ntol;
- 	 	int rheqflag ;   
 
+            Integrator vegintegrator[NUM_PFT];
+            Integrator solintegrator;
+
+
+     	void updateMonthly_DIMveg(const int & currmind, const bool & dvmmodule);
+     	void updateMonthly_DIMgrd(const int & currmind, const bool & dslmodule);
+
+     	void updateMonthly_Env(const int & currmind, const int & dinmcurr);
+ 	 	void updateMonthly_Bgc(const int & currmind);
+     	void updateMonthly_Fir(const int & yrcnt, const int & currmind);
+
+		// update root distribution
+		void getSoilFineRootFrac_Monthly();
+		double assignSoilLayerRootFrac(const double & topz, const double & botz,
+		           const double csumrootfrac[MAX_ROT_LAY], const double dzrotlay[MAX_ROT_LAY]);
+
+		//
+     	void assignAtmEd2pfts_daily();
+     	void assignGroundEd2pfts_daily();
+		void getSoilTransfactor4all_daily();
+     	void getEd4allveg_daily();
+     	void getEd4land_daily();
+
+     	void assignSoilBd2pfts_monthly();
+     	void getBd4allveg_monthly();
+
+		void resetSoilclm(const int & im);
 };
 #endif /*COHORT_H_*/

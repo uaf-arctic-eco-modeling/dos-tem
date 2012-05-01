@@ -4,16 +4,19 @@
 #ifndef MOSS_H_
 #define MOSS_H_
 
+#include "../inc/cohortconst.h"
+#include "../inc/layerconst.h"
+
 class Moss{
 	public:
-	Moss();
+		Moss();
+		~Moss();
 	
-	int num; //num of moss layers
-	double dza[2]; // there are maximum 2 layers
-	double thick;
+		int num;   // num of moss layers
+		int type;  // moss types: 1: sphagnum; 2: feathermoss; 3: other (including lichen)
+		double thick; // in meter
+		double dz[MAX_MOS_LAY];
 
-	void updateThicknesses(int type[], double dz[],const int & maxnum);
-	void updateThicknesses(const double & thickness);
-	bool sameThickRange(const double & thickness);
+		void setThicknesses(int soiltype[], double soildz[],const int & soilmaxnum);
 };
 #endif /*MOSS_H_*/

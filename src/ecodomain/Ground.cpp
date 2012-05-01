@@ -1,23 +1,11 @@
-/*! \file
- * Ground is used to manipulate the structure of 
- * snow and soil layers
- * modified from \url http://24bytes.com/Double-linked-List.html
- * The structure of soil layers is determined at the begining of run (and after each change
- * of soil structure after disturbance), the frozen thermal conductivity and thermal capacity is used
- * to determine the minimum soil layer thickness.
- * While the structure of snow layers is determined every time step. At the begining of model run
- * the maixmum snow mass is calculated to constrain the miminum snow layer thickness using maximum 
- * snow density.
- * 
- * Problems encountered during implementing dynamic organic soil thickness
- * 1) When soil layer thickness is reduced, it is possible that freezing/thawing fronts in this layer
- *    exceeds the bottom , so adjust the fronts in updateOrganicThickness
- * 2) pure virtual method called
- *    This is caused by using pointer which is already deleted, e.g. by fire removal
- * 3) STATUS_ACCESS_VIOLATION
- *    When a layer is removed, it still existed, and later on can be accessed through ->prevl or ->nextl
- *    The layer is removed in DoubleLinkedList::removeLayer, when useing delete, only the memory is released
- *    for future use, but the pointer is not deleted
+/*
+ * Ground.cpp
+ *
+ * Ground is used to manipulate the structure of snow and soil layers
+ *   (1) 'Ground' comprises of a few HORIZONS as following
+ *        Snow, Rock, Moss, Organic, Mineral Soil
+ *   (2) EACH HORIZON may have a few LAYERS (max. no are pre-defined in /inc/layerconst.h),
+ *   which are defined in /layer/..
  * 
  */
  
@@ -25,1944 +13,1829 @@
 
 Ground::Ground(){
    fstsoill = NULL;
-   fstfntl  = NULL;
-   lstfntl  = NULL;
-   fstminl  = NULL;
-   lstminl  = NULL;
+   lstsoill = NULL;
    
+   fstmossl = NULL;
+   lstmossl = NULL;
    fstshlwl = NULL;
    lstshlwl = NULL;
-   dtmax = 999.;
-  
-   rock.thick = 50;
-   
-   rocklayercreated=false;
+   fstdeepl = NULL;
+   lstdeepl = NULL;
+   fstminel  = NULL;
+   lstminel  = NULL;
 
-  // updateDailySoilEnv=true;
+   fstfntl  = NULL;
+   lstfntl  = NULL;
+
+   rocklayercreated=false;
    
 };
 
 Ground::~Ground(){
-   clean();	
+   cleanAllLayers();
 }
 
-//////////////////////////////////////////////////////////////////////////////
-void Ground::updateDaily(const int & yrcnt, const int & year,
-			 const int & mind, const int & id, const double & tdrv2, const double & dayl){
-	double tsurface;
-	double trans, melt, evap, rnth;
-	curyrcnt = yrcnt;
-    curyear  = year;
-    dtmax    = 0.3;
-     
-    ed->d_l2soi.perc   = 0.;
-    ed->d_soi2l.qover  = 0.;
-    ed->d_soi2l.qdrain = 0.;
-    
-    //update nfactor based on envlai         
-	tsurface = tdrv2 *ed->d_soid.nfactor;
-	
-	//frontl->tem;	
-	if(frontl->isSoil()){
-		soil.updateDailySurfFlux(frontl, tsurface, dayl);
-		ed->d_snw2a.solrad =0.;
-		ed->d_snw2a.sublim=0;
+//
+void Ground::initParameter(){
+
+	//parameters for snow dimension
+	snowdimpar.denmax = chtlu->snwdenmax;   //kg/m3
+	snowdimpar.newden = chtlu->snwdennew;
+
+	//parameters for soil dimension
+	soildimpar.maxmossthick = chtlu->maxmossthick;
+	soildimpar.coefmossa  = chtlu->coefmossa;
+	soildimpar.coefmossb  = chtlu->coefmossb;
+
+	soildimpar.coefshlwa  = chtlu->coefshlwa;
+	soildimpar.coefshlwb  = chtlu->coefshlwb;
+
+	soildimpar.coefdeepa  = chtlu->coefdeepa;
+	soildimpar.coefdeepb  = chtlu->coefdeepb;
+
+	soildimpar.coefminea  = chtlu->coefminea;
+	soildimpar.coefmineb  = chtlu->coefmineb;
+
+};
+
+//initial dimension from inputs
+void Ground::initDimension(){
+
+	snow.thick = chtlu->initsnwthick;
+	snow.dense = chtlu->initsnwdense;
+
+	moss.thick = chtlu->initmossthick;
+	moss.type  = chtlu->initmosstype;
+
+	organic.shlwthick = chtlu->initfibthick;
+	organic.deepthick = chtlu->inithumthick;
+
+	mineral.num = 0;
+	mineral.thick = 0;
+	for (int il=0; il<MAX_MIN_LAY; il++){
+		if (chtlu->minetexture[il] > 0 && MINETHICK[il]>0.) {
+			mineral.num+=1;
+			mineral.thick += MINETHICK[il];
+			mineral.dz[il] = MINETHICK[il];
+			mineral.texture[il] = chtlu->minetexture[il];
+		} else {
+			break;
+		}
+	}
+
+	soilparent.thick = 50.;  //meter
+
+}
+
+void Ground::initLayerStructure(snwstate_dim *snowdim, soistate_dim *soildim){
+
+	//layers are constructed from bottom
+	if(rocklayercreated){
+		cleanSnowSoilLayers();
 	}else{
-	 	snow.updateDailySurfFlux(frontl, tsurface);
-	 	ed->d_soi2a.evap =0.;
-	 	ed->d_soi2a.solrad =0.;
-	}	
-	
-	double tdrv1 = tdrv2 * ed->d_soid.nfactor;	
-
-    if(tdrv1>0){
-    	ed->d_snwd.melt +=meltSnowLayers();
+		initRockLayers();               //rock in the bottom first and no-need to do again
 	}
-    
- 	bool slchg1= constructSnowLayers(tsurface);
-    if(slchg1)	{       
-    	resetSnowLayerIndex();
-    }
-    
-	bool slchg2=combineSnowLayers();
-	if(slchg2){		  
-		 resetSnowLayerIndex();
-	}
-	
-	bool slchg3=divideSnowLayers();	
 
-	if( slchg1 || slchg2 || slchg3)	{		
-		updateLayerIndex();
-		updateSnowLayerZ();
-	}
-		 
-	updateSWE();
-    //checkSnowLayers();
-    //added by shuhua on Apr. 18, 2008
-    if(frontl->isSnow() && fstsoill->frozen ==-1){ //for cases with snow fall before ground surface freezing
-    	SoilLayer* sl = dynamic_cast<SoilLayer*>(fstsoill);
-    	sl->addOneFront5Top(0.0, 1);
-    	//also set tem at top of layer to zero, otherwise problem of temperature calcu. occurs
-    	//added by shuhua Apr 22, 2008
-    	sl->tem=0.;
-    	updateFstLstFntLay();
-    	sl= NULL;
-    }
-   /* if(lstminl->frozen ==-1 && lstminl->nextl->tem <0   || lstminl->frozen ==1 && lstminl->nextl->tem >0){
-    	Layer* currl = lstminl;
-    	if(currl->isSoil()){
-    	SoilLayer* sl1 = dynamic_cast<SoilLayer*>(currl);
-    	if(currl->frozen ==1){
-    	sl1->addOneFront5Top(currl->dz,1);
-    	}else if(currl->frozen ==-1){
-    	sl1->addOneFront5Top(currl->dz,-1);	
-    	}
-    	sl1 =NULL;
-    	updateFstLstFntLay();
-    	
-    	}
-    }*/
-    
-    if(fstfntl==NULL && lstfntl==NULL ){ // there is no front
-     	if(frontl->isSoil()){
-       		if((tstate==1 && tdrv1>0) || (tstate==-1 && tdrv1<0) || tstate==0){//create front
-       	 		soil.stefan.updateFronts(tdrv1, frontl, backl,fstsoill, lstminl,mind);
-       		// stefan.checkFrontsValidity(fstsoill);
-       		}
-     	}
-    }else{
-		soil.stefan.updateFronts(tdrv1, frontl, backl,fstsoill, lstminl,mind);
-		soil.stefan.checkFrontsValidity(fstsoill);
-    }
-   
-    updateFstLstFntLay();
-	soil.stefan.updateTemps(tdrv1, frontl, backl,fstsoill, fstfntl, lstfntl);
-    
-   	ed->d_soid.itnum = soil.stefan.itsumall;
+	initSnowSoilLayers();
 
-	// at end of the day, calculate the surface runoff and infiltration
-	// and then soil water dynamics at a daily time step
-	trans = ed->d_v2a.trans;  //mm/day
-    evap  = ed->d_soi2a.evap; //mm/day
-    rnth  = (ed->d_v2g.rthfl +ed->d_v2g.rdrip)+ (1-ed->y_vegd.vegfrac)*ed->d_a2l.rnfl; //mm/day
-           //the first two items has already been adjust by ed->y_vegd.vegfrac in VE
-           
-    melt = ed->d_snwd.melt; //mm/day
-    // soil.updateRunoffInfil(fstsoill, rnth, melt);
-    ed->d_soid.watertab = soil.getWaterTable(fstsoill);
-    ed->d_soid.frasat = soil.getFracSat(  ed->d_soid.frasat);
-           
-           
-    updateThermState();
+	resortGroundLayers();
 
-/* Yuan: Feb. 2011: let the Richards algorithm runs for all
-    if(richardl->frozen > -1){//if the soil column is totally frozen
-    //	if(frontl->isSnow()){
-   	//change to if there is snow
- 		if(rnth +melt>0){
-         	//double runoff = soil.getRunoffVIC(fstsoill, rnth, melt); //mm/day
-         	double runoff = soil.getRunoff(fstsoill, rnth, melt, ed->d_soid.frasat); //mm/day
-           	 	
-        	double infilf = rnth +melt - runoff; //mm/day
-           	double leftinfil = soil.infilFrozen(fstminl, infilf);//mm/day
-           		
-           	//soil.infilFrozen2( fstsoill, fstnoinfil, rnth, melt);
-           		
-           	ed->d_l2soi.perc = infilf-leftinfil;//mm/day
-           	ed->d_soi2l.qover =runoff +leftinfil;//mm/day
-        }else{
-       	    ed->d_soi2l.qover = 0.;//mm/day
-        }
-    
-    } else {         
-*/
-        if(rnth+melt>0){
-            // ed->d_soi2l.qover = soil.getRunoffVIC(fstsoill, rnth, melt); //mm/day
-         	ed->d_soi2l.qover  = soil.getRunoff(fstsoill, rnth, melt, ed->d_soid.frasat); //mm/day
-           	ed->d_l2soi.perc   = (rnth+melt) - ed->d_soi2l.qover;//mm/day
-        }else{
-           	ed->d_soi2l.qover  = 0.;
-           	ed->d_l2soi.perc   = 0.;	
-        }
-        
-        double infil = ed->d_l2soi.perc;
-        double sinday= 24.*3600.; 
-        
-		trans /=sinday; // mm/day to mm/s
-		infil /=sinday; // mm/day to mm/s
-		evap /=sinday;  // mm/day to mm/s
-				
-	    //double watertab =  soil.getWaterTable(frontl);  
-        double  drain = 0; //soil.getDrainage(watertab);
-	        
-	    soil.richard.update(frontl, backl,fstsoill, drainl,  drain,  trans,  evap,infil ,
-	        		 ed->d_soid.watertab );
- 	    
- 	    // double permftab = soil.getPermafrostTable(fstsoill);
- 	       
- 	    //  ed->d_soi2l.qdrain =soil.update5BaseFlow(drainl);
- 	   
- 	    if(ed->cd->drgtype==0){
- 	         ed->d_soi2l.qdrain =soil.update5Drainage(drainl, ed->d_soid.frasat, ed->d_soid.watertab);
- 	    }else{
- 	         ed->d_soi2l.qdrain =0;	
- 	    }
- 	         
- 	    ed->d_soid.itnumliq = soil.richard.itsum;
- 	      
-//    }
-    
-    //at the end of water calculation, adjust water from fntl to nextl layer which is frozen or part frozen
-    //May 19, 2010 yis
-    if(fstfntl!=NULL && lstfntl!=NULL){
-    	if(fstfntl->indl ==lstfntl->indl){
-    		if(fstfntl->isSoil()){
-    			SoilLayer* sl = dynamic_cast<SoilLayer*>(fstfntl);
-          		if(sl->fronts[0]->frzing==-1){//thawing front
-          			//put some water of upper layer into this layer
-          			if(fstfntl->prevl!=NULL){
-          				if(fstfntl->prevl->isSoil() && fstfntl->prevl->frozen==-1){
-          					SoilLayer* slp =   dynamic_cast<SoilLayer*>(fstfntl->prevl);
-          					if(slp->getVolLiq()>sl->getVolWater()){
-          						double provide = (slp->getVolLiq()-sl->getVolWater())*slp->dz*1000.;
-          						double receive = (sl->poro - sl->getVolWater())*sl->dz*1000.;
-          						double delta =0;
-          						if(provide >receive){
-          							delta = receive;
-          						}else{
-          							delta = provide;
-          						}
-          						slp->liq -= delta;
-          						sl->liq +=delta;
-          					}
-          				}
-          			}
-          		}
-    		}
-    	
-    	} else { //not the same front
+	// put the layer structure to 'cd'
+	retrieveSnowDimension(snowdim);
+	retrieveSoilDimension(soildim);
 
-    		if(fstfntl->isSoil()){
-    			if(fstfntl->prevl!=NULL){
-    				SoilLayer* sl = dynamic_cast<SoilLayer*>(fstfntl);
-          		    	if(sl->fronts[0]->frzing==-1){//thawing front
-          		    		//put some water of upper layer into this layer
-          		           	if(fstfntl->prevl->isSoil() && fstfntl->prevl->frozen==-1){
-          		           	SoilLayer* slp =   dynamic_cast<SoilLayer*>(fstfntl->prevl);
-          		           		if(slp->getVolLiq()>sl->getVolWater()){
-          		           			double provide = (slp->getVolLiq()-sl->getVolWater())*slp->dz*1000.;
-          		           			double receive = (sl->poro - sl->getVolWater())*sl->dz*1000.;
-          		           			double delta =0;
-          		           			if(provide >receive){
-          		           				delta = receive;
-          		           			}else{
-          		           				delta = provide;
-          		           			}
-          		           			slp->liq -= delta;
-          		           			sl->liq +=delta;
-          		           		}
-
-          		           	}
-          		       }
-    			}
-          	}
-
-          	if(lstfntl->isSoil()){
-          		SoilLayer* sl = dynamic_cast<SoilLayer*>(lstfntl);
-          		if(lstfntl->prevl!=NULL){
-          			if(sl->fronts[0]->frzing==-1){//thawing front
-          				//put some water of upper layer into this layer
-          		        if(lstfntl->prevl->isSoil() && lstfntl->prevl->frozen==-1){
-          		        	SoilLayer* slp =   dynamic_cast<SoilLayer*>(lstfntl->prevl);
-          		        	if(slp->getVolLiq()>sl->getVolWater()){
-          		        		double provide = (slp->getVolLiq()-sl->getVolWater())*slp->dz*1000.;
-          		           		double receive = (sl->poro - sl->getVolWater())*sl->dz*1000.;
-          		           		double delta =0;
-          		           		if(provide >receive){
-          		           			delta = receive;
-          		           		}else{
-          		           		    delta = provide;
-          		           		}
-          		           		slp->liq -= delta;
-          		           		sl->liq +=delta;
-          		           	}
-          		        }
-          			}
-          		}
-          	}
-
-        }
-    }
-    
-	// at end of each day, each layer should be updated
-	updateAllLayers();
-	soil.retrieveThawPercent(fstsoill);
-		
-	//snow.endOfDay(curyrcnt, tdrv );
-
-	//soil.endOfDay(grow,  curyrcnt, tdrv);
-		
 };
 
-void Ground::updateAllLayers(){
-   	Layer* currl=frontl;
-   	
-   	while(currl!= NULL){
-   		currl->advanceOneDay();
-   		if(currl->isSnow()){
-       		dynamic_cast<SnowLayer*>(currl)->updateDensity();
-       		dynamic_cast<SnowLayer*>(currl)->updateThick();	
-   		}
-   		currl=currl->nextl;	
+void Ground::initRockLayers(){
+	soilparent.updateThicknesses(soilparent.thick); //thickness in m
+	for(int il =soilparent.num-1; il>=0; il--){
+		ParentLayer* rl = new ParentLayer(soilparent.dz[il]);
+		insertFront(rl);
+
+	}
+
+	rocklayercreated=true;
+
+};
+
+void Ground::initSnowSoilLayers(){
+
+	// mineral thickness must be input before calling this
+
+	for(int il =mineral.num-1; il>=0; il--){
+		MineralLayer* ml = new MineralLayer(mineral.dz[il],mineral.texture[il], &soillu);
+		insertFront(ml);
+	}
+
+  //need to do shlw organic horizon division before organic deep horizon,
+  //since the layers of deep are determined by the thickness of last shlw layer
+   organic.initShlwThicknesses(organic.shlwthick); //fibthick in m, which needs input
+   organic.initDeepThicknesses(organic.deepthick); //humthick in m, which needs input
+
+   // but for insertation of layers into the double-linked matrix, do the deep organic first
+   for(int il =organic.deepnum-1; il>=0; il--){
+	   OrganicLayer* pl = new OrganicLayer(organic.deepdz[il], 2);  //2 means deep organic
+	   insertFront(pl);
+   }
+   for(int il =organic.shlwnum-1; il>=0; il--){
+	   OrganicLayer* pl = new OrganicLayer(organic.shlwdz[il], 1);   //1 means shallow organic
+	   insertFront(pl);
+   }
+
+   // if nonvascular PFT exists
+   if (moss.thick>0.) {
+	   double initmldz[] = {0., 0.};
+	   initmldz[0] = min(0.01, moss.thick);    //moss thick in m, which needs input, assuming 0.01 m is living, and the rest is dead
+	   initmldz[1] = max(0., moss.thick - initmldz[0]);
+	   int soiltype[] = {-1, -1};
+	   if (initmldz[0] > 0.) soiltype[0] = 0;
+	   if (initmldz[1] > 0.) soiltype[1] = 0;
+	   moss.setThicknesses(soiltype, initmldz, 2);
+
+	   for(int il = moss.num-1; il>=0; il--){
+		   MossLayer* ml = new MossLayer(moss.dz[il], moss.type);//moss type (1- sphagnum, 2- feathermoss), which needs input
+		   insertFront(ml);
+	   }
+   }
+
+  // only ONE snow layer input assummed, if any
+   if(snow.thick>0){
+		SnowLayer* sl = new SnowLayer();
+		sl->dz = snow.thick;
+		insertFront(sl);
+   }
+
+};
+
+void Ground::initLayerStructure5restart(snwstate_dim *snowdim, soistate_dim *soildim, RestartData * resin){
+
+	//
+	soilparent.num = 0;
+	soilparent.thick = 0.;
+	for (int i=0; i<MAX_ROC_LAY; i++) {
+		soilparent.dz[i] = resin->DZrock[i];
+		soilparent.type[i] = MISSING_I;    // not used now
+		soilparent.num += 1;
+		soilparent.thick += soilparent.dz[i];
+	}
+	rocklayercreated = true;
+	for(int il =soilparent.num-1; il>=0; il--){
+		ParentLayer* rl = new ParentLayer(soilparent.dz[il]);
+		insertFront(rl);
+	}
+
+	//
+	int soiltype[MAX_SOI_LAY];
+	int soilage[MAX_SOI_LAY];
+	double dzsoil[MAX_SOI_LAY];
+	int soiltexture[MAX_SOI_LAY];
+	for (int i=0; i<MAX_SOI_LAY; i++){
+		soiltype[i]    = resin->TYPEsoil[i];
+		soilage[i]     = resin->AGEsoil[i];
+		dzsoil[i]      = resin->DZsoil[i];
+		soiltexture[i] = resin->TEXTUREsoil[i];
+	}
+
+	mineral.set5Soilprofile(soiltype, dzsoil, soiltexture, MAX_SOI_LAY);
+	for(int il =mineral.num-1; il>=0; il--){
+		MineralLayer* ml = new MineralLayer(mineral.dz[il], mineral.texture[il], &soillu);
+		ml->age = soilage[il];
+		insertFront(ml);
+	}
+
+	organic.setDeepThicknesses(soiltype, dzsoil, MAX_SOI_LAY);
+	for(int il = organic.deepnum-1; il>=0; il--){
+		OrganicLayer* pl = new OrganicLayer(organic.deepdz[il], 2);  //2 means deep organic
+		pl->age = soilage[il];
+		insertFront(pl);
+	}
+
+	organic.setShlwThicknesses(soiltype, dzsoil, MAX_SOI_LAY);
+	for(int il =organic.shlwnum-1; il>=0; il--){
+		OrganicLayer* pl = new OrganicLayer(organic.shlwdz[il], 1);//1 means shallow organic
+		pl->age = soilage[il];
+		insertFront(pl);
+	}
+
+  	moss.setThicknesses(soiltype, dzsoil, MAX_SOI_LAY);
+  	for(int il = moss.num-1; il>=0; il--){
+  		MossLayer* ml = new MossLayer(moss.dz[il], moss.type);
+		ml->age = soilage[il];
+  		insertFront(ml);
+  	}
+
+	//snow
+	snow.coverage  = 0.;
+	snow.extramass = 0.;
+	snow.numl  = 0;
+	snow.thick = 0.;
+  	for(int il =MAX_SNW_LAY-1; il>=0; il--){
+		if(resin->DZsnow[il]>0){
+			SnowLayer* snwl = new SnowLayer();
+			snwl->dz = resin->DZsnow[il];
+			snwl->age= resin->AGEsnow[il];
+			snwl->rho= resin->RHOsnow[il];
+			insertFront(snwl);
+
+			snow.coverage = 1.;
+			snow.dz[il] = resin->DZsnow[il];
+			snow.numl ++;
+			snow.thick += resin->DZsnow[il];
+		} else {
+			snow.dz[il] = MISSING_D;
+		}
+
+	}
+
+	int frontFT[MAX_NUM_FNT];
+	double frontZ[MAX_NUM_FNT];
+	for (int i=0; i<MAX_NUM_FNT; i++){
+		frontZ[i]=resin->frontZ[i];
+		frontFT[i]=resin->frontFT[i];
+	}
+   	for(int ifnt = 0; ifnt<MAX_NUM_FNT; ifnt++){
+   	    if(frontZ[ifnt]>0.){
+   	    	frontsz.push_front(frontZ[ifnt]);
+   	    	frontstype.push_front(frontFT[ifnt]);
+   	    }
    	}
+
+	//
+	resortGroundLayers();
+
+	// put the layer structure to 'cd'
+	retrieveSnowDimension(snowdim);
+	retrieveSoilDimension(soildim);
+
 };
 
-void Ground::checkSnowLayers(){
- 	Layer* currl = frontl;
- 	SnowLayer* sl;
- 	
- 	while(currl!=NULL){
-    	if (currl->isSnow()){
-      		sl = dynamic_cast<SnowLayer*>(currl);
-      		//sl->check();
-       		if(currl->tem>0){
-           		//cout <<"Snow temprature >0\n";
-           		currl->tem =-0.01;
-         	}	
-    	}	
-    	
-    	currl=currl->nextl;
- 	}		
+// called at the time of restructuring or initializing soil layers
+void Ground::resortGroundLayers(){
+
+	setFstLstSoilLayer();       // This must be called at first
+
+	updateLayerIndex();
+	updateSoilLayerZ();
+	updateSnowLayerZ();
+
+	setFstLstMineLayers();
+	setFstLstMossLayers();
+	setFstLstShlwLayers();
+	setFstLstDeepLayers();
+
+	setFstLstFrontLayers();
+
 };
 
-void Ground::updateFstLstFntLay(){
-	// determine the first front and last front layer
+void Ground::setFstLstSoilLayer(){
+	fstsoill = NULL;
+	lstsoill = NULL;
+	Layer* currl = toplayer;
+	while(currl!=NULL){
+	  if(currl->isSoil){
+		  fstsoill =currl;
+		  break;
+	  }
+	  currl = currl->nextl;
+	}
+
+	currl = botlayer;
+	while(currl!=NULL){
+	  if(currl->isSoil){
+		  lstsoill =currl;
+		  break;
+	  }
+	  currl = currl->prevl;
+	}
+
+};
+
+// only perform this at initialization of cohort
+// the mineral layer will never be removed/added
+void Ground::setFstLstMineLayers(){
+
+	fstminel = NULL;
+	fstminel = NULL;
+
+	Layer* currl = toplayer;
+  	while(currl!=NULL){
+    	if(currl->isSoil && currl->isMineral){
+    	   	fstminel = currl;
+    	   	break;
+    	}
+  		currl = currl->nextl;
+  	}
+
+  	currl =botlayer;
+  	while(currl!=NULL){
+    	if(currl->isSoil && currl->isMineral){
+    	   	lstminel = currl;
+    	   	break;
+    	}
+  		currl=currl->prevl;
+  	}
+
+};
+
+void Ground::setFstLstMossLayers(){
+	fstmossl =NULL;
+	lstmossl =NULL;
+
+	Layer* currl = fstsoill;
+	while(currl!=NULL){
+		if(currl->isMoss){
+
+			// first moss layer
+			if (currl->prevl==NULL || !currl->prevl->isMoss) fstmossl = currl;
+
+			// last moss layer
+			if (currl->nextl==NULL || !currl->nextl->isMoss) {
+				lstmossl = currl;
+				break;
+			}
+
+		} else {
+			break;    //So, 'moss' layer always stay on the top soil
+		}
+
+		currl = currl->nextl;
+	}
+
+};
+
+void Ground::setFstLstShlwLayers(){
+	fstshlwl =NULL;
+	lstshlwl =NULL;
+
+	Layer* currl = fstsoill;
+	while(currl!=NULL){
+		if(currl->isFibric){
+
+			// first fibric layer
+			if (currl->prevl==NULL || !currl->prevl->isFibric) fstshlwl = currl;
+
+			// last fibric layer
+			if (currl->nextl==NULL || !currl->nextl->isFibric) {
+				lstshlwl = currl;
+				organic.lstshlwdz = currl->dz;
+				break;
+			}
+
+		} else {
+			if (currl->isMineral) break;    //So, No burried organic horizon exists in the model
+		}
+
+		currl = currl->nextl;
+	}
+
+}
+
+void Ground::setFstLstDeepLayers(){
+	fstdeepl =NULL;
+	lstdeepl =NULL;
+
+	Layer* currl = fstsoill;
+
+	while(currl!=NULL){
+		if(currl->isHumic){
+
+			// first humic layer
+			if (currl->prevl==NULL || !currl->prevl->isHumic) fstdeepl = currl;
+
+			// last humic layer
+			if (currl->nextl==NULL || !currl->nextl->isHumic) {
+				lstdeepl = currl;
+				break;
+			}
+
+		} else {
+			if (currl->isMineral) break;    //So, No burried organic horizon exists in the model
+		}
+
+		currl = currl->nextl;
+	}
+
+};
+
+void Ground::setFstLstFrontLayers(){
+	// determine the first and last soil layer with thawing/freezing fronts
   	 fstfntl=NULL;
   	 lstfntl=NULL;
-  	 
+
   	 Layer* currl=fstsoill;
-  	 SoilLayer* sl;
-  	 
+
   	 while(currl!=NULL){
-  	   	if(currl->isSoil() ){
-  	   		sl = dynamic_cast<SoilLayer*>(currl);
-  	   	 	if(sl->fronts.size()>0){
-  	   	 		fstfntl=currl;
-  	   	 		break;
-  	   	 	}
-  	   	}
-  	   	
-  	   	currl=currl->nextl;	
+   	 	if(currl->frozen==0 && currl->isSoil){
+   	 		fstfntl=currl;
+   	 		break;
+   	 	}
+  	   	currl=currl->nextl;
   	 }
-  	 
+
   	 if(fstfntl!=NULL){
-  	 	currl=backl;
+  	 	currl=botlayer;
   	 	while(currl!=NULL){
-  	  		if(currl->isSoil() ){
-  	  			sl = dynamic_cast<SoilLayer*>(currl);
-  	   	 		if(sl->fronts.size()>0){
-  	   	 			lstfntl=currl;
-  	   	 			break;
-  	   	 		}
-  	  		}	
+  	  		if(currl->isSoil && currl->frozen==0){
+  	   	 		lstfntl=currl;
+  	   	 		break;
+  	  		}
   	  		currl=currl->prevl;
   	 	}
   	 }
-	
+
+  	 //
+  	 checkFrontsValidity();
 };
 
-void Ground::updateThermState(){
-	
-	if(fstfntl!=NULL && lstfntl!=NULL){
-	  	tstate =0; // part frozen and part unfrozen	
-	}else if(fstfntl==NULL && lstfntl==NULL){
-	 	tstate =fstsoill->frozen;	
+void Ground::updateLayerIndex(){
+	Layer* currl = toplayer;
+	int ind =0;
+	int sind=0;
+
+	while (currl!=NULL){
+		ind++;
+		currl->indl =ind;
+
+		if(currl->isSoil){
+			sind++;
+
+		}
+
+		currl->solind = sind;
+
+		currl =currl->nextl;
 	}
-		
+};
+
+// update the z, which is the distance between soil surface and top of a soil layer
+// note that the dz for each soil layer already known.
+void Ground::updateSoilLayerZ(){
+
+	Layer* currl = fstsoill;     // 'fstsoill' must be first set up or updated
+	while(currl!=NULL){
+		if (currl==fstsoill) {
+			currl->z = 0.0;
+		} else {
+			currl->z = currl->prevl->z + currl->prevl->dz;
+		}
+
+		currl = currl->nextl;
+	}
+
+};
+
+void Ground::updateSoilHorizons(){
+
+	moss.num = 0;
+	moss.thick = 0.;
+	moss.type  = MISSING_I;
+	for (int i=0; i<MAX_MOS_LAY; i++) {
+		moss.dz[i] = MISSING_D;
+	}
+
+	organic.shlwnum = 0;
+	organic.shlwthick = 0.;
+	for (int i=0; i<MAX_SLW_LAY; i++) {
+		organic.shlwdz[i] = MISSING_D;
+	}
+
+	organic.deepnum = 0;
+	organic.deepthick = 0.;
+	for (int i=0; i<MAX_DEP_LAY; i++) {
+		organic.deepdz[i] = MISSING_D;
+	}
+
+	mineral.num = 0;
+	mineral.thick = 0.;
+	for (int i=0; i<MAX_MIN_LAY; i++) {
+		mineral.dz[i] = MISSING_D;
+		mineral.texture[i] = MISSING_I;
+	}
+
+	///
+	Layer* currl = toplayer;
+	int ind = -1;
+	while(currl!=NULL){
+
+		if(currl->isMoss){
+			ind +=1;
+
+			moss.num +=1;
+			moss.thick +=currl->dz;
+			moss.dz[ind] = currl->dz;
+			moss.type = dynamic_cast<MossLayer*>(currl)->mosstype;
+
+			if (currl->nextl==NULL || (!currl->nextl->isMoss)) ind = -1;
+
+		} else if(currl->isFibric){
+			ind +=1;
+
+			organic.shlwnum +=1;
+			organic.shlwthick +=currl->dz;
+			organic.shlwdz[ind] = currl->dz;
+
+			if (currl->nextl==NULL || (!currl->nextl->isFibric)) ind = -1;
+
+		} else if(currl->isHumic){
+			ind +=1;
+
+			organic.deepnum +=1;
+			organic.deepthick +=currl->dz;
+			organic.deepdz[ind] = currl->dz;
+
+			if (currl->nextl==NULL || (!currl->nextl->isHumic)) ind = -1;
+
+		}else if(currl->isMineral){
+			ind +=1;
+
+			mineral.num +=1;
+			mineral.thick +=currl->dz;
+			mineral.dz[ind] = currl->dz;
+			mineral.texture[ind] = currl->stkey;
+
+			if (currl->nextl==NULL || (!currl->nextl->isMineral)) ind = -1;
+
+		} else if (currl->isRock){
+			break;
+		}
+
+		currl = currl->nextl;
+	}
+
+};
+
+void Ground::cleanSnowSoilLayers(){
+	Layer* currl = toplayer;
+	Layer* templ;
+
+	while(currl!=NULL){
+	  	templ = currl->nextl;
+	  	if (!currl->isRock) {
+	  		removeLayer(currl);
+	  	} else {
+	  		break;
+	  	}
+	  	currl = templ ;
+
+	}
+
+}
+
+void Ground::cleanAllLayers(){
+	Layer* currl = toplayer;
+	Layer* templ;
+
+	while(currl!=NULL){
+	  	templ = currl->nextl;
+
+	  	removeLayer(currl);
+
+	  	currl = templ ;
+
+	}
+
+}
+
+///////////////////////////////////////////////////////////////////////
+//update the snowlayer z, which is the distance between soil surface and top of a snow layer
+void Ground::updateSnowLayerZ(){
+		snow.reset();
+		Layer* curr = fstsoill;
+		int snowind = 0;
+		double oldz = 0.;
+		while(curr!=NULL){
+		  if(curr->isSnow){
+			  curr->z = oldz + curr->dz;
+			  oldz = curr->z;
+
+			  snow.numl++;
+			  snow.dz[snowind] = curr->dz;
+			  snow.thick += curr->dz;
+			  snowind ++;
+		  }
+
+		  curr = curr->prevl;   //Note: 'snow', the index is ordered upward
+		}
+
+};
+
+
+// Snow Layers construction (+ 'extramass') or ablation (-'extramass')
+
+bool Ground::constructSnowLayers(const double & dsmass, const double & tdrv){
+	 bool layerchanged=false;
+	 snow.extramass += dsmass;   //Note: 'dsmass' + for snow-adding, - for snow-melting/sublimating when calling this function
+
+	 if(snow.extramass>0){ // accumlate
+		 double density = snowdimpar.newden;
+	 	 double thick = snow.extramass/density;
+		 if(toplayer->isSnow){
+
+			 SnowLayer * snwl = new SnowLayer();
+			 snwl->age = 0.;
+			 snwl->rho = snowdimpar.newden;
+			 snwl->dz = thick;
+
+			 snwl->ice = snow.extramass;
+			 snow.extramass = 0.;
+			 snwl->frozen =1;
+		 	 snwl->tem = tdrv;
+
+			 insertFront(snwl);
+
+		 	 return  true;
+		 }else{ // snow layer does not exist
+		 	 double tsno =toplayer->tem;
+		 	 if(tsno<=0){
+		 	   SnowLayer * snwl = new SnowLayer();
+
+			   snwl->rho    = snowdimpar.newden;
+
+			   snwl->dz  = thick;
+			   snwl->ice = snow.extramass;
+			   snow.extramass = 0.;
+			   snwl->frozen =1;
+		 	   snwl->tem = tdrv;
+
+		 	   insertFront(snwl);
+	           return true;
+		 	 }
+
+		 }
+
+	 } else if (snow.extramass<0.){ // ablate
+		double ablat = -snow.extramass;
+		snow.extramass = 0.;
+
+		//remove whole snow layer, if ablation meets
+		if(toplayer->isSnow){
+			while(ablat>= toplayer->ice){
+		 	  	ablat -= toplayer->ice;
+		 	  	removeFront();                      //NOTE: here after calling removeFront(), the 'toplayer' will be updated!
+		 	  	layerchanged =true;
+
+		 	  	if(toplayer->isSoil) break;
+
+			}
+		 }
+
+		// partially remove snow layer, if any, after above whole layer removal process
+		if(toplayer->isSnow){
+		 	toplayer->dz *= ((toplayer->ice -ablat)/(toplayer->ice));
+		    toplayer->ice -= ablat;
+		}
+	 }
+
+	 return layerchanged;
+
 };
 
 bool Ground::combineSnowLayers(){
 	bool layerchanged =false;
 	Layer* currl;
 	Layer* tempnext;
+
 	STARTCOMBINE:
-	currl= frontl;
-	
-	while(currl!=NULL && currl->nextl!=NULL){
-		// for case of first layer
-		tempnext = currl->nextl;
-		if(currl==frontl){
-	 		if(currl->isSnow()){
-	 			if(currl->dz < snow.mindz[currl->indl]){
-	  				if(currl->nextl->isSnow()){
-	  	  				currl->nextl->liq += currl->liq;
-	  	  				currl->nextl->ice += currl->ice;
-	  	  				currl->nextl->dz +=currl->dz;
-	  	  				currl->nextl->rho = currl->nextl->ice/currl->nextl->dz;
-	  	  				currl->nextl->age = currl->nextl->age/2. + currl->age/2.;
-	  	   
-	  	  				/* if(currl->nextl->age >1){
-	  	     	 		string msg = "snow age should not greater than 1 year ";
- 	 			 		char* msgc = const_cast< char* > ( msg.c_str());
- 		 		 		throw Exception(msgc, I_SNOW_AGE);
-	  	     			}*/
-	  	     
-	  	  
-	  				}else{ // set extramass
-	  	  				snow.extramass += currl->ice;
-	  				}
-	  	
-	  				//remove current layer
-	  				removeLayer(currl);
-	  				//frontl=tempnext;
-	  				resetLayerIndex();
-	  				layerchanged =true;
-	  				goto STARTCOMBINE;
-	  			}			
+		currl= toplayer;
+
+		while(currl!=NULL && currl->nextl!=NULL){
+			// for case of first layer
+			tempnext = currl->nextl;
+			if(currl==toplayer){
+				if(currl->isSnow){
+					if(currl->dz < snow.mindz[currl->indl]){
+						if(currl->nextl->isSnow){
+							currl->nextl->liq += currl->liq;
+							currl->nextl->ice += currl->ice;
+							currl->nextl->dz  += currl->dz;
+							currl->nextl->rho = currl->nextl->ice/currl->nextl->dz;
+							currl->nextl->age = currl->nextl->age/2. + currl->age/2.;
+
+						}else{ // set extramass
+							snow.extramass += currl->ice;
+						}
+
+						//remove current layer
+						removeLayer(currl);
+
+						updateLayerIndex();
+
+						layerchanged =true;
+
+						goto STARTCOMBINE;
+					}
+				}
+
+			}else{ // for other layers
+				if(currl->isSnow){
+					if(currl->dz < snow.mindz[currl->indl]){
+						if(currl->nextl->isSnow){
+							//find the thinest layer
+							if(currl->nextl->dz<currl->prevl->dz){
+								currl->nextl->liq += currl->liq;
+								currl->nextl->ice += currl->ice;
+								currl->nextl->dz +=currl->dz;
+								currl->nextl->rho = currl->nextl->ice/currl->nextl->dz;
+							}else{
+								currl->prevl->liq += currl->liq;
+								currl->prevl->ice += currl->ice;
+								currl->prevl->dz  +=currl->dz;
+								currl->prevl->rho = currl->prevl->ice/currl->prevl->dz;
+							}
+
+						}else{ // combine to upper snow layer
+							currl->prevl->liq += currl->liq;
+							currl->prevl->ice += currl->ice;
+							currl->prevl->dz  +=currl->dz;
+							currl->prevl->rho = currl->prevl->ice/currl->prevl->dz;
+						}
+
+						//remove current layer
+						removeLayer(currl);
+						updateLayerIndex();
+						layerchanged = true;
+
+						goto STARTCOMBINE;
+					}
+				}
+
 			}
-		
-		}else{ // for other layers
-			if(currl->isSnow()){
-	    		if(currl->dz < snow.mindz[currl->indl]){
-	  	 			if(currl->nextl->isSnow()){
-	  	 				//find the thinest layer
-	  	 				if(currl->nextl->dz<currl->prevl->dz){
-	  		  				currl->nextl->liq += currl->liq;
-	  		  				currl->nextl->ice += currl->ice;
-	  		  				currl->nextl->dz +=currl->dz;
-	  		  				currl->nextl->rho = currl->nextl->ice/currl->nextl->dz;
-	  	 				}else{
-	  	 	  				currl->prevl->liq += currl->liq;
-	  	  	  				currl->prevl->ice += currl->ice;
-	  	  	  				currl->prevl->dz +=currl->dz;
-	  	  	  				currl->prevl->rho = currl->prevl->ice/currl->prevl->dz;  	 		
-	  	 				}
-	  	  
-	  	 			}else{ // combine to upper snow layer
-	  	  				currl->prevl->liq += currl->liq;
-	  	  				currl->prevl->ice += currl->ice;
-	  	  				currl->prevl->dz +=currl->dz;
-	  	  				currl->prevl->rho = currl->prevl->ice/currl->prevl->dz;
-	    			}
-	  	
-	  				//remove current layer
-	  				removeLayer(currl);
-	  				resetLayerIndex();
-	  				layerchanged = true;
-	  				goto STARTCOMBINE;
-	  			}		
-			}
-		
-		}
-	
+
 		currl= tempnext;
-	
-		if(currl->isSoil())break;
+
+		if(currl->isSoil)break;
     }
-	
+
 	return layerchanged;
 };
 
 bool Ground::divideSnowLayers(){
-	bool layerchanged =false;	
+	bool layerchanged =false;
 	Layer* currl;
 	STARTOFDIVIDE:
-	currl= frontl;
-	
+	currl= toplayer;
+
 	while(currl!=NULL){
-		if(currl->isSoil())break;
+		if(currl->isSoil)break;
 		if(currl->dz>snow.maxdz[currl->indl]){
-			if(currl->nextl->isSnow()){//assume that the nextl meets the dz requirement
+			if(currl->nextl->isSnow){//assume that the nextl meets the dz requirement
 				currl->dz /=2;
 				currl->liq /=2;
 				currl->ice /=2;
 				currl->nextl->liq += currl->liq;
 	  			currl->nextl->ice += currl->ice;
-	  			currl->nextl->dz +=currl->dz;
-	  			currl->nextl->rho = currl->nextl->ice/currl->nextl->dz;
-	  		
+	  			currl->nextl->dz  += currl->dz;
+	  			currl->nextl->rho  = currl->nextl->ice/currl->nextl->dz;
+
 			}else{//create new layer
-				if(currl->indl+1 <MAX_SNW_LAY-1){			
+				if(currl->indl+1 <MAX_SNW_LAY-1){
 					if(currl->dz/2>snow.mindz[currl->indl+1]){
-						currl->dz /=2;
+						currl->dz  /=2;
 			    		currl->liq /=2;
 			    		currl->ice /=2;
 			    		SnowLayer* sl = new SnowLayer();
-		      			//  sl->ctype = soil.getCohortType();
-		        		sl->denmax =snow.envpar.denmax;
-		   	    		sl->albmax =snow.envpar.albmax;
-			    		sl->albmin =snow.envpar.albmin;
-			    		sl->newden =snow.envpar.newden;
-			    
-			    		sl->clone( dynamic_cast<SnowLayer*>(currl));
+
+			    		sl->clone(dynamic_cast<SnowLayer*>(currl));
 			    		sl->tem = currl->tem;
 			    		insertAfter(sl, currl);
-				
-						resetSnowLayerIndex();
+
+						updateLayerIndex();
 			    		layerchanged =true;
 			    		goto STARTOFDIVIDE;
 					}else if(currl->dz- snow.maxdz[currl->indl]>= snow.mindz[currl->indl+1]){
 						double tempdz = currl->dz;
 						double tempice = currl->ice;
 						double templiq = currl->liq;
-				
+
 						currl->dz = snow.maxdz[currl->indl];
 			    		currl->liq *= currl->dz/tempdz ;
 			    		currl->ice *= currl->dz/tempdz ;
 			    		SnowLayer* sl = new SnowLayer();
-			  			//  sl->ctype = soil.getCohortType();
-		        		sl->tem = currl->tem;
-		         		sl->denmax =snow.envpar.denmax;
-		   	    		sl->albmax =snow.envpar.albmax;
-			    		sl->albmin =snow.envpar.albmin;
-			    		sl->newden =snow.envpar.newden;
-		   
-			    		sl->clone( dynamic_cast<SnowLayer*>(currl));
-			    		sl->dz =tempdz - currl->dz;
+
+			    		sl->tem = currl->tem;
+
+			    		sl->clone(dynamic_cast<SnowLayer*>(currl));
+			    		sl->dz  = tempdz - currl->dz;
 			    		sl->liq = templiq -currl->liq;
 			    		sl->ice = tempice -currl->ice;
 			    		insertAfter(sl, currl);
-						resetSnowLayerIndex();
+
+			    		updateLayerIndex();
 			    		layerchanged =true;
 						goto STARTOFDIVIDE;
 					}
 				}else{
-			  		break;	
+			  		break;
 				}
-			
+
 			}
-		
+
 		}
 
 		currl= currl->nextl;
     }
-	
+
 	return layerchanged;
 };
 
+void Ground::updateSnowLayerProperties(){
+   	Layer* currl=toplayer;
 
-void Ground::updateSWE(){
-	ed->d_snws.swe =0.;
-	Layer* currl=frontl;
-	while(currl!=NULL){
-	  	if(currl->isSnow()){
-	  		ed->d_snws.swe +=   currl->ice;	  	
-	  	}else{
-	  		break;
-	  	}
-		currl=currl->nextl;
-	}
-	ed->d_snws.swe += snow.extramass;
-	
+   	while(currl!= NULL){
+   		if(currl->isSnow){
+
+   	   		currl->advanceOneDay();
+
+   	   		dynamic_cast<SnowLayer*>(currl)->updateDensity(&snowdimpar);   // this will compact snow layer basd on snowlayer age
+       		dynamic_cast<SnowLayer*>(currl)->updateThick();
+
+   		} else {
+   			break;
+   		}
+
+   		currl=currl->nextl;
+   	}
 };
 
-bool Ground::constructSnowLayers(const double & tdrv){
-	 bool layerchanged=false;
-     double dsmass = (ed->d_v2g.sthfl + ed->d_v2g.sdrip + (1-ed->y_vegd.vegfrac)* ed->d_a2l.snfl
-	                  - ed->d_snw2a.sublim-ed->d_snwd.melt); // dsmass is the total snowfall during one timestep
-	 //the first 2 items has already been adjusted by ed->y_vegd.vegfrac in VE
-	 snow.extramass +=dsmass;	
-	 double density  = snow.envpar.newden;
-	 if(ed->d_v2g.sthfl==0){ 
-	   	 //density = snow.maxden;
-	 }
-	 
-	 if(snow.extramass>0){ // accumlate
-	 	 double thick = snow.extramass/density;
-	 if(frontl->isSnow()){ 
-	 	 
+// Basically, here will not do thickness change, which will carry out in 'updateOslThickness5Carbon',
+// therefore, any new layer creation, will have to originate from neibouring layer, otherwise mathematic error will occur
+// execept for create new moss/fibrous organic layer from none.
+void  Ground::redivideSoilLayers(){
 
-		   SnowLayer * sl = new SnowLayer();
-		 //  sl->ctype = soil.getCohortType();
-		   sl->rho = snow.envpar.newden;
-		   sl->dz = thick;
-		   sl->denmax =snow.envpar.denmax;
-		   	    sl->albmax =snow.envpar.albmax;
-			    sl->albmin =snow.envpar.albmin;
-			    sl->newden =snow.envpar.newden;
-		   
-		   sl->ice = snow.extramass;
-		   snow.extramass =0;
-		   sl->frozen =1;
-	 	   insertFront(sl);
-	 	   frontl->tem = tdrv;
-           return  true;
-	 }else{ // snow layer does not exist
-	 	 double tsno =frontl->tem;
-	 	 if(tsno>0){
-	 	    ed->d_snws.swe =0.;
-		   	ed->d_snwd.melt =snow.extramass;
-		   	ed->d_snw2soi.infl += snow.extramass; 
-		   	snow.extramass =0.;		   	
-		   	return false; // when the initial soil temperature >0, no snow will accumulate
-	 	 }else{
-	 	   SnowLayer * sl = new SnowLayer();
-	 	 //  sl->ctype = soil.getCohortType();
-	 	   sl->denmax =snow.envpar.denmax;
-		   	    sl->albmax =snow.envpar.albmax;
-			    sl->albmin =snow.envpar.albmin;
-			    sl->newden =snow.envpar.newden;
-			    
-		   sl->rho = snow.envpar.newden;
-	 if(ed->d_v2g.sthfl==0){ 
-	  // sl->rho= snow.maxden;
-	 }else{
-	 	//sl->rho = snow.newden;
-	 }
-	 
-		   
-		   sl->dz = thick;
-		   sl->ice = snow.extramass;
-		   snow.extramass =0;
-		   sl->frozen =1;
-	 	   insertFront(sl);
-	 	   frontl->tem = tdrv;
-           return true;	
-	 	 }
-	 	
-	 }
-	 }else{ // ablate
-	 	double ablat = -snow.extramass;
-	 	snow.extramass =0;
-	 	
-	 	if(frontl->isSnow()){
-	 	  while(ablat>= frontl->ice){
-	 	  	ablat -= frontl->ice;
-	 	  	removeFront();
-	 	  	layerchanged =true;
-	 	  	if(frontl->isSoil())break;
-	 	  	
-	 	  }	
-	 	}
-	 	if(frontl->isSnow()){
-	 	 	frontl->dz = frontl->dz * (frontl->ice -ablat)/(frontl->ice);		
-		    frontl->ice -= ablat;	
-	 	}
-	 }
-	 return layerchanged;
-}
+	redivideMossLayers(moss.type);
+    redivideShlwLayers();
+    redivideDeepLayers();
 
-void Ground::resetSnowLayerIndex(){
-//every time there is a change of layer, reset the layer index	
-	Layer* currl = frontl;
-	int ind =0;
-	while(currl!=NULL){
-		if(currl->isSnow()){
-		ind++;
-		currl->indl= ind;
-		currl=currl->nextl;
+};
+
+//
+void  Ground::redivideMossLayers(const int &mosstype){
+
+	//before adjusting moss layer, needs checking if Moss layer exists
+	setFstLstMossLayers();
+
+	if(fstmossl==NULL) {
+
+		moss.type = mosstype;
+		moss.num = 1;  // create a new moss layer of 5 mm thick above the first soil layer for containing the C in
+		moss.thick = 0.005;
+		moss.dz[0] = moss.thick;
+		moss.dz[1] = MISSING_D;
+
+		MossLayer* ml = new MossLayer(0.005, moss.type);
+		ml->tem = fstsoill->tem;
+		insertBefore(ml, fstsoill);   // create the new moss layer above the first soil layer
+
+		if(ml->tem>0.){
+			ml->liq = ml->maxliq;      // assuming that moss layer initially saturated - usually moss exists in wet condition
+			ml->ice = 0.;
+			ml->frozen = 0;
 		}else{
-		 break;	
+			ml->liq = ml->minliq;
+			ml->ice = ml->maxice;
+			ml->frozen = 1;
 		}
-	}
-}
 
-void Ground::resetLayerIndex(){
-//every time there is a change of layer, reset the layer index	
-	Layer* currl = frontl;
-	int ind =0;
-	while(currl!=NULL){
-		ind++;
-		currl->indl= ind;
-		currl=currl->nextl;
-	}
-}
+		getOslCarbon5Thickness(ml, 0., ml->dz);
 
-double  Ground::meltSnowLayers(){ // based on the state and front of snow
-	//based on the temperatures of snow layer 
-	double melt=0;
-	double lf =  3.337e5 ;//latent heat of fusion J/kg
-	double vlh ; // snow layer volumetric heat capcity J/m3K
-	Layer* currl ;
+		// because a new layer insert, 'fronts' needs adjustment
+		adjustFrontsAfterThickchange(0., moss.thick);
 
-	currl= frontl;
-	while(currl!=NULL){
-	 if(currl->isSnow()){
-	 
-      if(currl->frozen==-1){
-      	melt += currl->ice;
-      }else {
-      	if(currl->tem>0){
-      		vlh = currl->getHeatCapacity();
-	  		if(vlh *currl->tem *917 /lf >=1){ //melt all the ice in layer
-		  		melt += currl->ice;
-	  		}else{
-	  			melt += vlh *currl->tem *917 /lf * currl->ice;
-	  		}
-	  	currl->tem=-0.1;
-      	currl->frozen=-1;
-      	}
-      }
-	  currl=currl->nextl;
-	  
-	 }else{
-	    break;	
-	 }
-	
-	}
-	if(melt>0){
-	  melt += snow.extramass;
-	  snow.extramass=0.;	
-	}
-	return melt;
-};
-
-/*
-double  Ground::meltSnowLayers(){
-	//based on the temperatures of snow layer 
-	double melt=0;
-	double lf =  3.337e5 ;//latent heat of fusion J/kg
-	double vlh ; // snow layer volumetric heat capcity J/m3K
-
-	Layer* currl ;
-
-	currl= frontl;
-	while(currl!=NULL){
-	 if(currl->isSnow()){
-	 
-	  if(currl->tem>0){
-	  	vlh = currl->getHeatCapacity();
-	  	if(vlh *currl->tem *917 /lf >=1){ //melt all the ice in layer
-	  		melt += currl->ice;
-	  	}else{
-	  		melt += vlh *currl->tem *917 /lf * currl->ice;
-	  	}
-	  	currl->tem=-0.1;
-	  }
-	  
-	  currl=currl->nextl;
-	  
-	 }else{
-	    break;	
-	 }
-	
-	}
-	if(melt>0){
-	  melt += snow.extramass;
-	  snow.extramass=0.;	
-	}
-	return melt;
-};*/
-
-/* when there is a disturbance, the moss/org layer may be removed
- * then the soil structure will be update
- */
-
-/* when snow layer is melt or accumlated , the layer indl should be updated
- */
-void Ground::updateLayerIndex(){
-	Layer* curr2 = frontl;
-	int ind =0;
-	int sind=0;
-	while (curr2!=NULL){
-	 ind++;	
-	 curr2->indl =ind;
-	 if(curr2->isSoil()){
-	 	sind++;
-	 }else{
-	    sind=0;	
-	 }
-	 curr2->solind = sind;
-	 
-	 curr2 =curr2->nextl;	
-	}
-	/*if(sind>MAX_SOI_LAY){
-	   cout << "there are more soil layers than maximum allowed " << MAX_SOI_LAY <<"\n";
-	   exit(-1);	
-	 }*/
-};
-
-void Ground::updateSoilLayerZ(){
-		//update the z, which is the distance between soil surface and top of a soil layer
-		soil.resetDiagnostic();
-		Layer* curr2=fstsoill->nextl;
-		fstsoill->z=0;
-		double oldz= 0.;
-		while(curr2!=NULL){
-			
-		  curr2->z = oldz+ curr2->prevl->dz;
-		  oldz = curr2->z;
-		  
-		  curr2=curr2->nextl;	
-		}
-		soil.dztot = backl->z +backl->dz;
-		soil.num = backl->indl;
-	
-};
-
-
-void Ground::updateSnowLayerZ(){
-		//update the z, which is the distance between soil surface and top of a snow layer
-		snow.resetDiagnostic();
-		Layer* curr2=fstsoill;
-		double oldz= 0.;
-		while(curr2!=NULL){
-		  if(curr2->isSnow()){
-		  curr2->z = oldz + curr2->dz;
-		  oldz = curr2->z;
-		  }
-		  curr2=curr2->prevl;	
-		}
-		if(frontl->isSnow()){
-		  snow.dztot= frontl->z;	
-		}
-};
-
-
-
-void Ground::checkTemperatures(){
-	/*	Layer* curr2 = frontl;
-		while(curr2!=NULL){
-
-			
-			if(curr2->tem>50. || curr2->tem<-50){
-			  cout <<"soil temperature is out of range -50 to 50 " << curr2->tem<< "\n";
-			  exit(-1);
-			}
-			curr2=curr2->nextl;
-		}*/
-};
-
-double Ground::getSoilTransFactor(){
-  return soil.getSoilTransFactor(fstsoill);	
-};
-
-void Ground::initializeLayerStructure(){ 
-
-	if(rocklayercreated){
-		cleanSnowSoilLayers();
-		initSnowSoilLayers5Thickness();
-	
-		
-	}else{
-		initRockLayers();
-		initSnowSoilLayers5Thickness();
-		
-	}
-    setFstSoilLayer();
-    setFstLstMineLayers();
-    setFstLstShlwLayers();
-	setFstLstDeepLayers();
-    
-    
-	updateLayerIndex();
-	updateSoilLayerZ();
-
-	updateSnowLayerZ();	
-	
-	
-	soil.initializeState(fstsoill);
-	rock.initializeState(backl);
-	//no need to initialize snow since there is no snow layer for first two types initialization
-	setLayer5Depth();
-	//snow.initializeState();
-	
-    soil.richard.updateSoilStructure(fstsoill);
-	 
-};  
-
-
-void Ground::initializeLayerStructure5restart(RestartData * resin){ 
-
-	if(rocklayercreated){
-		cleanSnowSoilLayers();
-		initSnowSoilLayers5Restart(resin);
-	}else{
-		initRockLayers();
-		initSnowSoilLayers5Restart(resin);
-		
-	}
-    setFstSoilLayer();
-    setFstLstMineLayers();
-    setFstLstShlwLayers();
-	setFstLstDeepLayers();
-    
-    
-	updateLayerIndex();
-	updateSoilLayerZ();
-	updateSnowLayerZ();	
-	
-	snow.initializeState5restart(frontl, resin);
-	
-	soil.initializeState5restart(fstsoill, resin); //soil temperature, moisture, front
-	setLayer5Depth();
-	
-	rock.initializeState5restart(lstminl, resin);
-	soil.richard.updateSoilStructure(fstsoill);
-    soil.stefan.checkFrontsValidity(fstsoill);	 
-}; 
-
-void Ground::setFstSoilLayer(){// only called at the time of initializing soil layers
-  Layer* currl = frontl;
-  while(currl!=NULL){
-    if(currl->isSoil()){
-    	fstsoill =currl;
-    	break;
-    }
-  	
-  	
-  	currl = currl->nextl;
-  }
-  
-};
-
-
-
-void Ground::setLayer5Depth(){
-	// for infiltration of snowmelt into the frozen soil
-	Layer* currl = fstsoill;
-
-	double maxdepth = soil.envpar.richardl;//
-	while(currl!=NULL){
-		if(currl->z<maxdepth && currl->z +currl->dz>=maxdepth){
-	  		richardl = currl;
-	  		break;	
-		}
-	
-		currl = currl ->nextl;	
-	}
-	
-};
-    
-void Ground::setFstLstMineLayers(){  // only perform this at initialization of cohort
-	//th mineral layer will never be removed/added
-  	Layer* currl = frontl;
-  	SoilLayer* sl; 
-  
-  	while(currl!=NULL){
-    	if(currl->isSoil()){
-    		sl = dynamic_cast<SoilLayer*>(currl);
-    		if(sl->isMineral()){
-    	   		fstminl =currl;
-    	   		break;
-    		}
-    	
-    	}
-  		currl = currl->nextl;
-  	}
-  
-  	currl =backl;
-  	while(currl!=NULL){
-  		if(currl->isSoil()){
-  	  		sl = dynamic_cast<SoilLayer*>(currl);
-  	  		if(sl->isMineral()){
-  	  	 		lstminl=	currl;
-  	  	 		break;
-  	  		}
-  		}
-  		currl=currl->prevl;	
-  	}
-	
-};
-
-void Ground::setFstLstShlwLayers(){  
-  fstshlwl =NULL;
-  lstshlwl =NULL;
-  //after setFstLstMineralLayer
-  Layer* currl = fstsoill;
-  SoilLayer* sl; 
-  PeatLayer* pl;
-  while(currl!=NULL){
-    if(currl->isSoil()){
-    	sl = dynamic_cast<SoilLayer*>(currl);
-    	if(sl->isPeat()){
-    	  pl = dynamic_cast<PeatLayer*>(sl);
-    	  if(pl->isFibric){
-    	  	fstshlwl = currl;
-    	  	break;
-    	  }
-    	}
-    	
-    }else{
-      break;	
-    }
-  	currl = currl->nextl;
-  }
-  
-  currl =fstminl;
-  while(currl!=NULL){
-  	if(currl->isSoil()){
-  	  	sl = dynamic_cast<SoilLayer*>(currl);
-    	if(sl->isPeat()){
-    	  pl = dynamic_cast<PeatLayer*>(sl);
-    	  if(pl->isFibric){
-    	  	lstshlwl = currl;
-    	  	break;
-    	  }
-    	}
-  	}else{
-  	  break;	
-  	}
-  	currl=currl->prevl;	
-  }
-	
-}
-
-
-void Ground::setFstLstDeepLayers(){  
-  fstdeepl =NULL;
-  lstdeepl =NULL;
-  //after setFstLstMineralLayer
-  Layer* currl = fstsoill;
-  SoilLayer* sl; 
-  PeatLayer* pl;
-  while(currl!=NULL){
-    if(currl->isSoil()){
-    	sl = dynamic_cast<SoilLayer*>(currl);
-    	if(sl->isPeat()){
-    	  pl = dynamic_cast<PeatLayer*>(sl);
-    	  if(pl->isHumic){
-    	  	fstdeepl = currl;
-    	  	break;
-    	  }
-    	}
-    	
-    }else{
-      break;	
-    }
-  	currl = currl->nextl;
-  }
-  
-  currl =fstminl;
-  while(currl!=NULL){
-  	if(currl->isSoil()){
-  	  	sl = dynamic_cast<SoilLayer*>(currl);
-    	if(sl->isPeat()){
-    	  pl = dynamic_cast<PeatLayer*>(sl);
-    	  if(pl->isHumic){
-    	  	lstdeepl = currl;
-    	  	break;
-    	  }
-    	}
-  	}else{
-  	  break;	
-  	}
-  	currl=currl->prevl;	
-  }
-	
-}
-
-void Ground::initRockLayers(){
-	rock.updateThicknesses(rock.thick); //rock thick in m
-	for(int il =rock.num-1; il>=0; il--){
-		RockLayer* rl = new RockLayer(rock.dza[il]);
-		insertFront(rl);
+	    resortGroundLayers();
 
 	}
- 
-	rocklayercreated=true;
-  
-};
-
-void Ground::initSnowSoilLayers5Thickness(){
-  
-  soil.mineral.initThicknesses(soil.mineral.thick); //mineral thick in m
-  soil.mineral.updateType(soil.mineral.type, MAX_MIN_LAY);   //Yuan:
-
-  for(int il =soil.mineral.num-1; il>=0; il--){
-  	 MineralLayer* ml = new MineralLayer(soil.mineral.dza[il],soil.mineral.type[il], &soillu);
-	 insertFront(ml);
-	 if(soil.mineral.dza[il]==0.3){
-	   drainl = frontl;	
-	 }
-  }
-
-  //need to do this before deep,
- //since the layers of deep are determined by the thickness of last shlw layer 
-   soil.peat.initShlwThicknesses(soil.peat.shlwthick); //fibthick in m
- 
-   soil.peat.initDeepThicknesses(soil.peat.deepthick); //humthick in m
-   for(int il =soil.peat.deepnum-1; il>=0; il--){
-	   PeatLayer* pl = new PeatLayer(soil.peat.deepdza[il], 0);//0 means deep organic
-	   insertFront(pl);
-   }
-  
-   soil.peat.initShlwThicknesses(soil.peat.shlwthick); //fibthick in m
-  for(int il =soil.peat.shlwnum-1; il>=0; il--){
-  	 PeatLayer* pl = new PeatLayer(soil.peat.shlwdza[il], 1);//1 means shallow organic
-  	 insertFront(pl);
-  }
-  
-  
-  soil.moss.updateThicknesses(soil.moss.thick); //moss thick in m
-  for(int il =soil.moss.num-1; il>=0; il--){
-  	 MossLayer* ml = new MossLayer(soil.moss.dza[il], ed->cd->drgtype);
-  	 insertFront(ml);
-  }
-  
-
-
-}
-
-void Ground::checkSnowBlwSoil(){
- //there is a case that snow occured belw soil
- /*
- Layer* currl = frontl;
- bool foundsoil=false;
- while(currl!=NULL){
- 	if(currl->isSoil()){
- 	   foundsoil =true;	
- 	}
- 	if(currl->isSnow()&& foundsoil){
- 	   cout <<"Snow blew soil \n";
- 	   exit(-1);
- 	  }
- 	  currl = currl->nextl;
- 	
- };	*/
-	
-}
-
-void Ground::initSnowSoilLayers5Restart(RestartData * resin){
-  
-   // cleanSnowSoilLayers();
-  
-    int numsoil=0;
-	
-	double dzsoil[MAX_SOI_LAY];
-	for (int i=0; i<MAX_SOI_LAY; i++){
-		dzsoil[i]=resin->DZsoil[i]; //resin->getDZsoil(dzsoil, ed->cd->reschtid);
-	}
-	
-	int  soiltype[MAX_SOI_LAY];
-	for (int i=0; i<MAX_SOI_LAY; i++){
-		soiltype[i]=resin->TYPEsoil[i]; //	resin->getTYPEsoil(soiltype, ed->cd->reschtid);
-	}
-		
-	int  mintype[MAX_MIN_LAY];
-	for (int i=0; i<MAX_MIN_LAY; i++){
-		mintype[i]=resin->TYPEmin[i]; //	resin->getTYPEmin(mintype, ed->cd->reschtid);
-	}
-	
-	soil.mineral.updateThicknesses(soiltype, dzsoil,MAX_SOI_LAY);
-	soil.mineral.updateType(mintype, MAX_MIN_LAY);
-	for(int il =soil.mineral.num-1; il>=0; il--){
-		MineralLayer* ml = new MineralLayer(soil.mineral.dza[il], soil.mineral.type[il], &soillu);//0 means deep organic
-		insertFront(ml);
-  	  	//if(soil.mineral.dza[il]==0.1){//july 16
-  	  	if(soil.mineral.dza[il]==0.3){
-  	  		drainl = frontl;	
-  	  	}
-  	  	numsoil++;
-	}
-  
-	soil.peat.updateShlwThicknesses(soiltype, dzsoil, MAX_SOI_LAY); //fibthick in m
-	
-	soil.peat.updateDeepThicknesses(soiltype, dzsoil,MAX_SOI_LAY); //humthick in m
-	
-	  
-  for(int il =soil.peat.deepnum-1; il>=0; il--){
-  	 PeatLayer* pl = new PeatLayer(soil.peat.deepdza[il], 0);//0 means deep organic
-  	 insertFront(pl);
-  	 numsoil++;
-  }
-  
-  soil.peat.updateShlwThicknesses(soiltype, dzsoil, MAX_SOI_LAY); //fibthick in m
-
-  for(int il =soil.peat.shlwnum-1; il>=0; il--){
-  	 PeatLayer* pl = new PeatLayer(soil.peat.shlwdza[il], 1);//1 means shallow organic
-  	 insertFront(pl);
-  	 numsoil++;
-  }
-  
-  
-  	soil.moss.updateThicknesses(soiltype, dzsoil, MAX_SOI_LAY); //moss thick in m
-  	for(int il =soil.moss.num-1; il>=0; il--){
-  		MossLayer* ml = new MossLayer(soil.moss.dza[il], ed->cd->drgtype);
-  		insertFront(ml);
-  		numsoil++;
-  	}
-  	ed->m_soid.actual_num_soil = numsoil;
-	
-	//get snow dzs
-	double dzsnow[MAX_SNW_LAY];
-	for (int i=0; i<MAX_SNW_LAY; i++){
-		dzsnow[i]=resin->DZsnow[i]; //resin->getDZsnow(dzsnow, ed->cd->reschtid);
-	}
-	
-	for(int il =MAX_SNW_LAY-1; il>=0; il--){
-		if(dzsnow[il]>0){
-			SnowLayer* sl = new SnowLayer();
-			sl->dz = dzsnow[il];
-			insertFront(sl);
-		}
-  	
-	}
-	
-
-}
- 
-//only clean dynamic layers , e.g. snow, organic soil layers
-//the mineral and rock is set constant
-void Ground::cleanSnowSoilLayers(){
-	Layer* currl = frontl;
-	Layer* templ;
-	SoilLayer* sl;
-	SnowLayer* snl;
-	//RockLayer* rl;
-	while(currl!=NULL){
-	  	templ = currl->nextl;
-	  	//remove current layer
-	  	//cout <<"there are " << "   " <<backl->indl -frontl->indl  << " Layers\n";
-	  	if(currl->isSnow()){
-	  	 // cout <<"remove snow layer: " <<currl->indl <<"\n";	
-	  	  snl = dynamic_cast<SnowLayer*>(currl);
-	  	  removeLayer(snl);
-	  	
-	  	}else if(frontl->isSoil()){
-	  	  
-	  	  sl = dynamic_cast<SoilLayer*>(currl);
-	  	  
-	  	  //cout <<"remove soil layer: " <<currl->indl<<"\n";	
-	  	  sl->clean();////
-	  	  removeLayer(sl);
-	  	  
-	  	}else{
-	  		break;
-	  	}
-	  currl = templ ;
-		 
-	}
-	
-	//removeLayer(frontl);
-
-  
-}
-//clean all
-void Ground::clean(){
-	//Layer* currl = frontl;
-	//Layer* nextl;
-	SoilLayer* sl;
-	SnowLayer* snl;
-	RockLayer* rl;
-	while(frontl!=backl){
-	  	//nextl = currl->nextl;
-	  	//remove current layer
-	  	//cout <<"there are " << "   " <<backl->indl -frontl->indl  << " Layers\n";
-	  	if(frontl->isSnow()){
-	  	//  cout <<"remove snow layer: " <<frontl->indl <<"\n";	
-	  	  snl = dynamic_cast<SnowLayer*>(frontl);
-	  	  removeLayer(snl);
-	  	}else if(frontl->isRock()){
-	  	 // cout <<"remove rock layer: " <<frontl->indl<<"\n";	
-	  	  rl = dynamic_cast<RockLayer*>(frontl);
-	  	  removeLayer(rl);
-	  	}else if(frontl->isSoil()){
-	  	 // cout <<"remove soil layer: " <<frontl->indl<<"\n";	
-	  	  sl = dynamic_cast<SoilLayer*>(frontl);
-	  	  sl->clean();
-	  	  removeLayer(sl);
-	  	}
-	  //if(
-		 
-	}
-	
-	//removeLayer(frontl);
-
-  
-}
-
-
-
-
-/*! get the totthickness and extrathickness for moss, shallow organic and deep organic*/
-
-void  Ground::updateMossThickness(const double & mossthick){
-	
-//////First Step/////////////////////
-//apply moss change and deep organic change (shallow organic has been changed in Soil_bgc)
-
-// the mimimum thickness of moss is 1.5 cm, and maximum thickness is 4 cm
-// the maximum thickness of moss for an ecocystem is 3.7 cm (from the fited equation)
-// so there are at most 2 moss layers
-
-bool samerange  = soil.moss.sameThickRange(mossthick);
-int oldmossnum = soil.moss.num;
-if(samerange){ // no need to change moss layer structure
-	
-	if(oldmossnum ==1){ //It must be the first soil layer
-		fstsoill->dz = mossthick;
-		SoilLayer* sl = dynamic_cast<SoilLayer*>(fstsoill);
-		sl->updateProperty4LayerChange();
-		sl->adjustFronts();
-	}else if(oldmossnum ==2){
-		fstsoill->nextl->dz = mossthick- fstsoill->dz;
-		SoilLayer* sl = dynamic_cast<SoilLayer*>(fstsoill->nextl);
-		sl->updateProperty4LayerChange();
-		sl->adjustFronts();
-	}
-	
-	
-}else{
- //need to change the structure of moss 
- 
- soil.moss.updateThicknesses(mossthick);
- 
- if(oldmossnum ==0  && soil.moss.num ==1){ //can only increase with time
- 	//create a new moss layer
- 	MossLayer* ml = new MossLayer(mossthick, ed->cd->drgtype);
-      	ml->tem = fstsoill->tem;
-		insertBefore(ml, fstsoill);
-		fstsoill=ml;
-		if(ml->tem>0){
-		  ml->liq = ml->maxliq;	
-		  ml->ice = 0.;
-		  ml->frozen =-1;
-		}else{
-		  ml->liq = ml->minliq;
-		  ml->ice = ml->maxice;	
-		  ml->frozen =1;
-		}
-		
- }else if(oldmossnum==1 && soil.moss.num ==2){ //can only increase with time
- 	    
- 	      fstsoill->dz = mossthick;
- 	      double updz = soil.moss.dza[0] ;
- 	       
- 	      double lwdz = soil.moss.dza[1];
-		  
-	  	  MossLayer* ml = new MossLayer(lwdz, ed->cd->drgtype);
-	  	  //SoilLayer* mladded=dynamic_cast<SoilLayer*>(ml);
-          SoilLayer* mltop=dynamic_cast<SoilLayer*>(fstsoill);
-
-          divideOneSoilLayerU2L(mltop, ml, updz, lwdz);
-          mltop->dz = updz;
-          mltop->updateProperty4LayerChange();
-		  insertAfter(ml, mltop);	
- }
-	
-}
-
 
 };
 
-void Ground::updateShlwThickness(){
-	//first get the new thickness and number of shlw layers
-	double thick =0.;
-	int num =0;	
-	bool thin=false;
-	bool upthick =false;//upper layer is thickner than lower layer
+void Ground::redivideShlwLayers(){
 
-	Layer* currl;
+	organic.shlwchanged = false;
+
+	////////// IF there exists 'shlw' layer(s) ////////////////
 	if(fstshlwl!=NULL){
-		num =lstshlwl->solind - fstshlwl->solind +1;
-		currl =fstshlwl;
-		double prevdz =-1;
+		// checking the existing double-linked layer structure for 'shlw' layers
+		double thick = 0.;
+
+		Layer* currl =fstshlwl;
 		while(currl!=NULL){
 			if(currl->indl<=lstshlwl->indl){
 				thick +=currl->dz;
-				if(currl->dz<0.02){
-			 		thin =true;	
-				}
-				if(currl->dz<prevdz){
-			 		upthick =true;	
-				}
-				prevdz = currl->dz;
 			}else{
 		 		break;	
 			}
 			currl =currl->nextl;
 		}
+
+		SoilLayer* upsl ;
+		SoilLayer* lwsl;
+
+			organic.shlwchanged =true;
+
+			// first, comine all layer into one
+			COMBINEBEGIN:
+			currl =fstshlwl;
+			while(currl!=NULL){
+		
+					if(currl->indl<lstshlwl->indl && currl->nextl->isFibric){
+						upsl = dynamic_cast<SoilLayer*>(currl);
+						lwsl = dynamic_cast<SoilLayer*>(currl->nextl);
+
+						combineTwoSoilLayersL2U(lwsl,upsl);  //combine this layer and next layer
+
+						upsl->indl = lwsl->indl;
+						removeLayer(currl->nextl);
+						goto COMBINEBEGIN;
+					} else {
+						break;
+					}
+					currl =currl->nextl;
+			}
+			updateSoilHorizons();   //all 'shlwl' are merged at this point
+
+
+			// then, re-do the thickness division
+			organic.initShlwThicknesses(thick);
+
+			// restructure the double-linked 'shlw layer'
+			if(organic.shlwnum==0){  // just in case
+				removeLayer(fstshlwl);
+		
+			} else if (organic.shlwnum ==1){    //only change the properties of layer
+				fstshlwl->dz = organic.shlwdz[0];
+				SoilLayer* shlwsl = dynamic_cast<SoilLayer*>(fstshlwl);
+				shlwsl->updateProperty4LayerChange();
+
+			}else if (organic.shlwnum ==2){//split shlw layer into two
+				OrganicLayer* plnew1 = new OrganicLayer(organic.shlwdz[1], 1);
+				SoilLayer* shlwsl = dynamic_cast<SoilLayer*>(fstshlwl);
+				splitOneSoilLayer(shlwsl, plnew1, 0., organic.shlwdz[1]);
+
+				insertAfter(plnew1, shlwsl);
+
+			}else if (organic.shlwnum ==3){//split shlw layer into 3 layers
+				OrganicLayer* plnew2 = new OrganicLayer(organic.shlwdz[2],1);
+				SoilLayer* shlwsl = dynamic_cast<SoilLayer*>(fstshlwl);
+				splitOneSoilLayer(shlwsl, plnew2, 0., organic.shlwdz[2]);   //the bottom one first cut off
+				insertAfter(plnew2, shlwsl);
+		
+				OrganicLayer* plnew1 = new OrganicLayer(organic.shlwdz[1],1);
+				splitOneSoilLayer(shlwsl, plnew1, 0., organic.shlwdz[1]);   // the middle one cut off
+				insertAfter(plnew1, shlwsl);
+			}
+
+			updateSoilHorizons();
+
+	
+		// end of adjusting existing layer structure
+	
+	////////////////// no existing fibric layer, MUST create a new one from the following layer
+	} else {
+		SoilLayer *nextsl;
+		if (fstdeepl !=NULL) {
+			nextsl = dynamic_cast<SoilLayer*>(fstdeepl);
+		} else {
+			nextsl = dynamic_cast<SoilLayer*>(fstminel);
+		}
+
+		double rawcmin = soildimpar.coefshlwa * pow(MINSLWTHICK*100., soildimpar.coefshlwb*1.)*10000.;  //Note: in Yi et al.(2009) - C in gC/cm2, depth in cm
+
+		if (nextsl->rawc>=rawcmin) {
+			organic.shlwchanged =true;
+			organic.initShlwThicknesses(MINSLWTHICK);
+
+			OrganicLayer* plnew = new OrganicLayer(organic.shlwdz[0], 1);
+			plnew->dz= MINSLWTHICK;
+			double frac = MINSLWTHICK/nextsl->dz;
+
+			// assign properties for the new-created 'shlw' layer
+			plnew->ice = max(0., nextsl->ice*frac);
+			plnew->liq = max(plnew->minliq, nextsl->liq*frac);
+			if (plnew->ice>plnew->maxice) plnew->ice = plnew->maxice;
+			if (plnew->liq>plnew->maxliq) plnew->liq = plnew->maxliq;
+
+			plnew->tem = nextsl->tem;
+			getLayerFrozenstatusByFronts(plnew);
+
+			plnew->rawc  = rawcmin;
+			plnew->soma  = 0.;
+			plnew->sompr = 0.;
+			plnew->somcr = 0.;
+
+			plnew->updateProperty4LayerChange();
+			insertBefore(plnew, nextsl);
+
+			// adjust properties for the following layer
+			nextsl->ice -= plnew->ice;
+			nextsl->liq -= plnew->liq;
+			nextsl->rawc-=rawcmin;
+
+			if (nextsl->isHumic) {  //additional changes needed for if the following layer is 'humic'
+				nextsl->dz *=(1.-frac);
+			}
+
+			nextsl->updateProperty4LayerChange();
+
+			updateSoilHorizons();
+
+		}
+
 	}
 
-	bool samerange =soil.peat.sameShlwThickRange(thick);
-	
-	SoilLayer* upsl ;
-	SoilLayer* lwsl;
-	soil.peat.shlwchanged =false;	
-	if(upthick||thin || !samerange){
-		//combine all shlw layers
-		soil.peat.shlwchanged =true;
-		soil.peat.initShlwThicknesses(thick);
-		//get the ice and liq water, tem for each layer
-		//double liq[3], ice[3], tem[3];
+	resortGroundLayers();
 
-		COMBINEBEGIN:
-		currl =fstshlwl;
-		while(currl!=NULL){
-		
-			if(currl->indl<lstshlwl->indl){
-				upsl = dynamic_cast<SoilLayer*>(currl);
-				lwsl = dynamic_cast<SoilLayer*>(currl->nextl);
-				//combine this layer and next layer
-				combineTwoSoilLayersL2U(lwsl,upsl);
-				lwsl->clean();
-				upsl->indl = lwsl->indl;
-				removeLayer(currl->nextl);
-				goto COMBINEBEGIN;
-			}else{
-				break;
-			}
-			currl =currl->nextl;
-		};
-	
-		///Divide this one shallow layer into up to 3 layers
-		if(num>0 && soil.peat.shlwnum==0){ //remove this layer
-			int indl = fstshlwl->solind;
-			Layer* nextpl = fstshlwl->nextl;
-			removeLayer(fstshlwl);
-			if(indl==1){//frontl
-				fstsoill= nextpl;
-				fstsoill->solind =1;
-			}
-		
-		}else if(soil.peat.shlwnum ==1){
-			//only change the properties of layer
-			fstshlwl->dz = soil.peat.shlwdza[0];
-			SoilLayer* shlwsl = dynamic_cast<SoilLayer*>(fstshlwl);
-			shlwsl->updateProperty4LayerChange();
-		}else if (soil.peat.shlwnum ==2){//split shlw layer into two
-			PeatLayer* plnew1 = new PeatLayer(soil.peat.shlwdza[1], 1);
-			SoilLayer* shlwsl = dynamic_cast<SoilLayer*>(fstshlwl);
-			divideOneSoilLayerU2L(shlwsl, plnew1, soil.peat.shlwdza[0],soil.peat.shlwdza[1]);
-			insertAfter(plnew1, shlwsl);
-		}else if (soil.peat.shlwnum ==3){//split shlw layer into 3 layers
-			PeatLayer* plnew2 = new PeatLayer(soil.peat.shlwdza[2],1);
-			SoilLayer* shlwsl = dynamic_cast<SoilLayer*>(fstshlwl);
-			divideOneSoilLayerU2L(shlwsl, plnew2, soil.peat.shlwdza[0]+soil.peat.shlwdza[1],soil.peat.shlwdza[2]);
-			insertAfter(plnew2, shlwsl);
-		
-			PeatLayer* plnew1 = new PeatLayer(soil.peat.shlwdza[1],1);
-			divideOneSoilLayerU2L(shlwsl, plnew1, soil.peat.shlwdza[0],soil.peat.shlwdza[1]);
-			insertAfter(plnew1, shlwsl);
-		}
-	
-	}else{
-		soil.peat.oldshlwthick = soil.peat.shlwthick;
-	  	soil.peat.shlwthick    = thick;
-	    soil.peat.olddlstshlw  = soil.peat.dlstshlw;
-	    //need to change the front in a layer so that the frontdz should not be greater than the layer thickness
-	    currl =fstshlwl;
-	    SoilLayer* sl;
-	    while(currl!=NULL){
-		
-		if(currl->indl<=lstshlwl->indl){
-			sl = dynamic_cast<SoilLayer*>(currl);
-			sl->adjustFronts();
-		}else{
-		 break;	
-		}
-		currl =currl->nextl;
-	};
-	
-	}
-	
-	
 }
 
-void Ground::updateDeepThickness(){
-	//first get the new thickness and number of deep layers
-	double thick =0.;
-	int num =0;	
-	bool thin=false;    //check if too thin of a layer (<2cm)
-	bool upthick =false;//check if upper layer is thickner than lower layer
+void Ground::redivideDeepLayers(){
 
-	Layer* currl;
+	////////// IF there exists 'deep' layer(s) ////////////////
 	if(fstdeepl!=NULL){
-		num =lstdeepl->solind - fstdeepl->solind +1;
-		currl =fstdeepl;
-		double prevdz =-1;
+		Layer * currl =fstdeepl;
+
+		//first check the 'double-linked' if needs structural adjusting
+		double thick = 0.;
+		int num = 0;
 		while(currl!=NULL){
 			if(currl->indl<=lstdeepl->indl){
 				thick +=currl->dz;
-				if(currl->dz<0.02){
-			 		thin =true;	
-				}
-			
-				if(currl->dz<prevdz){
-			 		upthick =true;	
-				}
-				prevdz = currl->dz;
+				num +=1;
 			
 			}else{
 		 		break;	
 			}
 			currl =currl->nextl;
 		}
-	}
 
-	bool samerange =soil.peat.sameDeepThickRange(thick);
-	SoilLayer* upsl ;
-	SoilLayer* lwsl;
-	if(upthick|| thin || !samerange){
-		//combine all deep layers	
-		soil.peat.initDeepThicknesses(thick);
-		//get the ice and liq water, tem for each layer
-		//double liq[3], ice[3], tem[3];
+		// Then adjusting the OS horion's layer division/combination
+			SoilLayer* upsl ;
+			SoilLayer* lwsl;
 	
-		COMBINEBEGIN:	
-		currl =fstdeepl;
-		while(currl!=NULL){
+			//combine all deep layers into ONE for re-structuring
+			COMBINEBEGIN:
+			currl =fstdeepl;
+			while(currl!=NULL){
 		
-			if(currl->indl<lstdeepl->indl){
-				upsl = dynamic_cast<SoilLayer*>(currl);
-				lwsl = dynamic_cast<SoilLayer*>(currl->nextl);
-				//combine this layer and next layer
-				combineTwoSoilLayersL2U(lwsl,upsl); 
-				lwsl->clean();
-				upsl->indl = lwsl->indl;
-				removeLayer(currl->nextl);
+				if(currl->indl<lstdeepl->indl){
+					upsl = dynamic_cast<SoilLayer*>(currl);
+					lwsl = dynamic_cast<SoilLayer*>(currl->nextl);
+
+
+					combineTwoSoilLayersL2U(lwsl,upsl); //combine this layer and next layer
+					upsl->indl = lwsl->indl;
+					removeLayer(currl->nextl);
 	      	
-				goto COMBINEBEGIN;
-			}else{
-		 		break;	
+					goto COMBINEBEGIN;
+				}else{
+					break;
+				}
+
+				currl =currl->nextl;
 			}
-			currl =currl->nextl;
-		}
+			updateSoilHorizons();   //all 'deepl' are merged at this point
 	
-		///Divide this one shallow layer into up to 3 layers
-		if(num>0 && soil.peat.deepnum==0){ //remove this layer
-			int indl = fstdeepl->solind;
-			Layer* nextpl = fstdeepl->nextl;
-			removeLayer(fstdeepl);
-	  		if(indl==1){//frontl
-            	fstsoill= nextpl;	
-	  			fstsoill->solind =1;
-        	}
+			//Divide this one layer into up to 3 layers
+			organic.initDeepThicknesses(thick);   //
+
+			if(num>0 && organic.deepnum==0){ //remove all layer(s) from the double-linked structure
+
+				currl = fstdeepl;
+				while (currl!=NULL && currl->isHumic) {
+					Layer * next = currl->nextl;
+					removeLayer(currl);      //Note: here acutally the double-linked structure has changed
+					currl = next;
+				}
+
+			}else if(organic.deepnum ==1){
+				//only change the properties of layer
+				fstdeepl->dz = organic.deepdz[0];
+				SoilLayer* deepsl = dynamic_cast<SoilLayer*>(fstdeepl);
+				deepsl->updateProperty4LayerChange();
+
+			}else if (organic.deepnum ==2){//split deep layer into two
+				OrganicLayer* plnew1 = new OrganicLayer(organic.deepdz[1],2);
+				SoilLayer* deepsl = dynamic_cast<SoilLayer*>(fstdeepl);
+				splitOneSoilLayer(deepsl, plnew1, 0., organic.deepdz[1]);   // cut from bottom
+				insertAfter(plnew1, deepsl);
+
+			}else if (organic.deepnum ==3){//split deep layer into 3 layers
+				OrganicLayer* plnew2 = new OrganicLayer(organic.deepdz[2], 2);
+				SoilLayer* deepsl = dynamic_cast<SoilLayer*>(fstdeepl);
+				splitOneSoilLayer(deepsl, plnew2, 0., organic.deepdz[2]);   // the bottom one cut off first
+				insertAfter(plnew2, deepsl);
 		
-		}else if(soil.peat.deepnum ==1){
-			//only change the properties of layer
-			fstdeepl->dz = soil.peat.deepdza[0];
-			SoilLayer* deepsl = dynamic_cast<SoilLayer*>(fstdeepl);
-			deepsl->updateProperty4LayerChange();
-		}else if (soil.peat.deepnum ==2){//split deep layer into two
-			PeatLayer* plnew1 = new PeatLayer(soil.peat.deepdza[1],0);
-			SoilLayer* deepsl = dynamic_cast<SoilLayer*>(fstdeepl);
-			divideOneSoilLayerU2L(deepsl, plnew1, soil.peat.deepdza[0],soil.peat.deepdza[1]);
-			insertAfter(plnew1, deepsl);
-		}else if (soil.peat.deepnum ==3){//split deep layer into 3 layers
-			PeatLayer* plnew2 = new PeatLayer(soil.peat.deepdza[2], 0);
-			SoilLayer* deepsl = dynamic_cast<SoilLayer*>(fstdeepl);
-			divideOneSoilLayerU2L(deepsl, plnew2, soil.peat.deepdza[0]+soil.peat.deepdza[1],soil.peat.deepdza[2]);
-			insertAfter(plnew2, deepsl);
-		
-			PeatLayer* plnew1 = new PeatLayer(soil.peat.deepdza[1],0);
-			divideOneSoilLayerU2L(deepsl, plnew1, soil.peat.deepdza[0],soil.peat.deepdza[1]);
-			insertAfter(plnew1, deepsl);
-		}	
-	
-	}else{
-	  	soil.peat.olddeepthick =soil.peat.deepthick;
-	  	soil.peat.deepthick =thick;
-	  	
-	  	//need to change the front in a layer so that the frontdz should not be greater than the layer thickness
-	    currl =fstdeepl;
-	    SoilLayer* sl;
-	    while(currl!=NULL){
-		
-			if(currl->indl<=lstdeepl->indl){
-				sl = dynamic_cast<SoilLayer*>(currl);
-				sl->adjustFronts();
-			}else{
-		 		break;	
+				OrganicLayer* plnew1 = new OrganicLayer(organic.deepdz[1],2);
+				splitOneSoilLayer(deepsl, plnew1, 0., organic.deepdz[1]);   // the middle one cut off secondly
+				insertAfter(plnew1, deepsl);
 			}
-			currl =currl->nextl;
-		}
+			updateSoilHorizons();
+
 	
+	/////////// THERE NO Existing deep amorphous OS layer //////////////////////
+	} else {
+		SoilLayer *lfibl;
+		if (lstshlwl !=NULL) {
+			lfibl = dynamic_cast<SoilLayer*>(lstshlwl);
+		} else {
+			return;
+		}
+
+		double deepcmin = soildimpar.coefdeepa * pow(MINDEPTHICK*100., soildimpar.coefdeepb*1.)*10000.;  //Note: in Yi et al.(2009) - C in gC/cm2, depth in cm
+		double somc = 0.5*lfibl->soma+lfibl->sompr+lfibl->somcr;   //assuming those SOMC available for forming a deep humific OS layer
+
+		if (somc>=deepcmin) {
+			organic.initDeepThicknesses(MINDEPTHICK);
+
+			OrganicLayer* plnew = new OrganicLayer(organic.deepdz[0], 2);
+			double frac = plnew->dz/lfibl->dz;
+
+			// assign properties for the new-created 'deep' layer
+			plnew->ice = lfibl->ice*frac;
+			plnew->liq = lfibl->liq*frac;
+			plnew->tem = lfibl->tem;
+			plnew->frozen = lfibl->frozen;
+
+			plnew->rawc  = 0.;
+			plnew->soma  = 0.5*lfibl->soma;
+			plnew->sompr = lfibl->sompr;
+			plnew->somcr = lfibl->somcr;
+
+			plnew->updateProperty4LayerChange();
+			insertAfter(plnew, lfibl);
+
+			// adjust properties for the above fibrous layer
+			organic.shlwchanged =true;
+			lfibl->ice *= (1.-frac);
+			lfibl->liq *= (1.-frac);
+			lfibl->soma *=0.5;
+			lfibl->sompr = 0.;
+			lfibl->somcr = 0.;
+
+			lfibl->updateProperty4LayerChange();
+
+			updateSoilHorizons();
+
+		}
+
 	}
 
+    resortGroundLayers();
+
 };
 
-void  Ground::adjustLayerThickness( const double & mossthick){
-    
-    updateMossThickness(mossthick);
-    updateShlwThickness();
-    updateDeepThickness();
-	
-    setFstSoilLayer();
-  	resetLayerIndex();// set
-	//updateLayerStructure();
-	
-	updateLayerIndex();
-	updateSnowLayerZ();
-	updateSoilLayerZ();
-	setLayer5Depth();
-	setFstLstShlwLayers();
-	setFstLstDeepLayers();
-	
-	soil.resetFineRootFrac(fstsoill);
+// Note: here properties updated when do re-structuring double-linked layer matrix
+// the 'usl' is the original layer, which will be divided into a new 'usl' (upper) and a new 'lsl' (lower)
+// 'updeptop' - the 'usl' top depth of same soil horizon type (needed for estimating C content from depth)
+// 'lsldz' - the new 'lsl' thickness
+void Ground::splitOneSoilLayer(SoilLayer*usl, SoilLayer* lsl, const double & updeptop, const double &lsldz){
 
-    soil.richard.updateSoilStructure(fstsoill);
-    	
-	
-    soil.layer2structmonthly(fstsoill);
-   
+	 double lslfrac = lsldz/usl->dz;
+
+	 // dividing depth/thickness
+     usl->dz -= lsldz;    // the upper one will not change its depth from the surface
+	 lsl->z   = usl->z + usl->dz;
+	 lsl->dz  = lsldz;
+
+	 //update layer water contents
+	 lsl->liq = usl->liq*lslfrac;   //may need a better way to split 'water' ?
+	 lsl->ice = usl->ice*lslfrac;
+
+	 usl->liq *= (1.- lslfrac);
+	 usl->ice *= (1.- lslfrac);
+
+	 //update layer temperature
+	 if(usl->nextl==NULL){
+		lsl->tem = usl->tem;
+	 }else{
+	 	double ntem = usl->nextl->tem;
+	 	double gradient = (usl->tem - ntem)/(- usl->dz -lsl->dz);   //linearly interpolated
+	 	lsl->tem = usl->dz * gradient + usl->tem;
+	 }
+
+	 // after division, needs to update 'usl' and 'lsl'- 'frozen' status based on 'fronts' if given
+	  getLayerFrozenstatusByFronts(lsl);
+	  getLayerFrozenstatusByFronts(usl);
+	  	 	
+	 lsl->updateProperty4LayerChange();
+	 usl->updateProperty4LayerChange();
+	  	 	
+	 //update C in new 'lsl' and 'usl' - note: at this point, 'usl' C must be not updated
+	 	 //first, assign 'lsl' C with original 'usl', then update it using actual thickness and depth
+	 lsl->rawc =usl->rawc;
+	 lsl->soma =usl->soma;
+	 lsl->sompr=usl->sompr;
+	 lsl->somcr=usl->somcr;
+
+	 if (usl->isOrganic) {
+		 double pldtop = updeptop + usl->dz;   //usl->dz must have been updated above
+		 double pldbot = pldtop + lsl->dz;
+		 getOslCarbon5Thickness(lsl, pldtop, pldbot);
+	 } else {
+		 lsl->rawc  *= lslfrac;
+		 lsl->soma  *= lslfrac;
+		 lsl->sompr *= lslfrac;
+		 lsl->somcr *= lslfrac;
+	 }
+
+	  // then update C for new 'usl'
+	  usl->rawc -= lsl->rawc;
+	  usl->soma -= lsl->soma;
+	  usl->sompr-= lsl->sompr;
+	  usl->somcr-= lsl->somcr;
+
 };
 
-void Ground::updateLayer5FireGrowth(){
-	//first update the depth from growth
-    //only for the organic layer   
-    
-    // then if burndepth >0, remove burndepth from layer
-    
-    // then update diagnostic varibles
-	
-	// then update the variables in envdata
-};
-
-
-
-void Ground::burn(const bool & dslmodule){
-	//for later version , only set burndepth here, do not change layer
-	// change layer at begin of a month in updatelayer5firegrowth
-	
- 	bool k2run = false;
- 	
-	//cout<<"burn " <<burndepth <<"\n";
-	double burndepth = fd->y_soid.burnthick;
-  
-  	if(k2run){
-  		burndepth =0.08;
-  	}
-  
-  	double rdepth =burndepth;
-  	Layer *currl =frontl;
-  	// if there is snow, remove it
-  	while(currl!=NULL){
-  		if(currl->isSnow()){
-  	  		removeLayer(currl);   
-  		}else{
-  	  		break;	             
-  		}
-//  		currl = currl->nextl;
-  		currl = frontl;            //Yuan: currl->nextl does NOT exist at this point
-  	}
-  
-  	while(rdepth>0){
-  		currl= fstsoill;
-  		SoilLayer* sl= dynamic_cast<SoilLayer*>(currl);
-		if(sl->isMineral())	break; 
-		
-		// later, add the constraints of frozen state
-  		if(rdepth >=currl->dz){
-  	  		rdepth -= currl->dz;	
-  	  		removeLayer(currl);
-  	  		fstsoill = frontl;
-  	  
-  		}else{
-  	 		// double tempdz = currl->dz;
-  	  		currl->dz -= rdepth;
-  	  		if(currl->dz<0.01){
-  	  			removeLayer(currl);
-  	  			fstsoill=frontl;
-  	  		}
-  	  		rdepth =0.;
-  		}
-  	
-  	}
-  
-  	//The left organic layer should be turned into deep organic
-  	currl = fstsoill;
-  	while (currl!=NULL){
-  		if(currl->isSoil()){
-  	  		SoilLayer* sl= dynamic_cast<SoilLayer*>(currl);
-	  		if(sl->isPeat()){ //there should be no moss left when fire occurs (only 3~4 cm)
-	  			//insert
-	  			PeatLayer * pl = dynamic_cast<PeatLayer*>(sl);  	
-	  			if(pl->isFibric){
-	  				pl->humify();
-	  			}else{
-	  	    		break;	
-	  			}
-	  		}else{
-	  			break;
-	  		} 
-  		
-  		}else {
-  	 		break;	
-  		}
-  		currl = currl->nextl;
-  	}
-  
-   	//for all the organic layers, update soil property
-  
-  	currl =fstsoill;
-   	while (currl!=NULL){
-  		if(currl->isSoil()){
-  	  		SoilLayer* sl= dynamic_cast<SoilLayer*>(currl);
-	  		if(sl->isPeat()){ //there should be no moss left when fire occurs
-	  			sl->updateProperty4LayerChange();
-	  		}else{
-	  			break;
-	  		} 
-  		}else {
-  	 		break;	
-  		}
-  		currl = currl->nextl;
-  	}
-  	
-  	//remove the fronts of first soil layer
-  	//added by shuhua on Apr. 24, 2008
-  	SoilLayer* fstss = dynamic_cast<SoilLayer*>(fstsoill);
-  	if(fstss->fronts.size()>0){
-  		if(fstsoill->nextl->frozen!=0){
-  	   		fstss->removeAllFronts(fstsoill->nextl->frozen);	
-  		}else{
-  			if(fstsoill->nextl->isSoil()){
-  				SoilLayer* nsl = dynamic_cast<SoilLayer*>(fstsoill->nextl);
-  	   			fstss->removeAllFronts(nsl->fronts[0]->frzing);	
-  			}
-  		}
-  	}
-  	
-  	if(dslmodule  ){
-  	// create one shlw organic from deep organic , so that the orgc can accumulate in this layer
-  		PeatLayer* pl = new PeatLayer(0.02, 1);
-  		pl->tem = fstsoill->tem;
-  		pl->liq = pl->minliq;
-  		pl->ice =0.;
-  		pl->reac = 0.;
-  		pl->nonc = 0.;
-  
-  		//added by shuhua on Apr 24, 2008
-  		//for the case of fire with snow on ground
-  		//fstsoil is frozen
-  		if(fstsoill->frozen !=0){
-  	  		pl->frozen = fstsoill->frozen;
-  		}else if (fstsoill->frozen==0){
-  	 		SoilLayer* fstsl = dynamic_cast<SoilLayer*>(fstsoill);
-  			pl->frozen = fstsl->fronts[0]->frzing;
-  		}
-  		
-  		pl->updateProperty4LayerChange();
-  		insertBefore(pl, fstsoill);
-  		fstsoill = pl;
-  	}
- 	
- 	//added by shuhua on Apr 22, 2008
- 	//manipulate deep organic after burn 
-    setFstSoilLayer();
-  	resetLayerIndex();  
-	updateLayerIndex();
-	updateSnowLayerZ();
-	updateSoilLayerZ();
-	setLayer5Depth();
-	setFstLstShlwLayers();
-	setFstLstDeepLayers();
-  
-  	if(k2run){	
-  	    PeatLayer* plnew1 = new PeatLayer(0.05, 0);
-		SoilLayer* plremain = dynamic_cast<SoilLayer*>(frontl);
-		divideOneSoilLayerU2L(plremain, plnew1, 0.02, 0.05);
-		insertAfter(plnew1, plremain);
-  	}else{
-  		soil.peat.dlstshlw =0.02;
- 		updateDeepThickness();
-  	}
-    
-    setFstSoilLayer();
-  	resetLayerIndex();
-	updateLayerIndex();
-	updateSnowLayerZ();
-	updateSoilLayerZ();
-	setLayer5Depth();
-	setFstLstShlwLayers();
-	setFstLstDeepLayers();
-	
-	soil.resetFineRootFrac(fstsoill);
-
-    soil.richard.updateSoilStructure(fstsoill);
-    soil.layer2structmonthly(fstsoill);
-  
-};
-
-
-
-void Ground::divideOneSoilLayerU2L(SoilLayer*usl, SoilLayer* lsl, const double & updz, const double & lwdz ){
-	 	     
-	 	  	//lwdz  is not used
-	 	  	// totdepth is the distance between peat surface and a layer's bottom
-	 	    int oldfrozen = usl->frozen;
-	 	    int oldtopfront =0;
-	 	    int oldbotfront =0;
-	 	    
-	 	    if(usl->fronts.size()>0){
-	 	      oldtopfront = usl->fronts[0]->frzing;	
-	 	      oldbotfront = usl->fronts[usl->fronts.size()-1]->frzing;	
-	 	    }
-	 	  	double frac = updz/usl->dz;
-	  	     lsl->liq = usl->liq *(1- frac);
-	  	     lsl->ice = usl->ice*(1-frac);
-	  	     lsl->reac = usl->reac*(1-frac);
-	  	     usl->reac = usl->reac*frac;
-	  	     lsl->nonc = usl->nonc*(1-frac);
-	  	     usl->nonc = usl->nonc*frac;
-	  		 usl->liq *= frac;
-	  	 	 usl->ice *= frac;
-	  	  	 usl->dz = updz;
-	  	  	 //lsl->dz =lwdz;
-	  	  	 
-  		 
-	  	 
-	  	 if(usl->nextl==NULL){
-	  	 	lsl->tem = usl->tem;
-	  	 	}else{
-	  	 	 double ntem = usl->nextl->tem;
-	  	 	 double gradient = (usl->tem - ntem)/(- usl->dz -lsl->dz);
-	  	 	 lsl->tem = updz * gradient + usl->tem;	
-	  	 	}
-	  	 	
-	  	 
-	  	 	if(usl->fronts.size()>=1){
-	  	 		for (unsigned int i =0; i<usl->fronts.size(); i++){
-	  	 		  if(usl->fronts[i]->dz>=updz){
-	  	 		  lsl->addOneFront5Bot(usl->fronts[i]->dz-updz, usl->fronts[i]->frzing);
-	  	 		}
-	  	 		}
-	  	 		
-	  	 		while(usl->fronts.size()>0){
-	  	 			if(usl->fronts[usl->fronts.size()-1]->dz >=updz){
-	  	 				usl->removeBotFront();
-	  	 			}else{
-	  	 			  break;	
-	  	 			}  	 		  	
-	  	 		}
-	  	 		
-	  	 	}
-	  	 	
-	  	 	if(usl->fronts.size()>0){
-	  	 	  usl->frozen =0;	
-	  	 	}else{
-	  	     if(oldfrozen!=0){
-	  	 	 usl->frozen = oldfrozen;
-	  	 	 }else if(oldtopfront!=0){
-	  	       usl->frozen = oldtopfront;
-	  	     }else{
-	  	     	 string msg = "cannot determine soil frozen state ";
- 	 			 char* msgc = const_cast< char* > ( msg.c_str());
- 		 		 throw Exception(msgc, I_FROZEN_STATE);
-	  	     }
-	  	     
-	  	 	  
-	  	     
-	  	 	}
-	  	 	
-	  	 	if(lsl->fronts.size()>0){
-	  	 	  lsl->frozen =0;	
-	  	 	}else{
-	  	 	  //added by shuhua on Apr 18, 2008
-	  	 	  if(usl->fronts.size()>0){
-	  	 	  	 int numfnt = usl->fronts.size();
-	  	 	  	 lsl->frozen = -  usl->fronts[numfnt-1]->frzing;
-	  	 	  	
-	  	 	  }else{
-	  	 	  if(oldfrozen!=0){
-	  	 	  lsl->frozen = oldfrozen;
-	  	 	  }else if(oldbotfront!=0){
-	  	 	  	lsl->frozen= - oldbotfront;
-	  	 	  }else{
-	  	 	  	 string msg = "cannot determine soil frozen state ";
- 	 			 char* msgc = const_cast< char* > ( msg.c_str());
- 		 		 throw Exception(msgc, I_FROZEN_STATE);
-	  	 	  }
-	  	 	 
-	  	 	  }
-	  	 	}
-	  	 	
-	  	 	lsl->updateProperty4LayerChange();
-	  	 	usl->updateProperty4LayerChange();
-	  	 	
-	  	 	
-	  	 		//usl->checkFronts();
-	  	 		//lsl->checkFronts();
-}
+// Note: here properties updated when do combining two double-linked layers
+// from upper 'usl' to lower layer 'lsl'
+// after calling this, 'usl' must be removed
 
 void Ground::combineTwoSoilLayersU2L(SoilLayer* usl, SoilLayer* lsl){
- 
-   	  	  lsl->reac +=usl->reac;
-   	  	  lsl->nonc +=usl->nonc;
-   	  	  
-   	  	  lsl->liq +=usl->liq;
-   	  	  lsl->ice +=usl->ice;
-   	  	  lsl->tem = usl->tem;	
-	  	  lsl->dz += usl->dz;	
-	  	  
-	  	  
-	  		int lfnum =lsl->fronts.size();
-	  		if(lfnum>0){
-	  		  for(int i =0; i<lfnum; i++){
-	  		  	 lsl->fronts[i]->dz += usl->dz;
-	  		  }	
-	  		}
-	  		int ufnum = usl->fronts.size();
-	  		if( ufnum>0){
-	  		   for( int i=ufnum-1 ; i>=0; i--){
-	  		   	 double tempfdz = usl->fronts[i]->dz;
-	  		   	 int tempfrzing = usl->fronts[i]->frzing;
-	  		   	 
-	  		   	 lsl->addOneFront5Top(tempfdz, tempfrzing);
-	  		   }	
-	  			
-	  		}
-	  		if(lsl->fronts.size()>0){
-	  	 	  lsl->frozen =0;	
-	  	 	}else{
-	  	 	   if(lsl->frozen==1 && lsl->tem>0){
-	  	 	  	 lsl->tem =-0.01;
-	  	 	  }else if(lsl->frozen==-1 && lsl->tem<0){
-	  	 	  	 lsl->tem =0.01;
-	  	 	  }
-	  	 	}
-	  	 	
-	  lsl->updateProperty4LayerChange(); 			
-	  usl->updateProperty4LayerChange(); 			
-}
 
+	  // update water content
+	  lsl->z    = usl->z;   //note - z is the top of a layer from ground surface
+	  lsl->dz  += usl->dz;
+  	  lsl->liq += usl->liq;
+  	  lsl->ice += usl->ice;
+
+  	  // update temperature
+  	  double upfrac = usl->dz/lsl->dz;
+  	  lsl->tem *= (1.-upfrac);
+  	  lsl->tem += usl->tem*upfrac;
+
+  	  // update C content:
+	  lsl->rawc +=usl->rawc;
+	  lsl->soma +=usl->soma;
+	  lsl->sompr+=usl->sompr;
+	  lsl->somcr+=usl->somcr;
+	  	 	
+	  // after combination, needs to update 'lsl'- 'frozen' status based on 'fronts' if given
+	  getLayerFrozenstatusByFronts(lsl);
+	  checkFrontsValidity();
+
+	  lsl->updateProperty4LayerChange();
+
+
+};
 
 void Ground::combineTwoSoilLayersL2U(SoilLayer* lsl, SoilLayer* usl){
  
-   	  	  usl->reac +=lsl->reac;
-   	  	  usl->nonc +=lsl->nonc;
-   	  	  usl->liq +=lsl->liq;
-   	  	  usl->ice +=lsl->ice;
-   	  	  
-   	  	 // usl->orgc +=lsl->orgc;
-   	  	 
-	  	  	if(lsl->fronts.size()>0){
-	  		  for(unsigned int i =0; i<lsl->fronts.size(); i++){
-	  		  	 
-	  		  	 usl->addOneFront5Bot(lsl->fronts[i]->dz +usl->dz, lsl->fronts[i]->frzing);
-	  		  }	
+	  // update water content
+   	  usl->dz  +=lsl->dz;
+   	  usl->liq +=lsl->liq;
+   	  usl->ice +=lsl->ice;
+
+  	  // update temperature
+  	  double lsfrac = lsl->dz/usl->dz;
+  	  usl->tem *= (1.-lsfrac);
+  	  usl->tem += lsl->tem*lsfrac;
+
+   	  // update C content:
+   	  usl->rawc +=lsl->rawc;
+   	  usl->soma +=lsl->soma;
+   	  usl->sompr+=lsl->sompr;
+   	  usl->somcr+=lsl->somcr;
+
+	  // after combination, needs to update 'usl'- 'frozen' status based on 'fronts' if given
+	  getLayerFrozenstatusByFronts(usl);
+
+	  usl->updateProperty4LayerChange();
+
+};
+
+// The following module will re-constructure double-linked layer matrix based on C content change after fire
+// So, it must be called after 'bd' layerd C content was assigned to the orginal double-linked layer matrix
+double Ground::adjustSoilAfterburn(){
+
+	double bdepthadj = 0.;  // this is used to check if thickness change here would be modifying burn thickness in 'WildFire.cpp'
+	                        // and 'frontz'
+
+  	Layer *currl  = toplayer;
+  	// if there is snow, remove it
+  	while(currl!=NULL){
+  		if(currl->isSnow){
+  	  		removeLayer(currl);
+  	  		currl = toplayer;        // then the new toplayer is currl->nextl(otherwise, bug here)
+  		}else{
+  	  		break;
+  		}
+	}
+
+  	// remove all moss/organic layers, if C is zero, after fire
+  	currl = fstsoill;
+  	while (currl!=NULL){
+  		if(currl->isMoss || currl->isOrganic){
+  			double tsomc = currl->rawc+currl->soma+currl->sompr+currl->somcr;
+	  		if(tsomc<=0.){
+	  	  		bdepthadj += currl->dz;  // adding the removed moss layer thickness to that 'err' counting
+	  	    	adjustFrontsAfterThickchange(0, -currl->dz);  // need to adjust 'freezing/thawing front depth' due to top layer removal below
+	  	  		removeLayer(currl);
+
+	  	  		currl = toplayer;          // then the new toplayer is currl->nextl (otherwise, bug here)
+	  		}else{
+	  			break;
 	  		}
-	  		
-	  		 usl->dz += lsl->dz;
-	        if(usl->fronts.size()>0){
-	  	 	  usl->frozen =0;	
-	  	 	}else{
-	  	 	  //if(usl->frozen == lsl->frozen){
-	  	 	  	//nothing will change
-	  	 	  //}
-	  	 	  if(usl->frozen==1 && usl->tem>0){
-	  	 	  	 usl->tem =-0.01;
-	  	 	  }else if(usl->frozen==-1 && usl->tem<0){
-	  	 	  	 usl->tem =0.01;
-	  	 	  }
-	  	 	}
-	  	usl->updateProperty4LayerChange(); 			
-	  	lsl->updateProperty4LayerChange(); 			
-	  	   	  	  
+
+  		}else {
+  	 		break;
+  		}
+  	}
+  	// Note: at this point, the toplayer(s) may have been moved up due to snow/moss horizons removal above, so need resort the double-linked structure
+ 	resortGroundLayers();
+
+  	// The left organic layer(s) after fire should all be turned into humified organic layer
+  	currl = toplayer;
+  	while (currl!=NULL){
+  		if(currl->isFibric){
+  			OrganicLayer * pl = dynamic_cast<OrganicLayer*>(currl);
+			pl->humify();   // here only updated 'physical' properties
+
+			pl->somcr += pl->rawc;  //assuming all 'raw material' converted into 'chemically-resistant' SOM
+			pl->rawc = 0.;
+
+  		}else if (currl->isHumic || currl->isMineral || currl->isRock){
+
+  			break;
+  		}
+
+  		currl = currl->nextl;
+  	}
+
+  	// re-do thickness of deep organic layers, because of changing of its original type is not humic
+ 	currl = toplayer;
+ 	double deepctop = 0.;  //cumulative C for deep OSL horizon at the top of a layer, initialzed as 0
+ 	double deepcbot;
+  	while(currl!=NULL){
+ 	  	if(currl->isHumic){
+ 			double olddz;
+ 			olddz= currl->dz;
+ 	  		OrganicLayer *pl=dynamic_cast<OrganicLayer*>(currl);
+ 			double plcarbon = pl->rawc+pl->soma+pl->sompr+pl->somcr;
+ 			if (plcarbon > 0.) { // this may not be needed, if we do things carefully above. But just in case
+				 // update 'dz' for 'pl' from its C content
+				 double olddz = currl->dz;
+				 deepcbot = deepctop+pl->rawc+currl->soma+currl->sompr+currl->somcr;
+				 getOslThickness5Carbon(currl, deepctop, deepcbot);
+
+				 deepctop = deepcbot;
+				 bdepthadj += (olddz - currl->dz);  // adjuting the difference to that 'err' counting
+
+				 pl->updateProperty4LayerChange(); //update soil physical property after thickness change from C is done
+
+ 			}
+
+ 		}else if (currl->isMineral || currl->isRock){
+ 		  	 break;
+ 		}
+
+ 		currl =currl->nextl;
+ 	}
+	resortGroundLayers();
+
+	// finally, checking if further needed to divide/combine double-linked layer matrix,
+	// in case that some layers may be getting too thick or too thin due to layer adjustion above
+	// then, re-do layer division or combination is necessary for better thermal/hydrological simulation
+	redivideSoilLayers();
+
+  	// for checking the adjusted burned thickness
+	return bdepthadj;
+};
+
+/////////////////////////////////////////////////////////////////////////////////
+
+//check the validity of fronts in soil column
+void Ground::checkFrontsValidity(){
+
+	if (frontsz.size()>0) {
+		// checking if the 'front' may be out of the top soil layer
+		while (frontsz[0]<=fstsoill->z) {
+			frontsz.pop_front();
+			frontstype.pop_front();    // this will update the 'deque'
+		}
+
+		// checking if the 'front' may be out of soil bottom
+		while (frontsz[frontsz.size()-1]>=(lstsoill->z+lstsoill->dz*0.9999)) {
+			frontsz.pop_back();
+			frontstype.pop_back();    // this will update the 'deque'
+		}
+	}
+
+ 	int frntnum = frontsz.size();
+
+	for(int i=0; i<MAX_NUM_FNT; i++){
+		if (i<frntnum) {
+			frontz[i] = frontsz[i];
+			fronttype[i] = frontstype[i];
+
+			if (i>0){
+				if (fronttype[i]==fronttype[i-1]) {
+					string msg = "adjacent fronts should be different";
+//					cout<< msg <<" in Ground::checkFrontsValidity! \n";
+				}
+			}
+		} else {
+			frontz[i] = MISSING_D;
+			fronttype[i] = MISSING_I;
+
+		}
+	}
+
+	int fntind = 0;
+ 	Layer*currl=fstsoill;
+ 	while (currl!=NULL && fntind<frntnum) {
+
+		if(currl->isSoil){
+			while (frontsz[fntind]>currl->z &&
+					frontsz[fntind]<=currl->z+currl->dz) {
+
+				if (currl->frozen!=0) {
+					string msg = "soil layer with front shall be have 0 for its frozen state";
+//					cout << msg + ":: in Soil Layer "<<currl->indl<< "\n";
+				}
+
+				fntind++;
+				if (fntind>=frntnum) break;
+			}
+		}
+
+ 		currl=currl->nextl;
+	}
+};
+
+//if OS thickness changes, the following needs to be called
+void Ground::adjustFrontsAfterThickchange(const double &depth, const double &thickadding){
+
+ 	int frntnum = frontsz.size();
+
+	for(int i=0; i<frntnum; i++){
+		if (frontsz[i]>=depth)                // only need to adjust 'fronts' below 'depth'
+		frontsz[i] += thickadding;            //thickadding CAN be negative
+	}
+
+	// checking if the 'front' may be removed, e.g., due to fire removal of top layers
+	while (frontsz.size()>0 && frontsz[0]<=0.) {
+		frontsz.pop_front();
+		frontstype.pop_front();    // this will update the 'deque'
+	}
+
+};
+
+// update the fraction of frozen portion (thickness), and frozen status for ONE layer, if known 'fronts' dequeue given
+// this is useful if re-do soil layer construction/division, but not change the total thickness
+void Ground::getLayerFrozenstatusByFronts(Layer * soill){
+
+	if (soill==NULL) return;
+
+	int fntnum = frontsz.size();
+	int fntind = 0;
+
+	if (fntnum>0 &&
+		soill->z >= frontsz.back() &&
+		((soill->z+soill->dz) <= frontsz.front())) {  //at least the layer within fronts
+
+			double fracfrozen = 0.;
+			double dzabvfnt   = 0.;
+
+			while (fntind<fntnum){
+
+				double fntz = frontsz[fntind];
+				int fnttype = frontstype[fntind];
+
+				if (fntz>soill->z && fntz<=soill->z+soill->dz){
+
+					soill->frozen = 0;
+					double dzfnt = fntz-soill->z; // the distance of the 'fntind'th front from the 'currl->z'
+					if (fnttype==1) {                             //freezing front: from this front up to the neibored previous front IS frozen portion
+ 						fracfrozen += (dzfnt - dzabvfnt);
+					} else if (fnttype==-1 &&    // thawing front without following freezing front in the 'currl'
+ 						( (fntind==fntnum-1) ||                      // thawing front already the last one in the deque
+ 						  (fntind<fntnum-1 && frontsz[fntind+1]>(soill->z+soill->dz)))){  //   // the following (freezing) front out of 'currl'
+						fracfrozen += soill->dz - dzfnt;
+					}
+
+					dzabvfnt = dzfnt;    //update the upper front 'dz' for following front
+
+				} else {
+
+					if (fntz<=soill->z) soill->frozen = -fnttype;
+
+					if (fntz>soill->z+soill->dz) break;
+				}
+
+				fntind++;
+			}
+
+			soill->frozenfrac = fracfrozen/soill->dz;
+
+ 	} else {  // not possible for a layer containing fronts
+ 			if (soill->tem > 0.) {
+ 				soill->frozen = -1;
+ 				soill->frozenfrac = 0.;
+ 			} else {
+ 				soill->frozen = 1;
+				soill->frozenfrac = 1.;
+ 			}
+ 	}
+
+};
+
+
+void Ground::setDrainL(Layer* lstsoill, double & barrierdepth, double & watertab){
+
+
+	double watab  = watertab;           // water table depth (from surface)
+	double ald    = barrierdepth;       // barrier depth, e.g. ALD or uppermost frozen depth (from surface)
+	draindepth    = watab;
+	if (draindepth>=ald) draindepth = ald;     // the min. of watertable and barrierdepth
+
+	if (draindepth<=0) {
+		drainl = NULL;
+	} else {
+		drainl = lstsoill;
+		Layer* currl = lstsoill;
+		double laytop = currl->z;
+		double laybot = currl->z+currl->dz;
+		while(currl!=NULL){
+			if(currl->isSoil){
+				laytop = currl->z;
+				laybot = currl->z+currl->dz;
+
+				if(draindepth<=laybot && draindepth>laytop){
+					drainl = currl;  // the drainage layer is the soil layer with drainage depth inside
+					break;
+				}
+
+			}else{
+				break;
+			}
+
+			currl = currl->prevl;
+		}
+	}
+
+};
+
+void Ground::retrieveSnowDimension(snwstate_dim * snowdim){
+
+	Layer * curr=toplayer;
+    int snwind = 0;
+
+	while(curr!=NULL){
+	  if(curr->isSnow){
+
+	  	//dimension output here as well
+		  snowdim->dz[snwind] = curr->dz;
+		  snowdim->age[snwind]= curr->age;
+		  snowdim->rho[snwind]= curr->rho;
+		  snowdim->por[snwind]= curr->poro;
+
+		  curr = curr->nextl;
+
+	  }else{
+		  if (snwind>=MAX_SNW_LAY) break;
+		  snowdim->dz[snwind] = MISSING_D;
+		  snowdim->age[snwind]= MISSING_D;
+		  snowdim->rho[snwind]= MISSING_D;
+		  snowdim->por[snwind]= MISSING_D;
+
+	  }
+
+	  snwind++;
+
+	}
+
+	snowdim->thick  = snow.thick;
+	snowdim->numsnwl= snow.numl;
+	snowdim->dense  = snow.dense;
+	snowdim->extramass = snow.extramass;
+
 }
 
+///save 'soil' information in double-linked layer into struct in 'cd'
+void Ground::retrieveSoilDimension(soistate_dim * soildim){
+	Layer * curr;
 
+	curr= toplayer;
 
+	//initializing
+	soildim->mossthick =0;
+	soildim->shlwthick =0;
+	soildim->deepthick =0;
+	soildim->mineathick =0;
+	soildim->minebthick =0;
+	soildim->minecthick =0;
+	soildim->totthick  =0;
 
-void Ground::setCohortData(const int & drgtypep,const int & vegtypep){
-     vegtype = vegtypep;
-     drgtype = drgtypep;	
+	soildim->mossnum =0;
+	soildim->shlwnum =0;
+	soildim->deepnum =0;
+	soildim->minenum =0;
+	soildim->numsl   =0;
+
+    for(int il=0; il<MAX_SOI_LAY; il++){
+      soildim->age[il]  = MISSING_I;
+      soildim->z[il]    = MISSING_D;
+      soildim->dz[il]   = MISSING_D;
+      soildim->type[il] = MISSING_I;
+      soildim->por[il]  = MISSING_D;
+      soildim->texture[il]  = MISSING_I;
+    }
+
+  	int slind=0;
+  	int mlind=0;
+	while(curr!=NULL) {
+
+		if(curr->isSoil){
+			soildim->age[slind] = (int)curr->age;
+			soildim->dz[slind]  = curr->dz;
+			soildim->z[slind]   = curr->z;
+			soildim->por[slind] = curr->poro;
+
+			if(curr->isMoss){
+				soildim->type[slind] = 0;
+				soildim->mossthick +=curr->dz;
+				soildim->mossnum+=1;
+			} else if(curr->isOrganic){
+				if(curr->isFibric){
+					soildim->type[slind] = 1;
+					soildim->shlwthick +=curr->dz;
+					soildim->shlwnum+=1;
+
+				}else if(curr->isHumic){
+					soildim->type[slind] = 2;
+					soildim->deepthick +=curr->dz;
+					soildim->deepnum+=1;
+				}
+			}else if(curr->isMineral){
+				soildim->type[slind] = 3;
+				soildim->texture[slind] = mineral.texture[mlind];
+				soildim->minenum+=1;
+
+				if (mlind>=0 && mlind<=MINEZONE[0]) soildim->mineathick +=curr->dz;
+				if (mlind>MINEZONE[0] && mlind<=MINEZONE[1]) soildim->minebthick +=curr->dz;
+				if (mlind>MINEZONE[1] && mlind<=MINEZONE[2]) soildim->minecthick +=curr->dz;
+
+				mlind++;
+
+			}
+
+			slind++;
+		}
+
+		curr= curr->nextl;
+	};
+
+	//
+	soildim->numsl= soildim->mossnum+soildim->shlwnum+soildim->deepnum+soildim->minenum;
+
+	soildim->totthick = soildim->mossthick+soildim->shlwthick+soildim->deepthick
+			             +soildim->mineathick+soildim->minebthick+soildim->minecthick;
+
 };
 
-void Ground::setEnvData(EnvData* edp){
-	ed = edp;
-	soil.setEnvData(ed);
-	soil.richard.setEnvData(ed);
-	snow.setEnvData(ed);
-	rock.setEnvData(ed);
+void Ground::updateWholeFrozenStatus(){
+
+	if(fstfntl==NULL && lstfntl==NULL){
+	 	ststate = fstsoill->frozen;
+	} else {
+	  	ststate = 0; // partitally frozen
+	}
 };
 
-void Ground::setFirData(FirData* fdp){
-  	 fd =fdp;
-  	 soil.setFirData(fd);
-  	 snow.setFirData(fd);
-  	 
+///////////////////////////////////////////////////////////////////////
+
+// update OSL thickness for all organic horizons if C content known
+void Ground::updateOslThickness5Carbon(Layer* fstsoil){
+
+	if(fstsoil->isMineral || fstsoil->isRock){
+		return;
+ 	}
+
+ 	double mosscbot = 0.;
+ 	double mossctop = 0.;
+
+ 	double shlwcbot = 0.;
+ 	double shlwctop = 0.;
+
+ 	double deepcbot = 0.;
+ 	double deepctop = 0.;
+
+ 	double olddz = 0.;
+ 	double newdz = 0.;
+
+ 	Layer* currl=fstsoil;
+ 	while(currl!=NULL){
+ 	  	if(currl->isSoil && (currl->isOrganic || currl->isMoss)){
+ 	  	 	SoilLayer* sl = dynamic_cast<SoilLayer*>(currl) ;
+ 	  	 	olddz = sl->dz;
+			if(sl->isHumic){
+				 deepcbot = deepctop+sl->rawc+sl->soma+sl->sompr+sl->somcr;
+ 				 getOslThickness5Carbon(sl, deepctop, deepcbot);
+ 			     deepctop = deepcbot;
+
+  			} else if(sl->isFibric){
+ 				 shlwcbot = shlwctop+sl->rawc+sl->soma+sl->sompr+sl->somcr;
+ 				 getOslThickness5Carbon(sl, shlwctop, shlwcbot);
+ 				 shlwctop = shlwcbot;
+
+ 			} else if(sl->isMoss){
+				 mosscbot = mossctop+sl->rawc+sl->soma+sl->sompr+sl->somcr;
+				 getOslThickness5Carbon(sl, mossctop, mosscbot);
+				 mossctop = mosscbot;
+
+			}
+
+			updateSoilLayerZ();   //'dz' changes, so 'z' needs update for all (index will not change).
+
+ 			sl->updateProperty4LayerChange();
+
+ 			newdz = sl->dz;
+
+ 		}else{
+ 			break;
+
+ 	  	}
+ 		currl =currl->nextl;
+ 	}
+
+ 	//
+ 	checkFrontsValidity();
+};
+
+// conversion from OSL C to thickness
+void Ground::getOslThickness5Carbon(Layer* sl, const double &plctop, const double &plcbot){
+
+	// NOTE: the OSL C - thickness relationship is for the whole same-type OSL horizon
+	// the estimation here is for ONE layer only in the whole horizon
+	// it means that C cannot be calculated using the layer thickness
+	// but using the bottom depth of a layer from the top of the whole horizon
+
+	double pltop = 0.;
+	double plbot = 0.;
+	double cumcarbon    = plcbot; //Cumulative C from the top of the whole horizon
+	double prevcumcarbon= plctop; //Cumulative C until the layer top
+
+	double osdzold = sl->dz;
+
+	if(sl->isMoss){
+		pltop = pow((prevcumcarbon/10000.)/soildimpar.coefmossa, 1./soildimpar.coefmossb)/100.;  //Note: in Yi et al.(2009) - C in gC/cm2, depth in cm
+		plbot = pow((cumcarbon/10000.)/soildimpar.coefmossa, 1./soildimpar.coefmossb)/100.;  //Note: in Yi et al.(2009) - C in gC/cm2, depth in cm
+	} else if(sl->isFibric){
+		pltop = pow((prevcumcarbon/10000.)/soildimpar.coefshlwa, 1./soildimpar.coefshlwb)/100.;  //Note: in Yi et al.(2009) - C in gC/cm2, depth in cm
+		plbot = pow((cumcarbon/10000.)/soildimpar.coefshlwa, 1./soildimpar.coefshlwb)/100.;  //Note: in Yi et al.(2009) - C in gC/cm2, depth in cm
+	} else if (sl->isHumic){
+		pltop = pow((prevcumcarbon/10000.)/soildimpar.coefdeepa, 1./soildimpar.coefdeepb)/100.;  //Note: in Yi et al.(2009) - C in gC/cm2, depth in cm
+		plbot = pow((cumcarbon/10000.)/soildimpar.coefdeepa, 1./soildimpar.coefdeepb)/100.;  //Note: in Yi et al.(2009) - C in gC/cm2, depth in cm
+	}
+
+	sl->dz=plbot-pltop;
+	double osdznew = sl->dz;
+
+  	// need to adjust 'freezing/thawing front depth', if 'fronts' depth below 'sl->z'
+  	adjustFrontsAfterThickchange(sl->z, osdznew - osdzold);
+
+};
+
+// conversion from OSL thickness to C content
+// note- only for thickness changing, i.e. previous fraction of SOM C pools must be known
+void Ground::getOslCarbon5Thickness(Layer* sl, const double &plztop, const double &plzbot){
+
+	// NOTE: the OSL C - thickness relationship is for the whole OSL horizon
+	// the estimation here is for ONE layer only in the whole horizon
+	// it means that C cannot be calculated using the layer thickness
+	// but using the bottom depth of a layer from the top of the whole horizon
+	double dbot = plzbot;   //the bottom depth of a layer from the top of the whole horizon
+	double dtop = plztop;  // the top depth of the layer
+
+	double cumcarbon    =0.;
+	double prevcumcarbon=0.;
+
+	if(sl->isMoss){
+		prevcumcarbon = soildimpar.coefmossa * pow(dtop*100., soildimpar.coefmossb*1.)*10000.;  //Note: in Yi et al.(2009) - C in gC/cm2, depth in cm
+		cumcarbon     = soildimpar.coefmossa * pow(dbot*100., soildimpar.coefmossb*1.)*10000.;  //Note: in Yi et al.(2009) - C in gC/cm2, depth in cm
+	} else if(sl->isFibric){
+		prevcumcarbon = soildimpar.coefshlwa * pow(dtop*100., soildimpar.coefshlwb*1.)*10000.;  //Note: in Yi et al.(2009) - C in gC/cm2, depth in cm
+		cumcarbon     = soildimpar.coefshlwa * pow(dbot*100., soildimpar.coefshlwb*1.)*10000.;  //Note: in Yi et al.(2009) - C in gC/cm2, depth in cm
+	} else if (sl->isHumic){
+		prevcumcarbon = soildimpar.coefdeepa * pow(dtop*100., soildimpar.coefdeepb*1.)*10000.;
+		cumcarbon     = soildimpar.coefdeepa * pow(dbot*100., soildimpar.coefdeepb*1.)*10000.;
+	}
+
+	if (sl->isMoss) {
+		sl->rawc = cumcarbon-prevcumcarbon;
+		sl->soma = 0.;
+		sl->sompr= 0.;
+		sl->somcr= 0.;
+	} else if (sl->isOrganic) {
+		double tsomc=sl->rawc+sl->soma+sl->sompr+sl->somcr;
+		if(tsomc>0.){
+			sl->rawc  *= (cumcarbon-prevcumcarbon)/tsomc; //because thickness change, C pools need update
+			sl->soma  *= (cumcarbon-prevcumcarbon)/tsomc;
+			sl->sompr *= (cumcarbon-prevcumcarbon)/tsomc;
+			sl->somcr *= (cumcarbon-prevcumcarbon)/tsomc;
+		}
+	}
+};
+
+//////////////////////////////////////////////////////////////////////
+void Ground::setCohortLookup(CohortLookup* chtlup){
+	chtlu = chtlup;
 };
 

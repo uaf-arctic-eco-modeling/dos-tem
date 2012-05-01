@@ -18,754 +18,1300 @@ RegnOutputer::~RegnOutputer(){
 
 };
 
-void RegnOutputer::missingValues(const int & MAX_DRV_YR, const int & chtcount){
- 	regnod->status =-999;
-  	for(int iy=0; iy<MAX_DRV_YR; iy++){
-   		regnod->ysf=-999;
+void RegnOutputer::outputCohortMissing(const int & yrind, const int & chtcount){
+	regnod->year = MISSING_I;
+	regnod->ysf  = MISSING_I;
+  	for(int im=0; im<12; im++){
 
-   		regnod->burnthick=-999;
-  		regnod->burnvegc=-999;
-  		regnod->burnsoic=-999;
-  		regnod->growstart=-999;
-  		regnod->growend=-999;
-  		regnod->perm=-999;
-  		regnod->mossdz=-999;
-  		regnod->shlwdz=-999;
-  		regnod->deepdz=-999;
+		regnod->month[im]= MISSING_I;
 
-  		for (int im=0; im<12; im++){
-  			regnod->lai[im]=-999;
-  			regnod->vegc[im]=-999;
-  			regnod->vegn[im]=-999;
+   		for (int ip=0; ip<NUM_PFT; ip++){
+   			regnod->growstart[im][ip] = MISSING_I;
+			regnod->growend[im][ip]   = MISSING_I;
 
-  			regnod->gpp[im] =-999;
-  			regnod->npp[im] =-999;
-  			regnod->rh[im] =-999;
-  			regnod->ltrfalc[im]=-999;
-  			regnod->ltrfaln[im]=-999;
+			regnod->vegcov[im][ip]= MISSING_D;
+			regnod->vegage[im][ip] = MISSING_D;
+			regnod->lai[im][ip]  = MISSING_D;
+			regnod->vegc[im][ip] = MISSING_D;
+			regnod->leafc[im][ip]= MISSING_D;
+			regnod->stemc[im][ip]= MISSING_D;
+			regnod->rootc[im][ip]= MISSING_D;
+			regnod->vegn[im][ip] = MISSING_D;
+			regnod->labn[im][ip] = MISSING_D;
+			regnod->leafn[im][ip]= MISSING_D;
+			regnod->stemn[im][ip]= MISSING_D;
+			regnod->rootn[im][ip]= MISSING_D;
 
-  			regnod->shlwc[im]=-999;
-  			regnod->deepc[im]=-999;
-  			regnod->minec[im]=-999;
-  	  		regnod->orgn[im]=-999;
-  	  		regnod->avln[im]=-999;
+			regnod->gpp[im][ip] = MISSING_D;
+			regnod->npp[im][ip] = MISSING_D;
+			regnod->ltrfalc[im][ip]= MISSING_D;
+			regnod->ltrfaln[im][ip]= MISSING_D;
 
-  	  		regnod->netnmin[im]=-999;
-  	  		regnod->nuptake[im]=-999;
-  	  		regnod->ninput[im]=-999;
-  	  		regnod->nlost[im]=-999;
+			regnod->nuptake[im][ip]= MISSING_D;
+		}
+        //
+   		regnod->permafrost[im]= MISSING_I;
 
-  			regnod->eet[im]=-999;
-  			regnod->pet[im]=-999;
-  			regnod->qdrain[im]=-999;
-  			regnod->qrunoff[im]=-999;
+   		regnod->mossdz[im]  = MISSING_D;
+   		regnod->oshlwdz[im] = MISSING_D;
+   		regnod->odeepdz[im] = MISSING_D;
+   		regnod->mineadz[im] = MISSING_D;
+   		regnod->minebdz[im] = MISSING_D;
+   		regnod->minecdz[im] = MISSING_D;
 
-   			regnod->snowthick[im]=-999;
-  			regnod->swe[im]=-999;
-   			regnod->wtd[im]=-999;
-  			regnod->ald[im]=-999;
+   		regnod->oshlwc[im] = MISSING_D;
+   		regnod->odeepc[im] = MISSING_D;
+   		regnod->mineac[im] = MISSING_D;
+   		regnod->minebc[im] = MISSING_D;
+   		regnod->minecc[im] = MISSING_D;
+   		regnod->orgn[im]   = MISSING_D;
+   		regnod->avln[im]   = MISSING_D;
 
-  	  		regnod->vwcshlw[im] =-999;
-  			regnod->vwcdeep[im] =-999;
-  			regnod->vwcminetop[im] =-999;
-  			regnod->vwcminebot[im] =-999;
+		regnod->rh[im]      = MISSING_D;
+   		regnod->netnmin[im] = MISSING_D;
 
-  			regnod->tshlw[im] =-999;
-  			regnod->tdeep[im] =-999;
-  			regnod->tminetop[im] =-999;
-  			regnod->tminebot[im] =-999;
+      	regnod->orgninput[im]= MISSING_D;
+      	regnod->avlninput[im]= MISSING_D;
+      	regnod->orgnlost[im]= MISSING_D;
+      	regnod->avlnlost[im]= MISSING_D;
+      	regnod->doclost[im]= MISSING_D;
 
-  			regnod->hkshlw[im] =-999;
-  			regnod->hkdeep[im] =-999;
-  			regnod->hkminetop[im] =-999;
-  			regnod->hkminebot[im] =-999;
+      	//
+      	regnod->eet[im]= MISSING_D;
+   		regnod->pet[im]= MISSING_D;
+   		regnod->qinfl[im]  = MISSING_D;
+   		regnod->qdrain[im] = MISSING_D;
+      	regnod->qrunoff[im]= MISSING_D;
 
-  			regnod->tcshlw[im] =-999;
-  			regnod->tcdeep[im] =-999;
-  			regnod->tcminetop[im] =-999;
-  			regnod->tcminebot[im] =-999;
+      	regnod->snwthick[im]= MISSING_D;
+      	regnod->swe[im]= MISSING_D;
 
-  			regnod->trock34[im]=-999;
+   		regnod->wtd[im]= MISSING_D;
+   		regnod->alc[im]= MISSING_D;
+      	regnod->ald[im]= MISSING_D;
 
-  			regnod->somcald[im]=-999;
-  			regnod->vwcald[im] =-999;
-  			regnod->tald[im] =-999;
-	 
-  		}
+   		regnod->vwcshlw[im]= MISSING_D;
+   		regnod->vwcdeep[im]= MISSING_D;
+   		regnod->vwcminea[im]= MISSING_D;
+      	regnod->vwcmineb[im]= MISSING_D;
+      	regnod->vwcminec[im]= MISSING_D;
 
-  		outputYearCohortVars(iy, chtcount);
+   		regnod->tshlw[im]= MISSING_D;
+   		regnod->tdeep[im]= MISSING_D;
+   		regnod->tminea[im]= MISSING_D;
+   		regnod->tmineb[im]= MISSING_D;
+   		regnod->tminec[im]= MISSING_D;
+
+   		regnod->hkshlw[im]= MISSING_D;
+   		regnod->hkdeep[im]= MISSING_D;
+   		regnod->hkminea[im]= MISSING_D;
+   		regnod->hkmineb[im]= MISSING_D;
+   		regnod->hkminec[im]= MISSING_D;
+
+   		regnod->tcshlw[im]= MISSING_D;
+   		regnod->tcdeep[im]= MISSING_D;
+   		regnod->tcminea[im]= MISSING_D;
+   		regnod->tcmineb[im]= MISSING_D;
+   		regnod->tcminec[im]= MISSING_D;
+
+   		regnod->tbotrock[im]= MISSING_D;
+
+   		//
+   		regnod->burnthick[im]= MISSING_D;
+   		regnod->burnsoic[im]= MISSING_D;
+   		regnod->burnvegc[im]= MISSING_D;
+
   	}
+
+  	outputCohortVars(yrind, chtcount, MISSING_I);
   	
 };
 
-void RegnOutputer::init(string& outputdir, const int & myid, string & stage, int MAX_DRV_YR){
+void RegnOutputer::init(string& outputdir, string & stage, int MAX_YRSTEP){
 
 	string moncfn =outputdir+"output"+stage+".nc";
 
 	rFile = new NcFile(moncfn.c_str(), NcFile::Replace);
 	
-		chtD  = rFile->add_dim("CHTID");
-		yearD = rFile->add_dim("YEAR", MAX_DRV_YR);
-		monthD = rFile->add_dim("MONTH", 12);
-	 
-		chtidCYV  =rFile->add_var("CHTID", ncInt,chtD);
-		statusCYV =rFile->add_var("STATUS", ncInt,chtD);
-		ysfCYV  = rFile->add_var("YSF", ncFloat, chtD, yearD);
+	NcDim * chtD  = rFile->add_dim("CHTID");
+	NcDim * yearD = rFile->add_dim("YEAR", MAX_YRSTEP);
+	NcDim * yrmonD= rFile->add_dim("YYYYMM", MAX_YRSTEP*12);
+	NcDim * pftD  = rFile->add_dim("PFTS", NUM_PFT);
 
-		//yearly only
-		if (regnod->outvarlist[0]>=1){
-			burnthickCYV = rFile->add_var("BURNTHICK", ncFloat, chtD, yearD);
-		}
-		if (regnod->outvarlist[1]>=1){
-			burnsoicCYV = rFile->add_var("BURNSOIC", ncFloat, chtD, yearD);
-		}
-		if (regnod->outvarlist[2]>=1){
-			burnvegcCYV = rFile->add_var("BURNVEGC", ncFloat, chtD, yearD);
-		}
-		if (regnod->outvarlist[3]>=1){
-			growstartCYV = rFile->add_var("GROWSTART", ncFloat, chtD, yearD);
-		}
-		if (regnod->outvarlist[4]>=1){
-			growendCYV   = rFile->add_var("GROWEND", ncFloat, chtD, yearD);
-		}
-		if (regnod->outvarlist[5]>=1){
-			permCYV = rFile->add_var("PERMAFROST", ncFloat, chtD, yearD);
-		}
-		if (regnod->outvarlist[6]>=1){
-			mossdzCYV = rFile->add_var("MOSSDZ", ncFloat, chtD, yearD);
-		}
-		if (regnod->outvarlist[7]>=1){
-			shlwdzCYV = rFile->add_var("SHLWDZ", ncFloat, chtD, yearD);
-		}
-		if (regnod->outvarlist[8]>=1){
-			deepdzCYV = rFile->add_var("DEEPDZ", ncFloat, chtD, yearD);
-		}
+ 	chtidV = rFile->add_var("CHTID", ncInt, chtD);
+  	statusV= rFile->add_var("STATUS", ncInt, chtD, yearD);
+	yearV  = rFile->add_var("YEAR", ncInt, yearD);
+	yrmonV = rFile->add_var("YYYYMM", ncInt, yrmonD);
+	ysfV   = rFile->add_var("YSF", ncInt, yearD);
 
-		//yearly or monthly
-		if (regnod->outvarlist[9]==1){
-			laiCYV  = rFile->add_var("LAI", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[9]==2) {
-			laiCYV  = rFile->add_var("LAI", ncFloat, chtD, yearD, monthD);
-		}
-		if (regnod->outvarlist[10]==1){
-			vegcCYV = rFile->add_var("VEGC", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[10]==2) {
-			vegcCYV = rFile->add_var("VEGC", ncFloat, chtD, yearD, monthD);
-		}
-		if (regnod->outvarlist[11]==1){
-			vegnCYV = rFile->add_var("VEGN", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[11]==2) {
-			vegnCYV = rFile->add_var("VEGN", ncFloat, chtD, yearD, monthD);
-		}
+/////////////////* YEARLY outputs *//////////////////////////////////////////////
+	//
+   	if (regnod->outvarlist[I_growstart]==1)
+   		growstartV = rFile->add_var("GROWSTART", ncInt, chtD, yearD, pftD);
+   	if (regnod->outvarlist[I_growend]==1)
+   		growendV   = rFile->add_var("GROWEND", ncInt, chtD, yearD, pftD);
 
-		if (regnod->outvarlist[12]==1){
-			gppCYV = rFile->add_var("GPP", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[12]==2) {
-			gppCYV = rFile->add_var("GPP", ncFloat, chtD, yearD, monthD);
-		}
-		if (regnod->outvarlist[13]==1){
-			nppCYV = rFile->add_var("NPP", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[13]==2) {
-			nppCYV = rFile->add_var("NPP", ncFloat, chtD, yearD, monthD);
-		}
-		if (regnod->outvarlist[14]==1){
-			rhCYV  = rFile->add_var("RH", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[14]==2) {
-			rhCYV  = rFile->add_var("RH", ncFloat, chtD, yearD, monthD);
-		}
-		if (regnod->outvarlist[15]==1){
-			ltrfalcCYV = rFile->add_var("LTRFALC", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[15]==2) {
-			ltrfalcCYV = rFile->add_var("LTRFALC", ncFloat, chtD, yearD, monthD);
-		}
-		if (regnod->outvarlist[16]==1){
-			ltrfalnCYV = rFile->add_var("LTRFALN", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[16]==2) {
-			ltrfalnCYV = rFile->add_var("LTRFALN", ncFloat, chtD, yearD, monthD);
-		}
+   	if (regnod->outvarlist[I_vegcov]==1)
+   		vegcovV   = rFile->add_var("VEGCOV", ncDouble, chtD, yearD, pftD);
+   	if (regnod->outvarlist[I_vegage]==1)
+   		vegageV    = rFile->add_var("VEGAGE", ncInt, chtD, yearD, pftD);
 
-		if (regnod->outvarlist[17]==1){
-			shlwcCYV = rFile->add_var("SHLWC", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[17]==2) {
-			shlwcCYV = rFile->add_var("SHLWC", ncFloat, chtD, yearD, monthD);
-		}
-		if (regnod->outvarlist[18]==1){
-			deepcCYV = rFile->add_var("DEEPC", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[18]==2) {
-			deepcCYV = rFile->add_var("DEEPC", ncFloat, chtD, yearD, monthD);
-		}
-		if (regnod->outvarlist[19]==1){
-			minecCYV  = rFile->add_var("MINEC", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[19]==2) {
-			minecCYV  = rFile->add_var("MINEC", ncFloat, chtD, yearD, monthD);
-		}
-		if (regnod->outvarlist[20]==1){
-			orgnCYV = rFile->add_var("ORGN", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[20]==2) {
-			orgnCYV = rFile->add_var("ORGN", ncFloat, chtD, yearD, monthD);
-		}
-		if (regnod->outvarlist[21]==1){
-			avlnCYV = rFile->add_var("AVLN", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[21]==2) {
-			avlnCYV = rFile->add_var("AVLN", ncFloat, chtD, yearD, monthD);
-		}
+   	if (regnod->outvarlist[I_lai]==1)
+   		laiV       = rFile->add_var("LAI", ncDouble, chtD, yearD, pftD);
+   	if (regnod->outvarlist[I_vegc]==1)
+   		vegcV      = rFile->add_var("VEGC", ncDouble, chtD, yearD, pftD);
+   	if (regnod->outvarlist[I_leafc]==1)
+   		leafcV     = rFile->add_var("LEAFC", ncDouble, chtD, yearD, pftD);
+   	if (regnod->outvarlist[I_stemc]==1)
+   		stemcV     = rFile->add_var("STEMC", ncDouble, chtD, yearD, pftD);
+   	if (regnod->outvarlist[I_rootc]==1)
+   		rootcV     = rFile->add_var("ROOTC", ncDouble, chtD, yearD, pftD);
+   	if (regnod->outvarlist[I_vegn]==1)
+   		vegnV      = rFile->add_var("VEGN", ncDouble, chtD, yearD, pftD);
+   	if (regnod->outvarlist[I_labn]==1)
+   		labnV      = rFile->add_var("LABN", ncDouble, chtD, yearD, pftD);
+   	if (regnod->outvarlist[I_leafn]==1)
+   		leafnV     = rFile->add_var("LEAFN", ncDouble, chtD, yearD, pftD);
+   	if (regnod->outvarlist[I_stemn]==1)
+   		stemnV     = rFile->add_var("STEMN", ncDouble, chtD, yearD, pftD);
+   	if (regnod->outvarlist[I_rootn]==1)
+   		rootnV     = rFile->add_var("ROOTN", ncDouble, chtD, yearD, pftD);
 
-		if (regnod->outvarlist[22]==1){
-			netnminCYV = rFile->add_var("NETNMIN", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[22]==2) {
-			netnminCYV = rFile->add_var("NETNMIN", ncFloat, chtD, yearD, monthD);
-		}
-		if (regnod->outvarlist[23]==1){
-			nuptakeCYV = rFile->add_var("NUPTAKE", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[23]==2) {
-			nuptakeCYV = rFile->add_var("NUPTAKE", ncFloat, chtD, yearD, monthD);
-		}
-		if (regnod->outvarlist[24]==1){
-			ninputCYV = rFile->add_var("NINPUT", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[24]==2) {
-			ninputCYV = rFile->add_var("NINPUT", ncFloat, chtD, yearD, monthD);
-		}
-		if (regnod->outvarlist[25]==1){
-			nlostCYV = rFile->add_var("NLOST", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[25]==2) {
-			nlostCYV = rFile->add_var("NLOST", ncFloat, chtD, yearD, monthD);
-		}
+   	if (regnod->outvarlist[I_gpp]==1)
+   		gppV       = rFile->add_var("GPP", ncDouble, chtD, yearD, pftD);
+   	if (regnod->outvarlist[I_npp]==1)
+   		nppV       = rFile->add_var("NPP", ncDouble, chtD, yearD, pftD);
+   	if (regnod->outvarlist[I_ltrfalc]==1)
+        ltrfalcV   = rFile->add_var("LTRFALC", ncDouble, chtD, yearD, pftD);
+   	if (regnod->outvarlist[I_ltrfaln]==1)
+        ltrfalnV   = rFile->add_var("LTRFALN", ncDouble, chtD, yearD, pftD);
 
-		if (regnod->outvarlist[26]==1){
-			eetCYV  = rFile->add_var("EET", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[26]==2) {
-			eetCYV  = rFile->add_var("EET", ncFloat, chtD, yearD, monthD);
-		}
-		if (regnod->outvarlist[27]==1){
-			petCYV  = rFile->add_var("PET", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[27]==2) {
-			petCYV  = rFile->add_var("PET", ncFloat, chtD, yearD, monthD);
-		}
-		if (regnod->outvarlist[28]==1){
-			qdrainCYV  = rFile->add_var("DRAINAGE", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[28]==2) {
-			qdrainCYV  = rFile->add_var("DRAINAGE", ncFloat, chtD, yearD, monthD);
-		}
-		if (regnod->outvarlist[29]==1){
-			qrunoffCYV = rFile->add_var("RUNOFF", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[29]==2) {
-			qrunoffCYV = rFile->add_var("RUNOFF", ncFloat, chtD, yearD, monthD);
-		}
+   	if (regnod->outvarlist[I_nuptake]==1)
+        nuptakeV   = rFile->add_var("NUPTAKE", ncDouble, chtD, yearD, pftD);
 
-		if (regnod->outvarlist[30]==1){
-			sthickCYV = rFile->add_var("SNOWTHICK", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[30]==2) {
-			sthickCYV = rFile->add_var("SNOWTHICK", ncFloat, chtD, yearD, monthD);
-		}
-		if (regnod->outvarlist[31]==1){
-			sweCYV    = rFile->add_var("SWE", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[31]==2) {
-			sweCYV    = rFile->add_var("SWE", ncFloat, chtD, yearD, monthD);
-		}
+        //
+   	if (regnod->outvarlist[I_permafrost]==1)
+   		permafrostV = rFile->add_var("PERMAFROST", ncInt, chtD, yearD);
 
-		if (regnod->outvarlist[32]==1){
-			wtdCYV  = rFile->add_var("WATERTAB", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[32]==2) {
-			wtdCYV  = rFile->add_var("WATERTAB", ncFloat, chtD, yearD, monthD);
-		}
-		if (regnod->outvarlist[33]==1){
-			aldCYV  = rFile->add_var("ALD", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[33]==2) {
-			aldCYV  = rFile->add_var("ALD", ncFloat, chtD, yearD, monthD);
-		}
+   	if (regnod->outvarlist[I_mossdz]==1)
+   		mossdzV  = rFile->add_var("MOSSDZ", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_oshlwdz]==1)
+   		oshlwdzV = rFile->add_var("OSHLWDZ", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_odeepdz]==1)
+   		odeepdzV = rFile->add_var("ODEEPDZ", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_mineadz]==1)
+   		mineadzV = rFile->add_var("MINEADZ", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_minebdz]==1)
+   		minebdzV = rFile->add_var("MINEBDZ", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_minecdz]==1)
+   		minecdzV = rFile->add_var("MINECDZ", ncDouble, chtD, yearD);
 
-		if (regnod->outvarlist[34]==1){
-			vwcshlwCYV  = rFile->add_var("VWCSHLW", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[34]==2) {
-			vwcshlwCYV  = rFile->add_var("VWCSHLW", ncFloat, chtD, yearD, monthD);
-		}
-		if (regnod->outvarlist[35]==1){
-			vwcdeepCYV  = rFile->add_var("VWCDEEP", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[35]==2) {
-			vwcdeepCYV  = rFile->add_var("VWCDEEP", ncFloat, chtD, yearD, monthD);
-		}
-		if (regnod->outvarlist[36]==1){
-			vwcminetopCYV = rFile->add_var("VWCMINETOP", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[36]==2) {
-			vwcminetopCYV = rFile->add_var("VWCMINETOP", ncFloat, chtD, yearD, monthD);
-		}
-		if (regnod->outvarlist[37]==1){
-			vwcminebotCYV = rFile->add_var("VWCMINEBOT", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[37]==2) {
-			vwcminebotCYV = rFile->add_var("VWCMINEBOT", ncFloat, chtD, yearD, monthD);
-		}
+   	if (regnod->outvarlist[I_oshlwc]==1)
+   		oshlwcV  = rFile->add_var("OSHLWC", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_odeepc]==1)
+   		odeepcV  = rFile->add_var("ODEEPC", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_mineac]==1)
+   		mineacV  = rFile->add_var("MINEAC", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_minebc]==1)
+   		minebcV  = rFile->add_var("MINEBC", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_minecc]==1)
+   		mineccV  = rFile->add_var("MINECC", ncDouble, chtD, yearD);
 
-		if (regnod->outvarlist[38]==1){
-			tshlwCYV  = rFile->add_var("TSHLW", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[38]==2) {
-			tshlwCYV  = rFile->add_var("TSHLW", ncFloat, chtD, yearD, monthD);
-		}
-		if (regnod->outvarlist[39]==1){
-			tdeepCYV  = rFile->add_var("TDEEP", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[39]==2) {
-			tdeepCYV  = rFile->add_var("TDEEP", ncFloat, chtD, yearD, monthD);
-		}
-		if (regnod->outvarlist[40]==1){
-			tminetopCYV = rFile->add_var("TMINETOP", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[40]==2) {
-			tminetopCYV = rFile->add_var("TMINETOP", ncFloat, chtD, yearD, monthD);
-		}
-		if (regnod->outvarlist[41]==1){
-			tminebotCYV = rFile->add_var("TMINEBOT", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[41]==2) {
-			tminebotCYV = rFile->add_var("TMINEBOT", ncFloat, chtD, yearD, monthD);
-		}
+   	if (regnod->outvarlist[I_orgn]==1)
+   		orgnV    = rFile->add_var("ORGN", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_avln]==1)
+   		avlnV    = rFile->add_var("AVLN", ncDouble, chtD, yearD);
 
-		if (regnod->outvarlist[42]==1){
-			hkshlwCYV  = rFile->add_var("HKSHLW", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[42]==2) {
-			hkshlwCYV  = rFile->add_var("HKSHLW", ncFloat, chtD, yearD, monthD);
-		}
-		if (regnod->outvarlist[43]==1){
-			hkdeepCYV  = rFile->add_var("HKDEEP", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[43]==2) {
-			hkdeepCYV  = rFile->add_var("HKDEEP", ncFloat, chtD, yearD, monthD);
-		}
-		if (regnod->outvarlist[44]==1){
-			hkminetopCYV = rFile->add_var("HKMINETOP", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[44]==2) {
-			hkminetopCYV = rFile->add_var("HKMINETOP", ncFloat, chtD, yearD, monthD);
-		}
-		if (regnod->outvarlist[45]==1){
-			hkminebotCYV = rFile->add_var("HKMINEBOT", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[45]==2) {
-			hkminebotCYV = rFile->add_var("HKMINEBOT", ncFloat, chtD, yearD, monthD);
-		}
+   	if (regnod->outvarlist[I_rh]==1)
+   		rhV        = rFile->add_var("RH", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_netnmin]==1)
+   		netnminV = rFile->add_var("NETNMIN", ncDouble, chtD, yearD);
 
-		if (regnod->outvarlist[46]==1){
-			tcshlwCYV  = rFile->add_var("TCSHLW", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[46]==2) {
-			tcshlwCYV  = rFile->add_var("TCSHLW", ncFloat, chtD, yearD, monthD);
-		}
-		if (regnod->outvarlist[47]==1){
-			tcdeepCYV  = rFile->add_var("TCDEEP", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[47]==2) {
-			tcdeepCYV  = rFile->add_var("TCDEEP", ncFloat, chtD, yearD, monthD);
-		}
-		if (regnod->outvarlist[48]==1){
-			tcminetopCYV = rFile->add_var("TCMINETOP", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[48]==2) {
-			tcminetopCYV = rFile->add_var("TCMINETOP", ncFloat, chtD, yearD, monthD);
-		}
-		if (regnod->outvarlist[49]==1){
-			tcminebotCYV = rFile->add_var("TCMINEBOT", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[49]==2) {
-			tcminebotCYV = rFile->add_var("TCMINEBOT", ncFloat, chtD, yearD, monthD);
-		}
+   	if (regnod->outvarlist[I_orgninput]==1)
+   		orgninputV = rFile->add_var("ORGNINPUT", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_avlninput]==1)
+   		avlninputV = rFile->add_var("AVLNINPUT", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_orgnlost]==1)
+      	orgnlostV  = rFile->add_var("ORGNLOST", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_avlnlost]==1)
+      	avlnlostV  = rFile->add_var("ALVNLOST", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_doclost]==1)
+      	doclostV   = rFile->add_var("dOCLOST", ncDouble, chtD, yearD);
 
-		if (regnod->outvarlist[50]==1){
-			trock34CYV = rFile->add_var("TROCK34M", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[50]==2) {
-			trock34CYV = rFile->add_var("TROCK34M", ncFloat, chtD, yearD, monthD);
-		}
+      	//
+   	if (regnod->outvarlist[I_eet]==1)
+      	eetV   = rFile->add_var("EET", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_pet]==1)
+   		petV   = rFile->add_var("PET", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_qinfl]==1)
+   		qinflV = rFile->add_var("QINFL", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_qdrain]==1)
+   		qdrainV = rFile->add_var("QDRAIN", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_qrunoff]==1)
+      	qrunoffV= rFile->add_var("QRUNOFF", ncDouble, chtD, yearD);
 
-		if (regnod->outvarlist[51]==1){
-			somcaldCYV = rFile->add_var("SOMCALD", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[51]==2) {
-			somcaldCYV = rFile->add_var("SOMCALD", ncFloat, chtD, yearD, monthD);
-		}
+   	if (regnod->outvarlist[I_snwthick]==1)
+      	snwthickV=rFile->add_var("SNWTHICK", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_swe]==1)
+      	sweV=rFile->add_var("SWE", ncDouble, chtD, yearD);
 
-		if (regnod->outvarlist[52]==1){
-			vwcaldCYV = rFile->add_var("VWCALD", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[52]==2) {
-			vwcaldCYV = rFile->add_var("VWCALD", ncFloat, chtD, yearD, monthD);
-		}
+   	if (regnod->outvarlist[I_wtd]==1)
+   		wtdV=rFile->add_var("WTD", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_alc]==1)
+   		alcV=rFile->add_var("ALC", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_ald]==1)
+      	aldV=rFile->add_var("ALD", ncDouble, chtD, yearD);
 
-		if (regnod->outvarlist[53]==1){
-			taldCYV = rFile->add_var("TALD", ncFloat, chtD, yearD);
-		} else if (regnod->outvarlist[53]==2) {
-			taldCYV = rFile->add_var("TALD", ncFloat, chtD, yearD, monthD);
-		}
+   	if (regnod->outvarlist[I_vwcshlw]==1)
+   		vwcshlwV=rFile->add_var("VWCSHLW", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_vwcdeep]==1)
+   		vwcdeepV=rFile->add_var("VWCDEEP", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_vwcminea]==1)
+   		vwcmineaV=rFile->add_var("VWCMINEA", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_vwcmineb]==1)
+      	vwcminebV=rFile->add_var("VWCMINEB", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_vwcminec]==1)
+      	vwcminecV=rFile->add_var("VWCMINEC", ncDouble, chtD, yearD);
+
+   	if (regnod->outvarlist[I_tshlw]==1)
+   		tshlwV=rFile->add_var("TSHLW", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_tdeep]==1)
+   		tdeepV=rFile->add_var("TDEEP", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_tminea]==1)
+   		tmineaV=rFile->add_var("TMINEA", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_tmineb]==1)
+   		tminebV=rFile->add_var("TMINEB", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_tminec]==1)
+   		tminecV=rFile->add_var("TMINEC", ncDouble, chtD, yearD);
+
+   	if (regnod->outvarlist[I_hkshlw]==1)
+   		hkshlwV=rFile->add_var("HKSHLW", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_hkdeep]==1)
+   		hkdeepV=rFile->add_var("HKDEEP", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_hkminea]==1)
+   		hkmineaV=rFile->add_var("HKMINEA", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_hkmineb]==1)
+   		hkminebV=rFile->add_var("HKMINEB", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_hkminec]==1)
+   		hkminecV=rFile->add_var("HKMINEC", ncDouble, chtD, yearD);
+
+   	if (regnod->outvarlist[I_tcshlw]==1)
+   		tcshlwV=rFile->add_var("TCSHLW", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_tcdeep]==1)
+   		tcdeepV=rFile->add_var("TCDEEP", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_tcminea]==1)
+   		tcmineaV=rFile->add_var("TCMINEA", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_tcmineb]==1)
+   		tcminebV=rFile->add_var("TCMINEB", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_tcminec]==1)
+   		tcminecV=rFile->add_var("TCMINEC", ncDouble, chtD, yearD);
+
+   	if (regnod->outvarlist[I_tbotrock]==1)
+   		tbotrockV=rFile->add_var("TBOTROCK", ncDouble, chtD, yearD);
+
+   		//
+   	if (regnod->outvarlist[I_burnthick]==1)
+   		burnthickV=rFile->add_var("BURNTHICK", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_burnsoic]==1)
+   		burnsoicV=rFile->add_var("BURNSOIC", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_burnvegc]==1)
+   		burnvegcV=rFile->add_var("BURNVEGC", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_burnsoin]==1)
+   		burnsoinV=rFile->add_var("BURNSOIN", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_burnvegn]==1)
+   		burnvegnV=rFile->add_var("BURNVEGN", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_burnretainc]==1)
+   		burnretaincV=rFile->add_var("BURNRETAINC", ncDouble, chtD, yearD);
+   	if (regnod->outvarlist[I_burnretainn]==1)
+   		burnretainnV=rFile->add_var("BURNRETAINN", ncDouble, chtD, yearD);
+
+/////////////////* MONTHLY outputs *//////////////////////////////////////////////
+
+	//
+   	if (regnod->outvarlist[I_growstart]==2)
+   		growstartV = rFile->add_var("GROWSTART", ncInt, chtD, yrmonD, pftD);
+   	if (regnod->outvarlist[I_growend]==2)
+   		growendV   = rFile->add_var("GROWEND", ncInt, chtD, yrmonD, pftD);
+
+   	if (regnod->outvarlist[I_vegcov]==2)
+   		vegcovV   = rFile->add_var("VEGFRAC", ncDouble, chtD, yrmonD, pftD);
+   	if (regnod->outvarlist[I_vegage]==2)
+   		vegageV    = rFile->add_var("VEGAGE", ncInt, chtD, yrmonD, pftD);
+
+   	if (regnod->outvarlist[I_lai]==2)
+   		laiV       = rFile->add_var("LAI", ncDouble, chtD, yrmonD, pftD);
+   	if (regnod->outvarlist[I_vegc]==2)
+   		vegcV      = rFile->add_var("VEGC", ncDouble, chtD, yrmonD, pftD);
+   	if (regnod->outvarlist[I_leafc]==2)
+   		leafcV     = rFile->add_var("LEAFC", ncDouble, chtD, yrmonD, pftD);
+   	if (regnod->outvarlist[I_stemc]==2)
+   		stemcV     = rFile->add_var("STEMC", ncDouble, chtD, yrmonD, pftD);
+   	if (regnod->outvarlist[I_rootc]==2)
+   		rootcV     = rFile->add_var("ROOTC", ncDouble, chtD, yrmonD, pftD);
+   	if (regnod->outvarlist[I_vegn]==2)
+   		vegnV      = rFile->add_var("VEGN", ncDouble, chtD, yrmonD, pftD);
+   	if (regnod->outvarlist[I_labn]==2)
+   		labnV      = rFile->add_var("LABN", ncDouble, chtD, yrmonD, pftD);
+   	if (regnod->outvarlist[I_leafn]==2)
+   		leafnV     = rFile->add_var("LEAFN", ncDouble, chtD, yrmonD, pftD);
+   	if (regnod->outvarlist[I_stemn]==2)
+   		stemnV     = rFile->add_var("STEMN", ncDouble, chtD, yrmonD, pftD);
+   	if (regnod->outvarlist[I_rootn]==2)
+   		rootnV     = rFile->add_var("ROOTN", ncDouble, chtD, yrmonD, pftD);
+
+   	if (regnod->outvarlist[I_gpp]==2)
+   		gppV       = rFile->add_var("GPP", ncDouble, chtD, yrmonD, pftD);
+   	if (regnod->outvarlist[I_npp]==2)
+   		nppV       = rFile->add_var("NPP", ncDouble, chtD, yrmonD, pftD);
+   	if (regnod->outvarlist[I_ltrfalc]==2)
+        ltrfalcV   = rFile->add_var("LTRFALC", ncDouble, chtD, yrmonD, pftD);
+   	if (regnod->outvarlist[I_ltrfaln]==2)
+        ltrfalnV   = rFile->add_var("LTRFALN", ncDouble, chtD, yrmonD, pftD);
+
+   	if (regnod->outvarlist[I_nuptake]==2)
+        nuptakeV   = rFile->add_var("NUPTAKE", ncDouble, chtD, yrmonD, pftD);
+
+        //
+   	if (regnod->outvarlist[I_permafrost]==2)
+   		permafrostV = rFile->add_var("PERMAFROST", ncInt, chtD, yrmonD);
+
+   	if (regnod->outvarlist[I_mossdz]==2)
+   		mossdzV  = rFile->add_var("MOSSDZ", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_oshlwdz]==2)
+   		oshlwdzV = rFile->add_var("OSHLWDZ", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_odeepdz]==2)
+   		odeepdzV = rFile->add_var("ODEEPDZ", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_mineadz]==2)
+   		mineadzV = rFile->add_var("MINEADZ", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_minebdz]==2)
+   		minebdzV = rFile->add_var("MINEBDZ", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_minecdz]==2)
+   		minecdzV = rFile->add_var("MINECDZ", ncDouble, chtD, yrmonD);
+
+   	if (regnod->outvarlist[I_oshlwc]==2)
+   		oshlwcV  = rFile->add_var("OSHLWC", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_odeepc]==2)
+   		odeepcV  = rFile->add_var("ODEEPC", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_mineac]==2)
+   		mineacV  = rFile->add_var("MINEAC", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_minebc]==2)
+   		minebcV  = rFile->add_var("MINEBC", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_minecc]==2)
+   		mineccV  = rFile->add_var("MINECC", ncDouble, chtD, yrmonD);
+
+   	if (regnod->outvarlist[I_orgn]==2)
+   		orgnV    = rFile->add_var("ORGN", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_avln]==2)
+   		avlnV    = rFile->add_var("AVLN", ncDouble, chtD, yrmonD);
+
+   	if (regnod->outvarlist[I_rh]==2)
+   		rhV        = rFile->add_var("RH", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_netnmin]==2)
+   		netnminV = rFile->add_var("NETNMIN", ncDouble, chtD, yrmonD);
+
+   	if (regnod->outvarlist[I_orgninput]==2)
+   		orgninputV = rFile->add_var("ORGNINPUT", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_avlninput]==2)
+   		avlninputV = rFile->add_var("AVLNINPUT", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_orgnlost]==2)
+      	orgnlostV  = rFile->add_var("ORGNLOST", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_avlnlost]==2)
+      	avlnlostV  = rFile->add_var("ALVNLOST", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_doclost]==2)
+      	doclostV   = rFile->add_var("dOCLOST", ncDouble, chtD, yrmonD);
+
+      	//
+   	if (regnod->outvarlist[I_eet]==2)
+      	eetV   = rFile->add_var("EET", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_pet]==2)
+   		petV   = rFile->add_var("PET", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_qinfl]==2)
+   		qinflV = rFile->add_var("QINFL", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_qdrain]==2)
+   		qdrainV = rFile->add_var("QDRAIN", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_qrunoff]==2)
+      	qrunoffV= rFile->add_var("QRUNOFF", ncDouble, chtD, yrmonD);
+
+   	if (regnod->outvarlist[I_snwthick]==2)
+      	snwthickV=rFile->add_var("SNWTHICK", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_swe]==2)
+      	sweV=rFile->add_var("SWE", ncDouble, chtD, yrmonD);
+
+   	if (regnod->outvarlist[I_wtd]==2)
+   		wtdV=rFile->add_var("WTD", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_alc]==2)
+   		alcV=rFile->add_var("ALC", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_ald]==2)
+      	aldV=rFile->add_var("ALD", ncDouble, chtD, yrmonD);
+
+   	if (regnod->outvarlist[I_vwcshlw]==2)
+   		vwcshlwV=rFile->add_var("VWCSHLW", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_vwcdeep]==2)
+   		vwcdeepV=rFile->add_var("VWCDEEP", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_vwcminea]==2)
+   		vwcmineaV=rFile->add_var("VWCMINEA", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_vwcmineb]==2)
+      	vwcminebV=rFile->add_var("VWCMINEB", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_vwcminec]==2)
+      	vwcminecV=rFile->add_var("VWCMINEC", ncDouble, chtD, yrmonD);
+
+   	if (regnod->outvarlist[I_tshlw]==2)
+   		tshlwV=rFile->add_var("TSHLW", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_tdeep]==2)
+   		tdeepV=rFile->add_var("TDEEP", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_tminea]==2)
+   		tmineaV=rFile->add_var("TMINEA", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_tmineb]==2)
+   		tminebV=rFile->add_var("TMINEB", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_tminec]==2)
+   		tminecV=rFile->add_var("TMINEC", ncDouble, chtD, yrmonD);
+
+   	if (regnod->outvarlist[I_hkshlw]==2)
+   		hkshlwV=rFile->add_var("HKSHLW", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_hkdeep]==2)
+   		hkdeepV=rFile->add_var("HKDEEP", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_hkminea]==2)
+   		hkmineaV=rFile->add_var("HKMINEA", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_hkmineb]==2)
+   		hkminebV=rFile->add_var("HKMINEB", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_hkminec]==2)
+   		hkminecV=rFile->add_var("HKMINEC", ncDouble, chtD, yrmonD);
+
+   	if (regnod->outvarlist[I_tcshlw]==2)
+   		tcshlwV=rFile->add_var("TCSHLW", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_tcdeep]==2)
+   		tcdeepV=rFile->add_var("TCDEEP", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_tcminea]==2)
+   		tcmineaV=rFile->add_var("TCMINEA", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_tcmineb]==2)
+   		tcminebV=rFile->add_var("TCMINEB", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_tcminec]==2)
+   		tcminecV=rFile->add_var("TCMINEC", ncDouble, chtD, yrmonD);
+
+   	if (regnod->outvarlist[I_tbotrock]==2)
+   		tbotrockV=rFile->add_var("TBOTROCK", ncDouble, chtD, yrmonD);
+
+   		//
+   	if (regnod->outvarlist[I_burnthick]==2)
+   		burnthickV=rFile->add_var("BURNTHICK", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_burnsoic]==2)
+   		burnsoicV=rFile->add_var("BURNSOIC", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_burnvegc]==2)
+   		burnvegcV=rFile->add_var("BURNVEGC", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_burnsoin]==2)
+   		burnsoinV=rFile->add_var("BURNSOIN", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_burnvegn]==2)
+   		burnvegnV=rFile->add_var("BURNVEGN", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_burnretainc]==2)
+   		burnretaincV=rFile->add_var("BURNRETAINC", ncDouble, chtD, yrmonD);
+   	if (regnod->outvarlist[I_burnretainn]==2)
+   		burnretainnV=rFile->add_var("BURNRETAINN", ncDouble, chtD, yrmonD);
 
 };
 
-void RegnOutputer::outputYearCohortVars(const int & yrind, const int & chtcount){
+void RegnOutputer::outputCohortVars(const int & yrind, const int & chtcount, const int & status){
  
-   	chtidCYV->set_cur(chtcount);
-   	chtidCYV->put(&regnod->chtid,1);
+   	chtidV->set_cur(chtcount);
+   	chtidV->put(&regnod->chtid, 1);
 
-   	statusCYV->set_cur(chtcount);
-   	statusCYV->put(&regnod->status,1);
+   	statusV->set_cur(chtcount, yrind);
+   	statusV->put(&status, 1, 1);
 
-   	ysfCYV->set_cur(chtcount, yrind);
-   	ysfCYV->put(&regnod->ysf, 1, 1);
+   	ysfV->set_cur(chtcount, yrind);
+   	ysfV->put(&regnod->ysf, 1, 1);
 
-	//yearly only
-	if (regnod->outvarlist[0]>=1){
-		burnthickCYV->set_cur(chtcount, yrind);
-		burnthickCYV->put(&regnod->burnthick, 1, 1);
-	}
-	if (regnod->outvarlist[1]>=1){
-		burnsoicCYV->set_cur(chtcount, yrind);
-		burnsoicCYV->put(&regnod->burnsoic, 1, 1);
-	}
-	if (regnod->outvarlist[2]>=1){
-		burnvegcCYV->set_cur(chtcount, yrind);
-		burnvegcCYV->put(&regnod->burnvegc, 1, 1);
-	}
-	if (regnod->outvarlist[3]>=1){
-		growstartCYV->set_cur(chtcount, yrind);
-		growstartCYV->put(&regnod->growstart, 1, 1);
-	}
-	if (regnod->outvarlist[4]>=1){
-		growendCYV->set_cur(chtcount, yrind);
-		growendCYV->put(&regnod->growend, 1, 1);
-	}
-	if (regnod->outvarlist[5]>=1){
-		permCYV->set_cur(chtcount, yrind);
-		permCYV->put(&regnod->perm, 1, 1);
-	}
-	if (regnod->outvarlist[6]>=1){
-		mossdzCYV->set_cur(chtcount, yrind);
-		mossdzCYV->put(&regnod->mossdz, 1, 1);
-	}
-	if (regnod->outvarlist[7]>=1){
-		shlwdzCYV->set_cur(chtcount, yrind);
-		shlwdzCYV->put(&regnod->shlwdz, 1, 1);
-	}
-	if (regnod->outvarlist[8]>=1){
-		deepdzCYV->set_cur(chtcount, yrind);
-		deepdzCYV->put(&regnod->deepdz, 1, 1);
-	}
+   	yearV->set_cur(chtcount, yrind);
+   	yearV->put(&regnod->year, 1, 1);
 
-	//yearly or monthly
-	if (regnod->outvarlist[9]==1){
-	  	laiCYV->set_cur(chtcount, yrind);
-	   	laiCYV->put(&regnod->lai[0], 1, 1);
-	} else if (regnod->outvarlist[9]==2) {
-	  	laiCYV->set_cur(chtcount, yrind, 0);
-	   	laiCYV->put(&regnod->lai[0], 1, 1, 12);
-	}
-	if (regnod->outvarlist[10]==1){
-		vegcCYV->set_cur(chtcount, yrind);
-	   	vegcCYV->put(&regnod->vegc[0], 1, 1);
-	} else if (regnod->outvarlist[10]==2) {
-		vegcCYV->set_cur(chtcount, yrind, 0);
-	   	vegcCYV->put(&regnod->vegc[0], 1, 1, 12);
-	}
-	if (regnod->outvarlist[11]==1){
-		vegnCYV->set_cur(chtcount, yrind);
-	   	vegnCYV->put(&regnod->vegn[0], 1, 1);
-	} else if (regnod->outvarlist[11]==2) {
-		vegnCYV->set_cur(chtcount, yrind, 0);
-	   	vegnCYV->put(&regnod->vegn[0], 1, 1, 12);
-	}
+   	yrmonV->set_cur(chtcount, yrind);
+   	yrmonV->put(&regnod->month[0], 1, 12);
 
-	if (regnod->outvarlist[12]==1){
-		gppCYV->set_cur(chtcount, yrind);
-	   	gppCYV->put(&regnod->gpp[0], 1, 1);
-	} else if (regnod->outvarlist[12]==2) {
-		gppCYV->set_cur(chtcount, yrind, 0);
-	   	gppCYV->put(&regnod->gpp[0], 1, 1, 12);
-	}
-	if (regnod->outvarlist[13]==1){
-		nppCYV->set_cur(chtcount, yrind);
-	   	nppCYV->put(&regnod->npp[0], 1, 1);
-	} else if (regnod->outvarlist[13]==2) {
-		nppCYV->set_cur(chtcount, yrind, 0);
-	   	nppCYV->put(&regnod->npp[0], 1, 1, 12);
-	}
-	if (regnod->outvarlist[14]==1){
-		rhCYV->set_cur(chtcount, yrind);
-	   	rhCYV->put(&regnod->rh[0], 1, 1);
-	} else if (regnod->outvarlist[14]==2) {
-		rhCYV->set_cur(chtcount, yrind, 0);
-	   	rhCYV->put(&regnod->rh[0], 1, 1, 12);
-	}
-	if (regnod->outvarlist[15]==1){
-		ltrfalcCYV->set_cur(chtcount, yrind);
-	   	ltrfalcCYV->put(&regnod->ltrfalc[0], 1, 1);
-	} else if (regnod->outvarlist[15]==2) {
-		ltrfalcCYV->set_cur(chtcount, yrind, 0);
-	   	ltrfalcCYV->put(&regnod->ltrfalc[0], 1, 1, 12);
-	}
-	if (regnod->outvarlist[16]==1){
-		ltrfalnCYV->set_cur(chtcount, yrind);
-	   	ltrfalnCYV->put(&regnod->ltrfaln[0], 1, 1);
-	} else if (regnod->outvarlist[16]==2) {
-		ltrfalnCYV->set_cur(chtcount, yrind, 0);
-	   	ltrfalnCYV->put(&regnod->ltrfaln[0], 1, 1, 12);
-	}
+/////// YEARLY OUTPUT /////////////////////////////////////////////////////////////////
+   	if (regnod->outvarlist[I_growstart]==1){
+   	   	growstartV->set_cur(chtcount, yrind);
+		growstartV->put(&regnod->growstart[0][0], 1, 1, NUM_PFT);
+   	}
 
-	if (regnod->outvarlist[17]==1){
-		shlwcCYV->set_cur(chtcount, yrind);
-	   	shlwcCYV->put(&regnod->shlwc[0], 1, 1);
-	} else if (regnod->outvarlist[17]==2) {
-		shlwcCYV->set_cur(chtcount, yrind, 0);
-	   	shlwcCYV->put(&regnod->shlwc[0], 1, 1, 12);
-	}
-	if (regnod->outvarlist[18]==1){
-		deepcCYV->set_cur(chtcount, yrind);
-	   	deepcCYV->put(&regnod->deepc[0], 1, 1);
-	} else if (regnod->outvarlist[18]==2) {
-		deepcCYV->set_cur(chtcount, yrind, 0);
-	   	deepcCYV->put(&regnod->deepc[0], 1, 1, 12);
-	}
-	if (regnod->outvarlist[19]==1){
-		minecCYV->set_cur(chtcount, yrind);
-	   	minecCYV->put(&regnod->minec[0], 1, 1);
-	} else if (regnod->outvarlist[19]==2) {
-		minecCYV->set_cur(chtcount, yrind, 0);
-	   	minecCYV->put(&regnod->minec[0], 1, 1, 12);
-	}
-	if (regnod->outvarlist[20]==1){
-		orgnCYV->set_cur(chtcount, yrind);
-	   	orgnCYV->put(&regnod->orgn[0], 1, 1);
-	} else if (regnod->outvarlist[20]==2) {
-		orgnCYV->set_cur(chtcount, yrind, 0);
-	   	orgnCYV->put(&regnod->orgn[0], 1, 1, 12);
-	}
-	if (regnod->outvarlist[21]==1){
-		avlnCYV->set_cur(chtcount, yrind);
-	   	avlnCYV->put(&regnod->avln[0], 1, 1);
-	} else if (regnod->outvarlist[21]==2) {
-		avlnCYV->set_cur(chtcount, yrind, 0);
-	   	avlnCYV->put(&regnod->avln[0], 1, 1, 12);
-	}
+   	if (regnod->outvarlist[I_growend]==1){
+   	   	growendV->set_cur(chtcount, yrind);
+		growendV->put(&regnod->growend[0][0], 1, 1, NUM_PFT);
+   	}
 
-	if (regnod->outvarlist[22]==1){
-		netnminCYV->set_cur(chtcount, yrind);
-	   	netnminCYV->put(&regnod->netnmin[0], 1, 1);
-	} else if (regnod->outvarlist[22]==2) {
-		netnminCYV->set_cur(chtcount, yrind, 0);
-	   	netnminCYV->put(&regnod->netnmin[0], 1, 1, 12);
-	}
-	if (regnod->outvarlist[23]==1){
-		nuptakeCYV->set_cur(chtcount, yrind);
-	   	nuptakeCYV->put(&regnod->nuptake[0], 1, 1);
-	} else if (regnod->outvarlist[23]==2) {
-		nuptakeCYV->set_cur(chtcount, yrind, 0);
-	   	nuptakeCYV->put(&regnod->nuptake[0], 1, 1, 12);
-	}
-	if (regnod->outvarlist[24]==1){
-		ninputCYV->set_cur(chtcount, yrind);
-	   	ninputCYV->put(&regnod->ninput[0], 1, 1);
-	} else if (regnod->outvarlist[24]==2) {
-		ninputCYV->set_cur(chtcount, yrind, 0);
-	   	ninputCYV->put(&regnod->ninput[0], 1, 1, 12);
-	}
-	if (regnod->outvarlist[25]==1){
-		nlostCYV->set_cur(chtcount, yrind);
-	   	nlostCYV->put(&regnod->nlost[0], 1, 1);
-	} else if (regnod->outvarlist[25]==2) {
-		nlostCYV->set_cur(chtcount, yrind, 0);
-	   	nlostCYV->put(&regnod->nlost[0], 1, 1, 12);
-	}
+   	if (regnod->outvarlist[I_vegcov]==1){
+   	   	vegcovV->set_cur(chtcount, yrind);
+		vegcovV->put(&regnod->vegcov[0][0], 1, 1, NUM_PFT);
+   	}
 
-	if (regnod->outvarlist[26]==1){
-		eetCYV->set_cur(chtcount, yrind);
-	   	eetCYV->put(&regnod->eet[0], 1, 1);
-	} else if (regnod->outvarlist[26]==2) {
-		eetCYV->set_cur(chtcount, yrind, 0);
-	   	eetCYV->put(&regnod->eet[0], 1, 1, 12);
-	}
-	if (regnod->outvarlist[27]==1){
-		petCYV->set_cur(chtcount, yrind);
-	   	petCYV->put(&regnod->pet[0], 1, 1);
-	} else if (regnod->outvarlist[27]==2) {
-		petCYV->set_cur(chtcount, yrind, 0);
-	   	petCYV->put(&regnod->pet[0], 1, 1, 12);
-	}
-	if (regnod->outvarlist[28]==1){
-		qdrainCYV->set_cur(chtcount, yrind);
-	   	qdrainCYV->put(&regnod->qdrain[0], 1, 1);
-	} else if (regnod->outvarlist[28]==2) {
-		qdrainCYV->set_cur(chtcount, yrind, 0);
-	   	qdrainCYV->put(&regnod->qdrain[0], 1, 1, 12);
-	}
-	if (regnod->outvarlist[29]==1){
-		qrunoffCYV->set_cur(chtcount, yrind);
-	   	qrunoffCYV->put(&regnod->qrunoff[0], 1, 1);
-	} else if (regnod->outvarlist[29]==2) {
-		qrunoffCYV->set_cur(chtcount, yrind, 0);
-	   	qrunoffCYV->put(&regnod->qrunoff[0], 1, 1, 12);
-	}
+   	if (regnod->outvarlist[I_vegage]==1){
+   	   	vegageV->set_cur(chtcount, yrind);
+		vegageV->put(&regnod->vegage[0][0], 1, 1, NUM_PFT);
+   	}
 
-	if (regnod->outvarlist[30]==1){
-		sthickCYV->set_cur(chtcount, yrind);
-	   	sthickCYV->put(&regnod->snowthick[0], 1, 1);
-	} else if (regnod->outvarlist[30]==2) {
-		sthickCYV->set_cur(chtcount, yrind, 0);
-	   	sthickCYV->put(&regnod->snowthick[0], 1, 1, 12);
-	}
-	if (regnod->outvarlist[31]==1){
-		sweCYV->set_cur(chtcount, yrind);
-	   	sweCYV->put(&regnod->swe[0], 1, 1);
-	} else if (regnod->outvarlist[31]==2) {
-		sweCYV->set_cur(chtcount, yrind, 0);
-	   	sweCYV->put(&regnod->swe[0], 1, 1, 12);
-	}
+   	if (regnod->outvarlist[I_lai]==1){
+   	   	laiV->set_cur(chtcount, yrind);
+		laiV->put(&regnod->lai[0][0], 1, 1, NUM_PFT);
+   	}
 
-	if (regnod->outvarlist[32]==1){
-		wtdCYV->set_cur(chtcount, yrind);
-	   	wtdCYV->put(&regnod->wtd[0], 1, 1);
-	} else if (regnod->outvarlist[32]==2) {
-		wtdCYV->set_cur(chtcount, yrind, 0);
-	   	wtdCYV->put(&regnod->wtd[0], 1, 1, 12);
-	}
-	if (regnod->outvarlist[33]==1){
-		aldCYV->set_cur(chtcount, yrind);
-	   	aldCYV->put(&regnod->ald[0], 1, 1);
-	} else if (regnod->outvarlist[33]==2) {
-		aldCYV->set_cur(chtcount, yrind, 0);
-	   	aldCYV->put(&regnod->ald[0], 1, 1, 12);
-	}
+   	if (regnod->outvarlist[I_vegc]==1){
+   	   	vegcV->set_cur(chtcount, yrind);
+		vegcV->put(&regnod->vegc[0][0], 1, 1, NUM_PFT);
+   	}
 
-	if (regnod->outvarlist[34]==1){
-		vwcshlwCYV->set_cur(chtcount, yrind);
-	   	vwcshlwCYV->put(&regnod->vwcshlw[0], 1, 1);
-	} else if (regnod->outvarlist[34]==2) {
-		vwcshlwCYV->set_cur(chtcount, yrind, 0);
-	   	vwcshlwCYV->put(&regnod->vwcshlw[0], 1, 1, 12);
-	}
-	if (regnod->outvarlist[35]==1){
-		vwcdeepCYV->set_cur(chtcount, yrind);
-	   	vwcdeepCYV->put(&regnod->vwcdeep[0], 1, 1);
-	} else if (regnod->outvarlist[35]==2) {
-		vwcdeepCYV->set_cur(chtcount, yrind, 0);
-	   	vwcdeepCYV->put(&regnod->vwcdeep[0], 1, 1, 12);
-	}
-	if (regnod->outvarlist[36]==1){
-		vwcminetopCYV->set_cur(chtcount, yrind);
-	   	vwcminetopCYV->put(&regnod->vwcminetop[0], 1, 1);
-	} else if (regnod->outvarlist[36]==2) {
-		vwcminetopCYV->set_cur(chtcount, yrind, 0);
-	   	vwcminetopCYV->put(&regnod->vwcminetop[0], 1, 1, 12);
-	}
-	if (regnod->outvarlist[37]==1){
-		vwcminebotCYV->set_cur(chtcount, yrind);
-	   	vwcminebotCYV->put(&regnod->vwcminebot[0], 1, 1);
-	} else if (regnod->outvarlist[37]==2) {
-		vwcminebotCYV->set_cur(chtcount, yrind, 0);
-	   	vwcminebotCYV->put(&regnod->vwcminebot[0], 1, 1, 12);
-	}
+   	if (regnod->outvarlist[I_leafc]==1){
+   	   	leafcV->set_cur(chtcount, yrind);
+		leafcV->put(&regnod->leafc[0][0], 1, 1, NUM_PFT);
+   	}
 
-	if (regnod->outvarlist[38]==1){
-		tshlwCYV->set_cur(chtcount, yrind);
-	   	tshlwCYV->put(&regnod->tshlw[0], 1, 1);
-	} else if (regnod->outvarlist[38]==2) {
-		tshlwCYV->set_cur(chtcount, yrind, 0);
-	   	tshlwCYV->put(&regnod->tshlw[0], 1, 1, 12);
-	}
-	if (regnod->outvarlist[39]==1){
-		tdeepCYV->set_cur(chtcount, yrind);
-	   	tdeepCYV->put(&regnod->tdeep[0], 1, 1);
-	} else if (regnod->outvarlist[39]==2) {
-		tdeepCYV->set_cur(chtcount, yrind, 0);
-	   	tdeepCYV->put(&regnod->tdeep[0], 1, 1, 12);
-	}
-	if (regnod->outvarlist[40]==1){
-		tminetopCYV->set_cur(chtcount, yrind);
-	   	tminetopCYV->put(&regnod->tminetop[0], 1, 1);
-	} else if (regnod->outvarlist[40]==2) {
-		tminetopCYV->set_cur(chtcount, yrind, 0);
-	   	tminetopCYV->put(&regnod->tminetop[0], 1, 1, 12);
-	}
-	if (regnod->outvarlist[41]==1){
-		tminebotCYV->set_cur(chtcount, yrind);
-	   	tminebotCYV->put(&regnod->tminebot[0], 1, 1);
-	} else if (regnod->outvarlist[41]==2) {
-		tminebotCYV->set_cur(chtcount, yrind, 0);
-	   	tminebotCYV->put(&regnod->tminebot[0], 1, 1, 12);
-	}
+   	if (regnod->outvarlist[I_stemc]==1){
+   	   	stemcV->set_cur(chtcount, yrind);
+		stemcV->put(&regnod->stemc[0][0], 1, 1, NUM_PFT);
+   	}
 
-	if (regnod->outvarlist[42]==1){
-		hkshlwCYV->set_cur(chtcount, yrind);
-	   	hkshlwCYV->put(&regnod->hkshlw[0], 1, 1);
-	} else if (regnod->outvarlist[42]==2) {
-		hkshlwCYV->set_cur(chtcount, yrind, 0);
-	   	hkshlwCYV->put(&regnod->hkshlw[0], 1, 1, 12);
-	}
-	if (regnod->outvarlist[43]==1){
-		hkdeepCYV->set_cur(chtcount, yrind);
-	   	hkdeepCYV->put(&regnod->hkdeep[0], 1, 1);
-	} else if (regnod->outvarlist[43]==2) {
-		hkdeepCYV->set_cur(chtcount, yrind, 0);
-	   	hkdeepCYV->put(&regnod->hkdeep[0], 1, 1, 12);
-	}
-	if (regnod->outvarlist[44]==1){
-		hkminetopCYV->set_cur(chtcount, yrind);
-	   	hkminetopCYV->put(&regnod->hkminetop[0], 1, 1);
-	} else if (regnod->outvarlist[44]==2) {
-		hkminetopCYV->set_cur(chtcount, yrind, 0);
-	   	hkminetopCYV->put(&regnod->hkminetop[0], 1, 1, 12);
-	}
-	if (regnod->outvarlist[45]==1){
-		hkminebotCYV->set_cur(chtcount, yrind);
-	   	hkminebotCYV->put(&regnod->hkminebot[0], 1, 1);
-	} else if (regnod->outvarlist[45]==2) {
-		hkminebotCYV->set_cur(chtcount, yrind, 0);
-	   	hkminebotCYV->put(&regnod->hkminebot[0], 1, 1, 12);
-	}
+   	if (regnod->outvarlist[I_rootc]==1){
+   	   	rootcV->set_cur(chtcount, yrind);
+		rootcV->put(&regnod->rootc[0][0], 1, 1, NUM_PFT);
+   	}
 
-	if (regnod->outvarlist[46]==1){
-		tcshlwCYV->set_cur(chtcount, yrind);
-	   	tcshlwCYV->put(&regnod->tcshlw[0], 1, 1);
-	} else if (regnod->outvarlist[46]==2) {
-		tcshlwCYV->set_cur(chtcount, yrind, 0);
-	   	tcshlwCYV->put(&regnod->tcshlw[0], 1, 1, 12);
-	}
-	if (regnod->outvarlist[47]==1){
-		tcdeepCYV->set_cur(chtcount, yrind);
-	   	tcdeepCYV->put(&regnod->tcdeep[0], 1, 1);
-	} else if (regnod->outvarlist[47]==2) {
-		tcdeepCYV->set_cur(chtcount, yrind, 0);
-	   	tcdeepCYV->put(&regnod->tcdeep[0], 1, 1, 12);
-	}
-	if (regnod->outvarlist[48]==1){
-		tcminetopCYV->set_cur(chtcount, yrind);
-	   	tcminetopCYV->put(&regnod->tcminetop[0], 1, 1);
-	} else if (regnod->outvarlist[48]==2) {
-		tcminetopCYV->set_cur(chtcount, yrind, 0);
-	   	tcminetopCYV->put(&regnod->tcminetop[0], 1, 1, 12);
-	}
-	if (regnod->outvarlist[49]==1){
-		tcminebotCYV->set_cur(chtcount, yrind);
-	   	tcminebotCYV->put(&regnod->tcminebot[0], 1, 1);
-	} else if (regnod->outvarlist[49]==2) {
-		tcminebotCYV->set_cur(chtcount, yrind, 0);
-	   	tcminebotCYV->put(&regnod->tcminebot[0], 1, 1, 12);
-	}
+   	if (regnod->outvarlist[I_vegn]==1){
+   	   	vegnV->set_cur(chtcount, yrind);
+		vegnV->put(&regnod->vegn[0][0], 1, 1, NUM_PFT);
+   	}
 
-	if (regnod->outvarlist[50]==1){
-		trock34CYV->set_cur(chtcount, yrind);
-	   	trock34CYV->put(&regnod->trock34[0], 1, 1);
-	} else if (regnod->outvarlist[50]==2) {
-		trock34CYV->set_cur(chtcount, yrind, 0);
-	   	trock34CYV->put(&regnod->trock34[0], 1, 1, 12);
-	}
+   	if (regnod->outvarlist[I_labn]==1){
+   	   	labnV->set_cur(chtcount, yrind);
+		labnV->put(&regnod->labn[0][0], 1, 1, NUM_PFT);
+   	}
 
-	if (regnod->outvarlist[51]==1){
-		somcaldCYV->set_cur(chtcount, yrind);
-	   	somcaldCYV->put(&regnod->somcald[0], 1, 1);
-	} else if (regnod->outvarlist[51]==2) {
-		somcaldCYV->set_cur(chtcount, yrind, 0);
-	   	somcaldCYV->put(&regnod->somcald[0], 1, 1, 12);
-	}
+   	if (regnod->outvarlist[I_leafn]==1){
+   	   	leafnV->set_cur(chtcount, yrind);
+		leafnV->put(&regnod->leafn[0][0], 1, 1, NUM_PFT);
+   	}
 
-	if (regnod->outvarlist[52]==1){
-		vwcaldCYV->set_cur(chtcount, yrind);
-	   	vwcaldCYV->put(&regnod->vwcald[0], 1, 1);
-	} else if (regnod->outvarlist[52]==2) {
-		vwcaldCYV->set_cur(chtcount, yrind, 0);
-	   	vwcaldCYV->put(&regnod->vwcald[0], 1, 1, 12);
-	}
+   	if (regnod->outvarlist[I_stemn]==1){
+   	   	stemnV->set_cur(chtcount, yrind);
+		stemnV->put(&regnod->stemn[0][0], 1, 1, NUM_PFT);
+   	}
 
-	if (regnod->outvarlist[53]==1){
-		taldCYV->set_cur(chtcount, yrind);
-	   	taldCYV->put(&regnod->tald[0], 1, 1);
-	} else if (regnod->outvarlist[53]==2) {
-		taldCYV->set_cur(chtcount, yrind, 0);
-	   	taldCYV->put(&regnod->tald[0], 1, 1, 12);
-	}
+   	if (regnod->outvarlist[I_rootn]==1){
+   	   	rootnV->set_cur(chtcount, yrind);
+		rootnV->put(&regnod->rootn[0][0], 1, 1, NUM_PFT);
+   	}
+
+   	if (regnod->outvarlist[I_gpp]==1){
+   	   	gppV->set_cur(chtcount, yrind);
+		gppV->put(&regnod->gpp[0][0], 1, 1, NUM_PFT);
+   	}
+
+   	if (regnod->outvarlist[I_npp]==1){
+   	   	nppV->set_cur(chtcount, yrind);
+		nppV->put(&regnod->npp[0][0], 1, 1, NUM_PFT);
+   	}
+
+   	if (regnod->outvarlist[I_ltrfalc]==1){
+   	   	ltrfalcV->set_cur(chtcount, yrind);
+   	   	ltrfalcV->put(&regnod->ltrfalc[0][0], 1, 1, NUM_PFT);
+   	}
+
+   	if (regnod->outvarlist[I_ltrfaln]==1){
+   	   	ltrfalnV->set_cur(chtcount, yrind);
+   	   	ltrfalnV->put(&regnod->ltrfaln[0][0], 1, 1, NUM_PFT);
+   	}
+
+   	if (regnod->outvarlist[I_nuptake]==1){
+   	   	nuptakeV->set_cur(chtcount, yrind);
+   	   	nuptakeV->put(&regnod->nuptake[0][0], 1, 1, NUM_PFT);
+   	}
+
+   	//
+   	if (regnod->outvarlist[I_permafrost]==1){
+   	   	permafrostV->set_cur(chtcount, yrind);
+		permafrostV->put(&regnod->permafrost[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_mossdz]==1){
+   	   	mossdzV->set_cur(chtcount, yrind);
+		mossdzV->put(&regnod->mossdz[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_oshlwdz]==1){
+   	   	oshlwdzV->set_cur(chtcount, yrind);
+		oshlwdzV->put(&regnod->oshlwdz[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_odeepdz]==1){
+   	   	odeepdzV->set_cur(chtcount, yrind);
+		odeepdzV->put(&regnod->odeepdz[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_mineadz]==1){
+   	   	mineadzV->set_cur(chtcount, yrind);
+		mineadzV->put(&regnod->mineadz[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_minebdz]==1){
+   	   	minebdzV->set_cur(chtcount, yrind);
+		minebdzV->put(&regnod->minebdz[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_minecdz]==1){
+   	   	minecdzV->set_cur(chtcount, yrind);
+		minecdzV->put(&regnod->minecdz[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_oshlwc]==1){
+   	   	oshlwcV->set_cur(chtcount, yrind);
+		oshlwcV->put(&regnod->oshlwc[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_odeepc]==1){
+   	   	odeepcV->set_cur(chtcount, yrind);
+		odeepcV->put(&regnod->odeepc[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_mineac]==1){
+   	   	mineacV->set_cur(chtcount, yrind);
+		mineacV->put(&regnod->mineac[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_minebc]==1){
+   	   	minebcV->set_cur(chtcount, yrind);
+		minebcV->put(&regnod->minebc[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_minecc]==1){
+   	   	mineccV->set_cur(chtcount, yrind);
+		mineccV->put(&regnod->minecc[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_orgn]==1){
+   	   	orgnV->set_cur(chtcount, yrind);
+		orgnV->put(&regnod->orgn[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_avln]==1){
+   	   	avlnV->set_cur(chtcount, yrind);
+		avlnV->put(&regnod->avln[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_rh]==1){
+   	   	rhV->set_cur(chtcount, yrind);
+		rhV->put(&regnod->rh[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_netnmin]==1){
+   	   	netnminV->set_cur(chtcount, yrind);
+		netnminV->put(&regnod->netnmin[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_orgninput]==1){
+   	   	orgninputV->set_cur(chtcount, yrind);
+   	   	orgninputV->put(&regnod->orgninput[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_avlninput]==1){
+   	   	avlninputV->set_cur(chtcount, yrind);
+		avlninputV->put(&regnod->avlninput[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_orgnlost]==1){
+   	   	orgnlostV->set_cur(chtcount, yrind);
+		orgnlostV->put(&regnod->orgnlost[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_avlnlost]==1){
+   	   	avlnlostV->set_cur(chtcount, yrind);
+		avlnlostV->put(&regnod->avlnlost[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_doclost]==1){
+   	   	doclostV->set_cur(chtcount, yrind);
+   	   	doclostV->put(&regnod->doclost[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_eet]==1){
+   	   	eetV->set_cur(chtcount, yrind);
+   	   	eetV->put(&regnod->eet[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_pet]==1){
+   	   	petV->set_cur(chtcount, yrind);
+		petV->put(&regnod->pet[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_qinfl]==1){
+   	   	qinflV->set_cur(chtcount, yrind);
+		qinflV->put(&regnod->qinfl[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_qdrain]==1){
+   	   	qdrainV->set_cur(chtcount, yrind);
+		qdrainV->put(&regnod->qdrain[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_qrunoff]==1){
+   	   	qrunoffV->set_cur(chtcount, yrind);
+   	   	qrunoffV->put(&regnod->qrunoff[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_snwthick]==1){
+   	   	snwthickV->set_cur(chtcount, yrind);
+   	   	snwthickV->put(&regnod->snwthick[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_swe]==1){
+   	   	sweV->set_cur(chtcount, yrind);
+   	   	sweV->put(&regnod->swe[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_wtd]==1){
+   	   	wtdV->set_cur(chtcount, yrind);
+		wtdV->put(&regnod->wtd[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_alc]==1){
+   	   	alcV->set_cur(chtcount, yrind);
+		alcV->put(&regnod->alc[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_ald]==1){
+   	   	aldV->set_cur(chtcount, yrind);
+   	   	aldV->put(&regnod->ald[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_vwcshlw]==1){
+   	   	vwcshlwV->set_cur(chtcount, yrind);
+		vwcshlwV->put(&regnod->vwcshlw[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_vwcdeep]==1){
+   	   	vwcdeepV->set_cur(chtcount, yrind);
+		vwcdeepV->put(&regnod->vwcdeep[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_vwcminea]==1){
+   	   	vwcmineaV->set_cur(chtcount, yrind);
+		vwcmineaV->put(&regnod->vwcminea[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_vwcmineb]==1){
+   	   	vwcminebV->set_cur(chtcount, yrind);
+   	   	vwcminebV->put(&regnod->vwcmineb[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_vwcminec]==1){
+   	   	vwcminecV->set_cur(chtcount, yrind);
+   	   	vwcminecV->put(&regnod->vwcminec[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_tshlw]==1){
+   	   	tshlwV->set_cur(chtcount, yrind);
+		tshlwV->put(&regnod->tshlw[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_tdeep]==1){
+   	   	tdeepV->set_cur(chtcount, yrind);
+		tdeepV->put(&regnod->tdeep[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_tminea]==1){
+   	   	tmineaV->set_cur(chtcount, yrind);
+		tmineaV->put(&regnod->tminea[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_tmineb]==1){
+   	   	tminebV->set_cur(chtcount, yrind);
+		tminebV->put(&regnod->tmineb[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_tminec]==1){
+   	   	tminecV->set_cur(chtcount, yrind);
+		tminecV->put(&regnod->tminec[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_hkshlw]==1){
+   	   	hkshlwV->set_cur(chtcount, yrind);
+		hkshlwV->put(&regnod->hkshlw[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_hkdeep]==1){
+   	   	hkdeepV->set_cur(chtcount, yrind);
+		hkdeepV->put(&regnod->hkdeep[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_hkminea]==1){
+   	   	hkmineaV->set_cur(chtcount, yrind);
+		hkmineaV->put(&regnod->hkminea[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_hkmineb]==1){
+   	   	hkminebV->set_cur(chtcount, yrind);
+		hkminebV->put(&regnod->hkmineb[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_hkminec]==1){
+   	   	hkminecV->set_cur(chtcount, yrind);
+		hkminecV->put(&regnod->hkminec[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_tcshlw]==1){
+   	   	tcshlwV->set_cur(chtcount, yrind);
+		tcshlwV->put(&regnod->tcshlw[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_tcdeep]==1){
+   	   	tcdeepV->set_cur(chtcount, yrind);
+		tcdeepV->put(&regnod->tcdeep[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_tcminea]==1){
+   	   	tcmineaV->set_cur(chtcount, yrind);
+		tcmineaV->put(&regnod->tcminea[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_tcmineb]==1){
+   	   	tcminebV->set_cur(chtcount, yrind);
+		tcminebV->put(&regnod->tcmineb[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_tcminec]==1){
+   	   	tcminecV->set_cur(chtcount, yrind);
+		tcminecV->put(&regnod->tcminec[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_tbotrock]==1){
+   	   	tbotrockV->set_cur(chtcount, yrind);
+		tbotrockV->put(&regnod->tbotrock[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_burnthick]==1){
+   	   	burnthickV->set_cur(chtcount, yrind);
+		burnthickV->put(&regnod->burnthick[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_burnsoic]==1){
+   	   	burnsoicV->set_cur(chtcount, yrind);
+		burnsoicV->put(&regnod->burnsoic[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_burnvegc]==1){
+   	   	burnvegcV->set_cur(chtcount, yrind);
+		burnvegcV->put(&regnod->burnvegc[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_burnsoin]==1){
+   	   	burnsoinV->set_cur(chtcount, yrind);
+		burnsoinV->put(&regnod->burnsoin[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_burnvegn]==1){
+   	   	burnvegnV->set_cur(chtcount, yrind);
+		burnvegnV->put(&regnod->burnvegn[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_burnretainc]==1){
+   	   	burnretaincV->set_cur(chtcount, yrind);
+		burnretaincV->put(&regnod->burnretainc[0], 1, 1);
+   	}
+
+   	if (regnod->outvarlist[I_burnretainn]==1){
+   	   	burnretainnV->set_cur(chtcount, yrind);
+		burnretainnV->put(&regnod->burnretainn[0], 1, 1);
+   	}
+
+/////// MONTHLY OUTPUT /////////////////////////////////////////////////////////////////
+   	   	if (regnod->outvarlist[I_growstart]==2){
+   	   	   	growstartV->set_cur(chtcount, yrind*12);
+   			growstartV->put(&regnod->growstart[0][0], 1, 12, NUM_PFT);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_growend]==2){
+   	   	   	growendV->set_cur(chtcount, yrind*12);
+   			growendV->put(&regnod->growend[0][0], 1, 12, NUM_PFT);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_vegcov]==2){
+   	   	   	vegcovV->set_cur(chtcount, yrind*12);
+   			vegcovV->put(&regnod->vegcov[0][0], 1, 12, NUM_PFT);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_vegage]==2){
+   	   	   	vegageV->set_cur(chtcount, yrind*12);
+   			vegageV->put(&regnod->vegage[0][0], 1, 12, NUM_PFT);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_lai]==2){
+   	   	   	laiV->set_cur(chtcount, yrind*12);
+   			laiV->put(&regnod->lai[0][0], 1, 12, NUM_PFT);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_vegc]==2){
+   	   	   	vegcV->set_cur(chtcount, yrind*12);
+   			vegcV->put(&regnod->vegc[0][0], 1, 12, NUM_PFT);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_leafc]==2){
+   	   	   	leafcV->set_cur(chtcount, yrind*12);
+   			leafcV->put(&regnod->leafc[0][0], 1, 12, NUM_PFT);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_stemc]==2){
+   	   	   	stemcV->set_cur(chtcount, yrind*12);
+   			stemcV->put(&regnod->stemc[0][0], 1, 12, NUM_PFT);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_rootc]==2){
+   	   	   	rootcV->set_cur(chtcount, yrind*12);
+   			rootcV->put(&regnod->rootc[0][0], 1, 12, NUM_PFT);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_vegn]==2){
+   	   	   	vegnV->set_cur(chtcount, yrind*12);
+   			vegnV->put(&regnod->vegn[0][0], 1, 12, NUM_PFT);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_labn]==2){
+   	   	   	labnV->set_cur(chtcount, yrind*12);
+   			labnV->put(&regnod->labn[0][0], 1, 12, NUM_PFT);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_leafn]==2){
+   	   	   	leafnV->set_cur(chtcount, yrind*12);
+   			leafnV->put(&regnod->leafn[0][0], 1, 12, NUM_PFT);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_stemn]==2){
+   	   	   	stemnV->set_cur(chtcount, yrind*12);
+   			stemnV->put(&regnod->stemn[0][0], 1, 12, NUM_PFT);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_rootn]==2){
+   	   	   	rootnV->set_cur(chtcount, yrind*12);
+   			rootnV->put(&regnod->rootn[0][0], 1, 12, NUM_PFT);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_gpp]==2){
+   	   	   	gppV->set_cur(chtcount, yrind*12);
+   			gppV->put(&regnod->gpp[0][0], 1, 12, NUM_PFT);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_npp]==2){
+   	   	   	nppV->set_cur(chtcount, yrind*12);
+   			nppV->put(&regnod->npp[0][0], 1, 12, NUM_PFT);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_ltrfalc]==2){
+   	   	   	ltrfalcV->set_cur(chtcount, yrind*12);
+   	   	   	ltrfalcV->put(&regnod->ltrfalc[0][0], 1, 12, NUM_PFT);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_ltrfaln]==2){
+   	   	   	ltrfalnV->set_cur(chtcount, yrind*12);
+   	   	   	ltrfalnV->put(&regnod->ltrfaln[0][0], 1, 12, NUM_PFT);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_nuptake]==2){
+   	   	   	nuptakeV->set_cur(chtcount, yrind*12);
+   	   	   	nuptakeV->put(&regnod->nuptake[0][0], 1, 12, NUM_PFT);
+   	   	}
+
+   	   	//
+   	   	if (regnod->outvarlist[I_permafrost]==2){
+   	   	   	permafrostV->set_cur(chtcount, yrind*12);
+   			permafrostV->put(&regnod->permafrost[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_mossdz]==2){
+   	   	   	mossdzV->set_cur(chtcount, yrind*12);
+   			mossdzV->put(&regnod->mossdz[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_oshlwdz]==2){
+   	   	   	oshlwdzV->set_cur(chtcount, yrind*12);
+   			oshlwdzV->put(&regnod->oshlwdz[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_odeepdz]==2){
+   	   	   	odeepdzV->set_cur(chtcount, yrind*12);
+   			odeepdzV->put(&regnod->odeepdz[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_mineadz]==2){
+   	   	   	mineadzV->set_cur(chtcount, yrind*12);
+   			mineadzV->put(&regnod->mineadz[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_minebdz]==2){
+   	   	   	minebdzV->set_cur(chtcount, yrind*12);
+   			minebdzV->put(&regnod->minebdz[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_minecdz]==2){
+   	   	   	minecdzV->set_cur(chtcount, yrind*12);
+   			minecdzV->put(&regnod->minecdz[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_oshlwc]==2){
+   	   	   	oshlwcV->set_cur(chtcount, yrind*12);
+   			oshlwcV->put(&regnod->oshlwc[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_odeepc]==2){
+   	   	   	odeepcV->set_cur(chtcount, yrind*12);
+   			odeepcV->put(&regnod->odeepc[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_mineac]==2){
+   	   	   	mineacV->set_cur(chtcount, yrind*12);
+   			mineacV->put(&regnod->mineac[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_minebc]==2){
+   	   	   	minebcV->set_cur(chtcount, yrind*12);
+   			minebcV->put(&regnod->minebc[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_minecc]==2){
+   	   	   	mineccV->set_cur(chtcount, yrind*12);
+   			mineccV->put(&regnod->minecc[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_orgn]==2){
+   	   	   	orgnV->set_cur(chtcount, yrind*12);
+   			orgnV->put(&regnod->orgn[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_avln]==2){
+   	   	   	avlnV->set_cur(chtcount, yrind*12);
+   			avlnV->put(&regnod->avln[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_rh]==2){
+   	   	   	rhV->set_cur(chtcount, yrind*12);
+   			rhV->put(&regnod->rh[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_netnmin]==2){
+   	   	   	netnminV->set_cur(chtcount, yrind*12);
+   			netnminV->put(&regnod->netnmin[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_orgninput]==2){
+   	   	   	orgninputV->set_cur(chtcount, yrind*12);
+   	   	   	orgninputV->put(&regnod->orgninput[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_avlninput]==2){
+   	   	   	avlninputV->set_cur(chtcount, yrind*12);
+   			avlninputV->put(&regnod->avlninput[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_orgnlost]==2){
+   	   	   	orgnlostV->set_cur(chtcount, yrind*12);
+   			orgnlostV->put(&regnod->orgnlost[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_avlnlost]==2){
+   	   	   	avlnlostV->set_cur(chtcount, yrind*12);
+   			avlnlostV->put(&regnod->avlnlost[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_doclost]==2){
+   	   	   	doclostV->set_cur(chtcount, yrind*12);
+   	   	   	doclostV->put(&regnod->doclost[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_eet]==2){
+   	   	   	eetV->set_cur(chtcount, yrind*12);
+   	   	   	eetV->put(&regnod->eet[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_pet]==2){
+   	   	   	petV->set_cur(chtcount, yrind*12);
+   			petV->put(&regnod->pet[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_qinfl]==2){
+   	   	   	qinflV->set_cur(chtcount, yrind*12);
+   			qinflV->put(&regnod->qinfl[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_qdrain]==2){
+   	   	   	qdrainV->set_cur(chtcount, yrind*12);
+   			qdrainV->put(&regnod->qdrain[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_qrunoff]==2){
+   	   	   	qrunoffV->set_cur(chtcount, yrind*12);
+   	   	   	qrunoffV->put(&regnod->qrunoff[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_snwthick]==2){
+   	   	   	snwthickV->set_cur(chtcount, yrind*12);
+   	   	   	snwthickV->put(&regnod->snwthick[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_swe]==2){
+   	   	   	sweV->set_cur(chtcount, yrind*12);
+   	   	   	sweV->put(&regnod->swe[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_wtd]==2){
+   	   	   	wtdV->set_cur(chtcount, yrind*12);
+   			wtdV->put(&regnod->wtd[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_alc]==2){
+   	   	   	alcV->set_cur(chtcount, yrind*12);
+   			alcV->put(&regnod->alc[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_ald]==2){
+   	   	   	aldV->set_cur(chtcount, yrind*12);
+   	   	   	aldV->put(&regnod->ald[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_vwcshlw]==2){
+   	   	   	vwcshlwV->set_cur(chtcount, yrind*12);
+   			vwcshlwV->put(&regnod->vwcshlw[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_vwcdeep]==2){
+   	   	   	vwcdeepV->set_cur(chtcount, yrind*12);
+   			vwcdeepV->put(&regnod->vwcdeep[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_vwcminea]==2){
+   	   	   	vwcmineaV->set_cur(chtcount, yrind*12);
+   			vwcmineaV->put(&regnod->vwcminea[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_vwcmineb]==2){
+   	   	   	vwcminebV->set_cur(chtcount, yrind*12);
+   	   	   	vwcminebV->put(&regnod->vwcmineb[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_vwcminec]==2){
+   	   	   	vwcminecV->set_cur(chtcount, yrind*12);
+   	   	   	vwcminecV->put(&regnod->vwcminec[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_tshlw]==2){
+   	   	   	tshlwV->set_cur(chtcount, yrind*12);
+   			tshlwV->put(&regnod->tshlw[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_tdeep]==2){
+   	   	   	tdeepV->set_cur(chtcount, yrind*12);
+   			tdeepV->put(&regnod->tdeep[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_tminea]==2){
+   	   	   	tmineaV->set_cur(chtcount, yrind*12);
+   			tmineaV->put(&regnod->tminea[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_tmineb]==2){
+   	   	   	tminebV->set_cur(chtcount, yrind*12);
+   			tminebV->put(&regnod->tmineb[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_tminec]==2){
+   	   	   	tminecV->set_cur(chtcount, yrind*12);
+   			tminecV->put(&regnod->tminec[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_hkshlw]==2){
+   	   	   	hkshlwV->set_cur(chtcount, yrind*12);
+   			hkshlwV->put(&regnod->hkshlw[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_hkdeep]==2){
+   	   	   	hkdeepV->set_cur(chtcount, yrind*12);
+   			hkdeepV->put(&regnod->hkdeep[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_hkminea]==2){
+   	   	   	hkmineaV->set_cur(chtcount, yrind*12);
+   			hkmineaV->put(&regnod->hkminea[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_hkmineb]==2){
+   	   	   	hkminebV->set_cur(chtcount, yrind*12);
+   			hkminebV->put(&regnod->hkmineb[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_hkminec]==2){
+   	   	   	hkminecV->set_cur(chtcount, yrind*12);
+   			hkminecV->put(&regnod->hkminec[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_tcshlw]==2){
+   	   	   	tcshlwV->set_cur(chtcount, yrind*12);
+   			tcshlwV->put(&regnod->tcshlw[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_tcdeep]==2){
+   	   	   	tcdeepV->set_cur(chtcount, yrind*12);
+   			tcdeepV->put(&regnod->tcdeep[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_tcminea]==2){
+   	   	   	tcmineaV->set_cur(chtcount, yrind*12);
+   			tcmineaV->put(&regnod->tcminea[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_tcmineb]==2){
+   	   	   	tcminebV->set_cur(chtcount, yrind*12);
+   			tcminebV->put(&regnod->tcmineb[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_tcminec]==2){
+   	   	   	tcminecV->set_cur(chtcount, yrind*12);
+   			tcminecV->put(&regnod->tcminec[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_tbotrock]==2){
+   	   	   	tbotrockV->set_cur(chtcount, yrind*12);
+   			tbotrockV->put(&regnod->tbotrock[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_burnthick]==2){
+   	   	   	burnthickV->set_cur(chtcount, yrind*12);
+   			burnthickV->put(&regnod->burnthick[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_burnsoic]==2){
+   	   	   	burnsoicV->set_cur(chtcount, yrind*12);
+   			burnsoicV->put(&regnod->burnsoic[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_burnvegc]==2){
+   	   	   	burnvegcV->set_cur(chtcount, yrind*12);
+   			burnvegcV->put(&regnod->burnvegc[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_burnsoin]==2){
+   	   	   	burnsoinV->set_cur(chtcount, yrind*12);
+   			burnsoinV->put(&regnod->burnsoin[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_burnvegn]==2){
+   	   	   	burnvegnV->set_cur(chtcount, yrind*12);
+   			burnvegnV->put(&regnod->burnvegn[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_burnretainc]==2){
+   	   	   	burnretaincV->set_cur(chtcount, yrind*12);
+   			burnretaincV->put(&regnod->burnretainc[0], 1, 12);
+   	   	}
+
+   	   	if (regnod->outvarlist[I_burnretainn]==2){
+   	   	   	burnretainnV->set_cur(chtcount, yrind*12);
+   			burnretainnV->put(&regnod->burnretainn[0], 1, 12);
+   	   	}
 
 };
 
-void RegnOutputer::setOutData(RegnOutData *regnodp) {
+void RegnOutputer::setOutData(OutDataRegn *regnodp) {
 	regnod = regnodp;
 };

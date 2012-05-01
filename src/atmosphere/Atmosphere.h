@@ -16,49 +16,52 @@ class Atmosphere{
    		Atmosphere();
    		~Atmosphere();
 	
-		void updateDailyEnviron(const int &yrcnt, const int & mid, const int & dayid,
-				const bool & normal, const bool & changeclm);
+		void updateDailyAtm(const int & mid, const int & dayid);
 	
     	void prepareMonthDrivingData();
-    	void prepareDayDrivingData();
-		void setEnvData(EnvData* edp);
+    	void prepareDayDrivingData(const int & mid, const int & usedatmyr, const bool & changeclm, const bool &changeco2);
 
-    	float tam[12];
-
-    	void beginOfMonth(const int & curyrcnt, const int& currmind ,const int& dinmcurr,
-    			const bool & normal, const bool & changeclm, const bool & changeco2);
+    	void setCohortData(CohortData* cdp);
+    	void setEnvData(EnvData* edp);
  	
-	private:									            
+	private:
+
+    // yearly
+    	float co2;
 	
 	// monthly
      
-		float ta[MAX_ATM_DRV_YR][12];
+		float tair[MAX_ATM_DRV_YR][12];      //
 		float prec[MAX_ATM_DRV_YR][12];
-		float cld[MAX_ATM_DRV_YR][12];
+        float vapo[MAX_ATM_DRV_YR][12];
+        float nirr[MAX_ATM_DRV_YR][12];
+
+        float cld[MAX_ATM_DRV_YR][12];
 		float snow[MAX_ATM_DRV_YR][12];
 		float rain[MAX_ATM_DRV_YR][12];
-		float vap[MAX_ATM_DRV_YR][12];
 		float par[MAX_ATM_DRV_YR][12];
 		float ppfd[MAX_ATM_DRV_YR][12];
-		float nirr[MAX_ATM_DRV_YR][12];
 		float girr[MAX_ATM_DRV_YR][12];
+
 	// daily
-		float ta_d[MAX_ATM_DRV_YR][12][31];
-		float rain_d[MAX_ATM_DRV_YR][12][31];
-		float snow_d[MAX_ATM_DRV_YR][12][31];
-		float vap_d[MAX_ATM_DRV_YR][12][31];
+		float ta_d[12][31];
+		float rain_d[12][31];
+		float snow_d[12][31];
+		float vap_d[12][31];
+		float par_d[12][31];
+		float nirr_d[12][31];
 	
-		float rhoa_d[MAX_ATM_DRV_YR][12][31];
-		float svp_d[MAX_ATM_DRV_YR][12][31];
-		float dersvp_d[MAX_ATM_DRV_YR][12][31];
-		float abshd_d[MAX_ATM_DRV_YR][12][31];
-		float vpd_d[MAX_ATM_DRV_YR][12][31];
+		float rhoa_d[12][31];
+		float svp_d[12][31];
+		float dersvp_d[12][31];
+		float abshd_d[12][31];
+		float vpd_d[12][31];
 
 	// for Equilibrium run, using the first 30 yrs-averaged
-		float eq_ta[12];
+		float eq_tair[12];
 		float eq_prec[12];
 		float eq_cld[12];
-		float eq_vap[12];
+		float eq_vapo[12];
 		float eq_rain[12];
 		float eq_snow[12];
 	
@@ -67,54 +70,19 @@ class Atmosphere{
 		float eq_nirr[12];
 		float eq_girr[12];
 	
-		float eq_ta_d[12][31];
-		float eq_rain_d[12][31];
-		float eq_snow_d[12][31];
-		float eq_vap_d[12][31];
-	
-		float eq_rhoa_d[12][31];
-		float eq_svp_d[12][31];
-		float eq_dersvp_d[12][31];
-		float eq_abshd_d[12][31];
-		float eq_vpd_d[12][31];
-
-	// for run, using the current last 30 yrs-averaged
-		float ca_ta[12];
-		float ca_prec[12];
-		float ca_cld[12];
-		float ca_vap[12];
-		float ca_rain[12];
-		float ca_snow[12];
-	
-		float ca_par[12];
-		float ca_ppfd[12];
-		float ca_nirr[12];
-		float ca_girr[12];
-	
-		float ca_ta_d[12][31];
-		float ca_rain_d[12][31];
-		float ca_snow_d[12][31];
-		float ca_vap_d[12][31];
-	
-		float ca_rhoa_d[12][31];
-		float ca_svp_d[12][31];
-		float ca_dersvp_d[12][31];
-		float ca_abshd_d[12][31];
-		float ca_vpd_d[12][31];
+		float wetdays ;
+		float yrsumday;
 		
 		AtmosUtil autil;
+   		CohortData * cd;
+   		EnvData * ed;
 	
 		float getAirDensity(float const & ta);
 		float getVPD (const float & svp, const float vp);
 		float getAbsHumDeficit(const float & svp, const float &vp, const float & ta);
-		float wetdays ;
-
-		float yrsumday;
 		void precsplt(const float & tair,const float & prec, float & snfl, float & rnfl);
-
-   		EnvData * ed;
    	         
-    	float getPET( const float & nirr, const float & tair,const int & dinm );
+    	float getPET( const float & nirr, const float & tair,const int & dinm);
 		float getGIRR( const float &lat, const int& dinm);			
 		float getNIRR( const float& clds, const float& girr );				
 		float getPAR( const float& clds, const float& nirr );	

@@ -2,119 +2,74 @@
 #define SOIL_ENV_H_
 
 #include "Stefan.h"  
-#include "Richard.h"
+#include "Richards.h"
 
+#include "../data/CohortData.h"
 #include "../data/EnvData.h"
 #include "../data/FirData.h"
 #include "../data/RestartData.h"
 
-#include "layer/Layer.h"
-#include "layer/SoilLayer.h"
-#include "layer/PeatLayer.h"
-
-#include "../inc/parameters.h"
-#include "../lookup/CohortLookup.h"
-#include "../inc/layerconst.h"
-
-#include "Moss.h"
-#include "Peat.h"
-#include "Mineral.h"
 #include "../inc/ErrorCode.h"
-#include "../util/Exception.h"
+#include "../inc/parameters.h"
+#include "../inc/layerconst.h"
+#include "../lookup/CohortLookup.h"
+
+#include "../ecodomain/Ground.h"
 
 class Soil_Env{
-  public:
-  Soil_Env();
-  ~Soil_Env();	
+	public:
+
+		Soil_Env();
+		~Soil_Env();
+
+		soipar_env envpar;
 	
-	
-	 /*! the thickness of soil column , which is from the the top
-	     * of moss layer, if exists, to the bottom of last mineral layer.(unit: m)*/
-	 double dztot;
-	 /*! number of soil layers */
-	 int num;
-	 double initem[MAX_SOI_LAY];
-	 double inivwc[MAX_SOI_LAY];
-	 
-	  /*! reset diagnostic variables to initial values */
- 	 void resetDiagnostic();
- 	 
- 	Moss moss;
-	Peat peat;
-	Mineral mineral;
-	
- 	 
-  Richard richard;
-  Stefan stefan;
+		Richards richards;
+		Stefan stefan;
 
-  void setEnvData(EnvData* edp);
-   void setFirData(FirData* fdp);
-  void setCohortLookup(CohortLookup * chtlup);
- 
-  void updateDailySurfFlux(Layer* frontl, const double & tsurf, const double & dayl);
+		void setGround(Ground* grndp);
+		void setCohortData(CohortData* cdp);
+		void setEnvData(EnvData* edp);
+		void setCohortLookup(CohortLookup * chtlup);
+
+		void resetDiagnostic();   /*! reset diagnostic variables to initial values */
+
+		void initializeParameter();
+		void initializeState();
+		void initializeState5restart(RestartData* resin);
+
+		void updateDailyGroundT(const double & tdrv, const double & dayl);
+      	void updateDailySM();
+
+      	void getSoilTransFactor(double btran[MAX_SOI_LAY], Layer* fstsoill, const double vrootfr[MAX_SOI_LAY]);
+
+		void retrieveDailyTM(Layer* toplayer, Layer* lstsoill);
+
+	private:
+
+		 Ground * ground;
+		 CohortData * cd;
+		 EnvData * ed;
+		 CohortLookup* chtlu;
   
-  double getWaterTable(Layer* fstsoil);
+		 void updateDailySurfFlux(Layer* frontl, const double & dayl);
+		 void updateDailySoilThermal4Growth(Layer* fstsoill, const double &tsurface);
+		 void updateLayerStateAfterThermal(Layer* fstsoill, Layer *lstsoill, Layer* botlayer);
 
-  
-  void initializeParameter(const int &drgtypep, const int &vegtypep);
-  void initializeState( Layer* fstsoill);
-  void initializeState5restart( Layer* fstsoill,RestartData* resin);
-  
-  
-  double infilFrozen2(Layer* fstsoill, Layer *fstminl, const double &  rnth, const double & melt);
-  
-  double infilFrozen(Layer* fstminl, const double & infilf);
+         void combineFronts();
+         void getLayerFrozenfraction(Layer* toplayer);
+         void updateWaterAfterFront(Layer* toplayer);
+		 void retrieveDailyFronts();
 
-  double getDrainage(const double & wtable);
-  double getRunoff(Layer* fstsoill, const double & rnth,const double & melt, const double & frasat);
-  double update5Drainage(Layer* drainl, const double & fracsat, const double & wtd);
-  
-  double  getSoilTransFactor(Layer* fstsoill);
-
-
- double update5BaseFlow(Layer* drainl);
- 
- double getBaseFlow(double const & wetness );
-
-double getRunoffVIC(Layer* fstsoill, const double & rnth,const double & melt);
-
-///////////////////
-void layer2structdaily(Layer* fstsoill);
-void layer2structmonthly(Layer* fstsoill);
-void retrieveDailyOutputs(Layer* fstsoill, Layer* fstminl, Layer* lstminl, Layer* backl);
-void retrieveDailyFronts(Layer* fstsoill);
-void retrieveThawPercent(Layer* fstsoill);
-
-//////////////////////
-
-void resetFineRootFrac(Layer* fstsoill);
-void resetTypeDZ(Layer* fstsoill);
-soipar_env envpar;
-
- double getFracSat(const double & wtd);
-
-  private:
-  
-  
-  double getEvaporation(const double & tsurf, const double & dayl, const double &rad);
-  
-  double getPenMonET(const double & ta, const double& vpd, const double &irad,
+		 double getEvaporation(const double & dayl, const double &rad);
+		 double getPenMonET(const double & ta, const double& vpd, const double &irad,
 				const double &rv, const double & rh);
-  double updateLayerTemp5Lat(Layer* currl, const double & infil);
-  
-  double getFineRootFrac(const double & layertop, const double & layerbot, const double & mossthick);
-  
- 
-  
-  EnvData * ed;	
-  FirData * fd;
-  
+		 double getWaterTable(Layer* fstsoil);
+		 double getRunoff(Layer* fstsoill, Layer* drainl, const double & rnth, const double & melt);
 
-  CohortLookup* chtlu;
-  
-  void initTempMois(Layer* frontl);
-  void initRootMass(Layer* fstsoill);
-
+		 // the following codes not used anymore
+		 double getInflFrozen(Layer *fstminl, const double &  rnth, const double & melt);
+		 double updateLayerTemp5Lat(Layer* currl, const double & infil);
 
 };
 

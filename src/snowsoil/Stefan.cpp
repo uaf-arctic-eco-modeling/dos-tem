@@ -1,772 +1,616 @@
 #include "Stefan.h"
 
 Stefan::Stefan(){
-	 ITMAX =30;
-     TSTEPMAX = 1;
-     TSTEPORG =0.5;
+	 ITMAX =1;
+     TSTEPMAX = 1.0;    //unit: day
+     TSTEPORG = 0.5;
+     TSTEPMIN = 1.e-4;
      
-     ttole =0.05;  // don't change this threshold
-     // I have tried 0.5 , and got some unrealistic results
+     ttole = 0.05;  // don't change this threshold
 };
 
 Stefan::~Stefan(){
 	
 };
 
+void Stefan::setGround(Ground* grndp){
+	ground = grndp;
+};
 
-
- void Stefan::updateFronts(const double & tdrv, Layer *frontl, Layer *backl,Layer *fstsoill, Layer* lstminl, const int & mind){
- 	for(int i=0; i<backl->indl; i++){
- 	     temupdated[i]=false;;	
- 	     temold[i] =-999.;
- 	}
+void Stefan::updateFronts(const double & tdrv, Layer *toplayer, Layer *botlayer,Layer *fstfntl, Layer* lstfntl){
  	
- 	// first , top->down propogation of front
- 	Layer* currl; 
- 	SoilLayer* sl;
-	
- 	double tdrv0=tdrv;
- 	
- 	currl=frontl;
- 	double dse = fabs( tdrv0 * 86400); // the extra degree second, assume using one day time step
- 	double sumresabv  =0. ; // sum of resistence for above layers;
-
     double tkres; // thermal conductivity for calculating resistence
  	double tkfront; // thermal conductivity for calculating part front depth
  	double tkunf, tkfrz;
  	int frozenstate; // the frozen state of a soil layer based on the driving temperature
 
-    if(tdrv>0){
-      frozenstate =-1;	
+ 	// top-down propogation of front
+ 	// driving force
+ 	double tdrv0 = tdrv;
+ 	double dse = fabs(tdrv0 * 86400); // the extra degree second, assume using one day time step
+ 	double sumresabv  =0. ; // sum of resistence for above layers;
+
+    if(tdrv0>0){
+    	frozenstate =-1;
    	}else {
-   	  frozenstate =1;	
+   		frozenstate =1;
    	}
-    currl=frontl;
-    while(currl!=NULL){
-    // if(currl->isRock())break;
-     temold[currl->indl -1] = currl->tem;
-     currl=currl->nextl;	
-    }
-    
-    currl =frontl;   
+
+    // find the new front
+    double newfntz = 0.;
+ 	Layer * currl=NULL;
+    currl = toplayer;
  	while(currl!=NULL && dse>0.){
- 		if(currl->isRock())break; // for bedrock, break
+ 		if(currl->isRock) {
+ 			if (dse>0.) {
+ 				newfntz = currl->prevl->z+currl->prevl->dz;   // this will weep out all fronts in the soil column
+ 			}
+ 			break; // for bedrock, break
+ 		}
  		
  		tkunf = currl->getUnfThermCond();
  	    tkfrz = currl->getFrzThermCond();
- 		   if(tdrv<0){
- 		   	 tkres = tkfrz;
- 		   	 tkfront =tkunf;
- 		   }else {
- 		   	 tkres = tkunf;
+ 		if(tdrv0<0){
+ 		   	 tkres   = tkfrz;
+ 		   	 tkfront = tkunf;
+ 		}else {
+ 		   	 tkres   = tkunf;
  		   	 tkfront = tkfrz;
- 		   }
- 		    
- 		  if(currl->isSnow()){
- 		  	processSnowLayer( tkres,tkfront ,dse,sumresabv,  tdrv, currl);
- 		  }else if(currl->isSoil()){
- 		  	sl = dynamic_cast<SoilLayer*>(currl);
- 		     sl->checkFronts();
- 		  	 processSoilLayer5Top(frozenstate, tkres, tkfront, dse,  sumresabv, tdrv0,
- 								 sl, frontl, backl);
- 			 sl->checkFronts();				 
- 			sl->updateWater5Front();					 
- 							 
- 		  }
- 		
- 		currl=currl->nextl;
- 	};
- 	
- 	//bottom up
- 	
- 	Layer* lstfntl=NULL; // the last layer with front(s)
- 	currl = backl;
- 	while(currl!=NULL){
- 	  if(currl->isSoil()){
- 	  SoilLayer* sl = dynamic_cast<SoilLayer*>(currl);
- 	  if(sl->fronts.size()>0){
- 	  	lstfntl = currl;
- 	  	break;
- 	  } 	
- 	  }else if (currl->isSnow()){
- 	  	break;
- 	  }
- 	  currl=currl->prevl;	
- 	}
- 	
- 
- 	Layer* botdrvl; // bottom driving layer;
- 	//determine the bottom driving layer
- 	// 1) should be at least 2 meters away from the lstfntl
-    
- 	if(lstfntl!=NULL){
- 	if(mind >8){ 	
- 		if(lstminl->frozen ==0){
- 		  botdrvl= lstminl ->nextl;	
- 		}else{
- 		  botdrvl =lstminl;
  		}
- 	   
- 	  //botdrvl= lstminl->nextl;	
- 	}else{//during growing season using deeper temperature as bottom driving
- 		botdrvl =lstminl ->nextl->nextl;
+
+ 		sumresabv += currl->dz/tkres;
+
+ 		if (currl->frozen != frozenstate) {    // if the layer has a different frozen status
+
+			if(currl->isSnow){
+ 				processFrontSnowLayer(tkfront, dse, sumresabv, tdrv0, currl);
+ 			}else if(currl->isSoil){
+ 				processFrontSoilLayerDown(frozenstate, sumresabv, tkfront, dse, newfntz, currl);
+ 			}
+ 		}
+
+ 		currl=currl->nextl;
  	}
- 	SoilLayer* slstfntl = dynamic_cast< SoilLayer*>(lstfntl);
- 	int numfnt = slstfntl->fronts.size();
-        if(slstfntl->fronts[numfnt-1]->frzing==1  && botdrvl->tem<0){
-          botdrvl=NULL;	
-        }else if(slstfntl->fronts[numfnt-1]->frzing==-1 && botdrvl->tem>0){
-          botdrvl=NULL;	
-        } 	 
+ 	// then incorporate the new front into the two deques: 'ground->frontsz' and 'ground->frontstype'
+ 	if (newfntz>0.) frontsDownDeque(newfntz, frozenstate);
+
+/*
+ 	// bottom-up determined front moving
+ 	// (1) determine the bottom driving layer
+ 	Layer* botdrvl = botlayer;   //initial botdrvl setting-up
+ 	if (lstfntl!=NULL) {
+ 		botdrvl = lstfntl;       // last layer with 'front'
+ 	} else {
+ 		while (!botdrvl->prevl->isSoil) {
+ 			botdrvl = botdrvl->prevl;        // or the first rock layer if no layer with 'front'
+ 		}
+ 	}
+
+ 	double dzbelow = 0.;        // the acutal botdrvl used is the initial one or its below 1.0 m layer
+ 	if(botdrvl->nextl!=NULL){
+ 		botdrvl = botdrvl->nextl;
+ 		while (botdrvl!=NULL){
+ 			dzbelow += botdrvl->dz;
+ 			if(dzbelow >= 2.0){    // the layer 1.0 meter below the 'lastfntl' or 'fstrockl'
+ 				break;
+ 			}else{
+ 				botdrvl = botdrvl->nextl;
+ 			}
+ 		}
  	}
  	
-    
+ 	// (2) find the front
  	if(lstfntl!=NULL && botdrvl!=NULL){
- 	double sumresblw=0 ;
- 	//
- 	currl =botdrvl;
- 	Layer * prevl = currl->prevl;
- 	double tdrv1 = botdrvl->tem;
- 	if(tdrv1>0){
- 	  frozenstate =-1;	
- 	  }else if(tdrv1<0){
- 	  frozenstate =1;	
-    }
+ 		double sumresblw=0 ;
+
+ 		currl =botdrvl;
+ 		//Layer * prevl = currl->prevl;
+ 		double tdrv1  = botdrvl->tem;
+ 		if(tdrv1>0){
+ 			frozenstate =-1;
+ 		}else if(tdrv1<0){
+ 			frozenstate =1;
+ 		}
  		  	   	
- 	dse = fabs(tdrv1 * 86400);
- 	while(prevl!=NULL && dse>0){
+ 		dse = fabs(tdrv1 * 86400);
+ 		newfntz = 0.;
+ 		while(currl!=NULL && dse>0.){
+ 			if(currl->isSnow){
+				newfntz = 0.;
+ 			    break;
+			}
+
  	       tkunf = currl->getUnfThermCond();
  		   tkfrz = currl->getFrzThermCond();
  		   if(tdrv1<0){
- 		   	 tkres = tkfrz;
- 		   	 tkfront =tkunf;
+ 			   tkres = tkfrz;
+ 			   tkfront =tkunf;
  		   }else {
- 		   	 tkres = tkunf;
- 		   	 tkfront = tkfrz;
+ 			   tkres = tkunf;
+ 			   tkfront = tkfrz;
  		   }
  		   
- 		   if(prevl->isRock()){
- 		   	 sumresblw += prevl->dz/tkres;
- 		   }else if(prevl->isSoil()){
- 		   	  SoilLayer* psl = dynamic_cast<SoilLayer*>(prevl);
- 		   	  processSoilLayer5Bot(frozenstate, tkres, tkfront,dse,  sumresblw, tdrv1,
- 								 psl, frontl, backl);
- 		   }else if(prevl->isSnow()){
- 		   	break;
+		   sumresblw += currl->dz/tkres;
+ 		   if (currl->frozen != frozenstate) {
+ 			   if(currl->isSoil){
+ 				   processFrontSoilLayerUp(frozenstate, sumresblw, tkfront, dse, newfntz, currl);
+ 			   }
  		   }
- 	  prevl=prevl->prevl;	
- 	}
- 	
- 	
- 	
- 	}
 
- 	checkFrontsValidity(fstsoill);
- 	//interpolate soil/snow temperatures
- 	//interpolateUpperTemps5Front(tdrv, frontl);
- };
+ 		   currl=currl->prevl;
+ 		}
+
+ 		// (3) then incorporate the new front into the two deques: 'ground->frontsz' and 'ground->frontstype'
+ 	 	if (newfntz>=0.) frontsUpDeque(newfntz, -frozenstate);   //NOTE: bottom-up freezing front actually is the thawing front if look downward
+ 	
+ 	}
+*/
+
+};
  
- void Stefan::processSnowLayer(double const & tkres, double const & tkfront ,
-                        double & dse, double & sumresabv, const double & tdrv,
- 						Layer* currl){
- 	SnowLayer* sl; // check to see whether the dse can totally melt a snow layer
- 	sl = dynamic_cast<SnowLayer*>(currl);
- 	double dz = sl->dz;
+void Stefan::processFrontSnowLayer(double const & tkfront, double & dse, double & sumresabv,
+		         const double & tdrv, Layer* currl){
+
+	SnowLayer* snwl; // check to see whether the dse can totally melt a snow layer
+ 	snwl = dynamic_cast<SnowLayer*>(currl);
+ 	double dz = snwl->dz;
  	double dsn;
  	if(tdrv>0){
  		
- 		double volwat = sl->ice/(917*dz);
+ 		double volwat = snwl->ice/(snwl->rho*dz);
  		dsn = getDegSecNeeded(dz, volwat, tkfront, sumresabv);
  		if(dse>=dsn){
- 		  sl->frozen =-1;
- 		  sumresabv +=dz/tkres;
- 		  dse -= dsn;	
+ 			snwl->frozen =-1;               // this layer will be removed in 'Ground::constructSnowLayer()'
+ 			snwl->liq += snwl->ice;           // the 'liq' will be collected in 'Snow_Env::meltSnowlayerAfterT()' as melting water
+
+ 			dse -= dsn;
  		}else{
- 		  sl->frozen =0;	
- 		  dse =0.;
- 		}
- 	}else{
- 		//update the resistence
- 		sumresabv +=dz/tkres;
+ 			snwl->frozen = 0;
+
+ 			//snow ice water converted to liq water (partially melted), which used in 'snow_env.cpp':: meltSnowLayerAfterT()
+ 			double swereduction = 0.;
+ 			if (dsn > 0.) swereduction = snwl->ice*(dse/dsn);    // this layer will be reduced in 'snow_env.cpp'
+ 			snwl->liq += swereduction;
+
+ 			dse =0.;
+		}
  	}
  	
- 	
- }
+}
  
- 
-void  Stefan::processSoilLayer5Top(const int &frozenstate, double const & tkres, double const & tkfront ,
-                        double & dse, double & sumresabv, const double & tdrv,
- 						SoilLayer* sl,  Layer *frontl, Layer *backl){
- 	//only deal with the front(s) in one layer	
- 	
- 	//create sublayer, based on the number of fronts in this layer
- 	//??
- 	
- 
- 	double volwat; // volumetric water content;
- 	double dz; // thickness
- 	double partd;//part of layer is freezed or thawed
- 	double dsn ; // the degree seconds needed to fully freeze/thaw one layer
- 	
- 	 int numfnt = sl->fronts.size();
- 	 
- 	//first step is to create fronts at  the top of a layer
- 	 if(numfnt>0){
- 	 if((sl->fronts[0]->frzing==1 &&tdrv>0 ) or (sl->fronts[0]->frzing==-1 &&tdrv<0 )){
- 	 	// in this way, the first front will be always freezing when tdrv<0
- 	 	sl->addOneFront5Top(0., -sl->fronts[0]->frzing);
- 	 }
- 	 }else{
- 	 	 if((sl->frozen==1 &&tdrv>0 ) or (sl->frozen==-1 &&tdrv<0 )){
- 	 		sl->addOneFront5Top(0., - sl->frozen);
- 	 		sl->frozen =0;
- 		 }
- 	 	
- 	 }
- //	double secinday=86400.;
- 	 
- 	 double lastfntz =0.;
- 	 double beforedse =0.;
- 	 double afterdse =0.;
- 	 
- 	 while(dse>0 && lastfntz<sl->dz){
- 	  numfnt = sl->fronts.size();
+void Stefan::processFrontSoilLayerDown(const int &frozenstate, double const & sumrescum, double const & tkfront ,
+                        double & dse, double & newfntz, Layer* sl){
 
- 	  if(numfnt==0){
- 	  	dz = sl->dz - lastfntz;
- 	  	sumresabv += (dz)/tkres;
- 	  	sl->frozen =frozenstate;
- 	  	lastfntz = sl->dz;
- 	  	
- 	  }else if(numfnt==1){	
- 	  	dz = sl->fronts[0]->dz  -lastfntz;
- 	  	
- 	  	lastfntz = sl->fronts[0]->dz;
- 	  	//double tempres = sl->fronts[0]->dz/tkres;
- 	  	sumresabv += dz/tkres;
- 	    dz =sl->dz  -  lastfntz;
- 	   	
- 	   	//top front will move down 
- 	   	volwat = sl->getEffVolWater();
- 		dsn = getDegSecNeeded(dz, volwat, tkfront, sumresabv);
- 	   	if(dse>=dsn){
- 	   	   beforedse =dse;
- 	   	   dse -= dsn;
- 	   	   afterdse = dse;
- 	   	   //changed by sy Nov27
- 	   	   //updateUpperTemps5Front(sl, beforedse,afterdse, tdrv, frozenstate, dz,tempres);
- 	   	
- 	   	  sl->removeTopFront();
- 	   	  sl->frozen =frozenstate;
- 	   	  Layer* nextl = sl->nextl;
- 	   	  if(nextl!=NULL){
- 	   	  	 if(nextl->isSoil()){
- 	   	  	   SoilLayer* nsl = dynamic_cast<SoilLayer*>(nextl);
- 	   	  	   nsl->addOneFront5Top(0, frozenstate);	
- 	   	  	 }
- 	   	  }
- 	   	  // next step will go to no front branch;
- 	   	}else{
- 	   	  beforedse =dse;
- 	   	  partd = getPartialDepth(volwat, tkfront, sumresabv, dse);
- 	   	  afterdse = 0;
- 	   	  //changed by sy Nov27
- 	   	  //updateUpperTemps5Front(sl, beforedse,afterdse, tdrv, frozenstate, partd,tempres);
+	newfntz = 0.;
+ 	double volwat; // volumetric ice/liq water content to be thawing/freezing;
+ 	double dz;     // thickness to be thawing/freezing
+ 	double dsn ;   // the degree seconds needed to fully freeze/thaw one layer of dz thickness
+ 	double partd;
 
- 		  sl->moveOneFrontDown(partd,0);
- 		  dse =0;
- 	   	}
- 	  }else if(numfnt>=2){
- 	  	dz = sl->fronts[0]->dz  -lastfntz;
- 	  	double tempres = sl->fronts[0]->dz/tkres;
- 	  	sumresabv += tempres;
- 	  	lastfntz = sl->fronts[0]->dz;
- 	  	dz = sl->fronts[1]->dz- sl->fronts[0]->dz;
- 	  	volwat = sl->getEffVolWater();
- 		dsn = getDegSecNeeded(dz, volwat, tkfront, sumresabv);
- 	    if(dse>=dsn){
- 	      beforedse = dse;
- 	      dse -=dsn;
- 	      afterdse = dse;
- 	      //changed by sy Nov27
- 	   	//updateUpperTemps5Front(sl, beforedse,afterdse, tdrv, frozenstate, dz,tempres);
- 	      
- 	      sl->removeTopFront(); //remove first two fronts	
- 	      sl->removeTopFront();
- 	      if(sl->fronts.size()>0){
- 	      	  lastfntz = sl->fronts[0]->dz;
- 	      }
- 	    }else{
- 	      beforedse =dse;
- 	      partd = getPartialDepth(volwat, tkfront, sumresabv, dse);
- 	      afterdse = 0;
- 	   	  //changed by sy Nov27
- 		  //updateUpperTemps5Front(sl, beforedse, afterdse, tdrv, frozenstate, partd, tempres);
- 		  sl->moveOneFrontDown(partd,0);
- 		  dse =0;
- 		  
- 	    }
- 	  }
- 	 	
+	 dz =sl->dz;
+	 if (frozenstate==1) {
+		 volwat = max(0., sl->getVolLiq()-sl->minliq/DENLIQ/sl->dz);
+	 } else {
+		 volwat = sl->getVolIce();
 	 }
-	};
- 
- 
-  
-void  Stefan::processSoilLayer5Bot(const int &frozenstate, double const & tkres, double const & tkfront ,
-                        double & dse, double & sumresblw, const double & tdrv,
- 						SoilLayer* sl,  Layer *frontl, Layer *backl){
- 
+	 dz *= volwat/sl->getEffVolWater();
+
+	 dsn = getDegSecNeeded(dz, volwat, tkfront, sumrescum);
+
+	 if(dse>=dsn){
+		 newfntz = sl->z+sl->dz;
+
+		 sl->frozen = frozenstate;  // set this layer 'frozen' state as fully frozen or unfrozen
+		 if (frozenstate == 1) {    // this is needed for upwardly front processing, otherwise unstable condition may occur
+			 sl->ice += (sl->liq - sl->minliq);
+			 sl->liq = sl->minliq;
+			 if (sl->ice>sl->maxice) sl->ice = sl->maxice;
+		 } else {
+			 sl->liq += sl->ice;
+			 sl->ice = 0.;
+		 }
+		 if (sl->ice>sl->maxice) sl->ice = sl->maxice;
+
+		 dse -= dsn;
+
+	 } else {
+
+		 //partd=getPartialDepth(volwat, tkfront, sumrescum, dse);  //may not be consistent
+		 partd = dse/dsn*dz;
+
+		 double newfntdz = 0.;
+		 int fntnum = ground->frontsz.size();
+
+		 if (fntnum<=0) {                                // no front at all
+			 newfntdz = partd;
+		 } else {
+			 if (ground->frontsz[0]>=(sl->z+sl->dz)
+			     || ground->frontsz[fntnum-1]<sl->z) {   // all existing front(s) above/below the current soil layer
+				 newfntdz = partd;
+			 } else {                                    // exiting front(s) in/containing the current soil layer
+				 double partdleft = partd;
+				 int fntind = 0;
+				 while (fntind<fntnum && partdleft>0.){
+					 int fnttype = ground->frontstype[fntind];
+					 double fntz = ground->frontsz[fntind];
+
+					 if (fntz>sl->z) {
+						 if (fntz<=(sl->z+sl->dz)){  //existing 'front(s)' in the current soil layer only
+
+							 double fntprvz = sl->z;   // the previous front's depth OR current soil layer up boundary
+							 if (fntnum>=2 && fntind>0) { // if there is a previous 'front' in the deque
+								 fntprvz = max(sl->z, ground->frontsz[fntind-1]);
+							 }
+
+							 double fntdz= ground->frontsz[fntind]-fntprvz;  // the distance of the 'fntind'th front from previous front
+
+							 double newfntdzmax = sl->dz;  // the max. distance of the new front
+							 if (fntnum>=2 && fntind<(fntnum-1)) { // if there is a following 'front' in the deque
+								 newfntdzmax = min(sl->dz, ground->frontsz[fntind+1]-sl->z);  // and, if that neibouring 'front' is in current soil layer
+							 }
+
+							 if (fnttype==frozenstate) {   // moving the same-type front
+								 newfntdz = min(newfntdzmax, (fntz-sl->z)+partdleft);  //moving the same type front down until the layer boundry or the next inside front
+								 partdleft -=newfntdz;
+							 } else {                     // for the opposite type front
+								 if (partdleft<fntdz) {
+									 newfntdz = (fntprvz-sl->z)+partdleft;      //adding a new front before the current front
+									 partdleft = 0.;                            // using up all left 'partd'
+								 } else {
+									 newfntdz = newfntdzmax;  // sweeping the opposite type front down until the layer boundry or the next inside front
+									 partdleft -= fntdz;      // but, only using up 'fntdz' of left 'partd', and the rest will be used to move/sweep the next front
+								 }
+							 }
+
+						 } else {
+							 if (fntind>=fntnum-1 && partdleft==partd) {  //existing fronts not in but containing the current layer
+								 newfntdz = partdleft;
+								 partdleft = 0.;
+							 }
+						 }
+					 }
+
+					 fntind++;
+				 }
+
+			 }
+		 }
+
+		 newfntz = sl->z+newfntdz;
+		 if (newfntz>sl->z+0.9999*sl->dz) {
+			 newfntz=sl->z+0.9999*sl->dz;     // this '0.9999' will keep the front within a layer, otherwise may cause mathmatic issue
+		 }
+
+		 sl->frozen = 0;
+		 if (frozenstate == 1) {    // this is needed for phase changed water
+			 sl->ice += (sl->liq-sl->minliq)*partd/sl->dz;
+			 sl->liq -= (sl->liq-sl->minliq)*partd/sl->dz;
+			 if (sl->ice>sl->maxice) sl->ice = sl->maxice;
+		 } else {
+			 sl->liq += sl->ice*partd/sl->dz;
+			 sl->ice -= sl->ice*partd/sl->dz;
+		 }
+
+		 dse = 0.;
+
+	 }
+}
+
+void Stefan::processFrontSoilLayerUp(const int &frozenstate, double const & sumrescum, double const & tkfront ,
+                        double & dse, double & newfntz, Layer* sl){
+
+	newfntz = 0.;
  	double volwat; // volumetric water content;
- 	double dz; // thickness
+ 	double dz;     // thickness
+ 	double dsn ;   // the degree seconds needed to fully freeze/thaw one layer
+ 	double partd;
 
- 	double partd;//part of layer is freezed or thawed
- 	double dsn ; // the degree seconds needed to fully freeze/thaw one layer
- 	
- 	int numfnt = sl->fronts.size();
+	 dz =sl->dz;
+//	 volwat = sl->getEffVolWater();
+///*
+	 if (frozenstate==1) {
+		 volwat = sl->getVolLiq()-sl->minliq/DENLIQ/sl->dz * sl->poro;
+	 } else {
+		 volwat = sl->getVolIce();
+	 }
+	 if (volwat<0.) volwat = 0.;
+	 dz *= volwat/sl->getEffVolWater();
 
- 	 if(numfnt>0){
- 	 if((sl->fronts[numfnt-1]->frzing==1 &&tdrv<0 ) or (sl->fronts[numfnt-1]->frzing==-1 &&tdrv>0 )){
- 	 	// there should be no new front created from bottom;
- 	  
- 		string msg = "there should be no new front created from bottom 1";
- 		char* msgc = const_cast< char* > ( msg.c_str());
- 		throw Exception(msgc, I_BOTTOM_NEW_FRONT);
- 		
- 	 }
- 	 }else{
- 	 	 if((sl->frozen==1 &&tdrv>0 ) or (sl->frozen==-1 &&tdrv<0 )){
- 	 	 	if(sl->nextl->isRock()){//to exclude of the case that rock layer change from very small minus temperature
- 	 	 		// to very small positive temperature added by shuhua Apr 22, 2008
- 	 	 	  return;	
- 	 	 	}else{
- 	 		string msg = "there should be no new front created from bottom 2";
- 			char* msgc = const_cast< char* > ( msg.c_str());
- 			throw Exception(msgc, I_BOTTOM_NEW_FRONT);
- 	 	 	}
- 		 }
- 	 	
- 	 } 
+//*/
+	 dsn = getDegSecNeeded(dz, volwat, tkfront, sumrescum);
 
- 	 
- 	 double lastfntz =0.;//used to record the latest front processesd;
- 	 //the difference between the bottom of a layer to the front
- 	 while(dse>0 && lastfntz<sl->dz){
- 	  numfnt = sl->fronts.size();
-        
- 	   	  
- 	  if(numfnt==0){
- 	  	dz = sl->dz - lastfntz;
- 	  	sumresblw += (dz)/tkres;
- 	  	sl->frozen =frozenstate;
- 	  	lastfntz = sl->dz;
- 	  }else if(numfnt==1){	
- 	  	dz = sl->dz - sl->fronts[numfnt-1]->dz  -lastfntz;
- 	  	lastfntz = sl->dz -sl->fronts[numfnt-1]->dz;
- 	  	sumresblw += dz/tkres;
- 	    dz = sl->fronts[numfnt-1]->dz;
- 	   
- 	   	//bot front will move up 
- 	   	volwat = sl->getEffVolWater();
- 		dsn = getDegSecNeeded(dz, volwat, tkfront, sumresblw);
- 	   	if(dse>=dsn){
- 	   	  dse -= dsn;
- 	   	  sl->removeBotFront();
- 	   	  sl->frozen =frozenstate;
- 	   	  Layer* prevl = sl->prevl;
- 	   	  if(prevl!=NULL){
- 	   	  	 if(prevl->isSoil()){
- 	   	  	   SoilLayer* psl = dynamic_cast<SoilLayer*>(prevl);
- 	   	  	   psl->addOneFront5Bot(psl->dz, -frozenstate);	
- 	   	  	 }
- 	   	  }
- 	   	  // next step will go to no front branch;
- 	   	}else{
- 	   	  partd = getPartialDepth(volwat, tkfront, sumresblw, dse);
- 		  sl->moveOneFrontUp(partd,numfnt-1);
- 		  dse =0;
- 	   	}
- 	  }else if(numfnt>=2){
- 	  	dz = sl->dz - sl->fronts[numfnt-1]->dz  -lastfntz;
- 	  	sumresblw += dz/tkres;
- 	  	lastfntz = sl->dz - sl->fronts[numfnt-1]->dz;
- 	  	dz =  sl->fronts[numfnt-1]->dz- sl->fronts[numfnt-2]->dz;
- 	  	volwat = sl->getEffVolWater();
- 		dsn = getDegSecNeeded(dz, volwat, tkfront, sumresblw);
- 	    if(dse>=dsn){
- 	      dse -=dsn;
- 	      sl->removeBotFront(); //remove first two fronts	
- 	      sl->removeBotFront();
- 	      //added by shuhua on Apr 20, 2008, 
- 	      //there is a case that the while loop can be break, when there is/are fronts in one layer
- 	        if(sl->fronts.size()>0){
- 	          
- 	      	  lastfntz = sl->dz -sl->fronts[sl->fronts.size()-1]->dz;
- 	      }
- 	    }else{
- 	      partd = getPartialDepth(volwat, tkfront, sumresblw, dse);
- 		  sl->moveOneFrontUp(partd,numfnt-1);
- 		  dse =0;
- 		
- 	    }
- 	  }
- 	 	
- }
- 	 }
+	 if(dse>=dsn){
+		 newfntz = sl->z;           // NOTE: 'newfntz' is the depth from zero ground surface
 
+		 sl->frozen = frozenstate;  // set this layer 'frozen' state as fully frozen or unfrozen
+		 if (frozenstate == 1) {    // may not be needed here, but just for in case
+			 sl->ice += sl->liq - sl->minliq;
+			 sl->liq = sl->minliq;
+		 } else {
+			 sl->liq += sl->ice;
+			 sl->ice = 0.;
+		 }
+		 dse -= dsn;
 
- 
- 
- 
- 
- double Stefan::getDegSecNeeded( const double & dz, 
+	 } else {
+		 partd=getPartialDepth(volwat, tkfront, sumrescum, dse);   // note: everything is UPwardly processing
+
+		 double newfntdz = partd;
+		 int fntnum = ground->frontsz.size();
+		 int fntind = fntnum-1;
+		 while (fntind>=0 && partd>0.){
+			double fntz = ground->frontsz[fntind];
+			int fnttype = ground->frontstype[fntind];
+
+			if (fntz<=sl->z+sl->dz && fntz>sl->z){
+
+				 	double fntdz = (sl->z+sl->dz)-fntz;                  // the distance of the 'fntind'th front from the 'sl->z+sl->dz'
+					if (fnttype==frozenstate) {
+						newfntdz = fntdz+partd;
+					} else {
+						if (partd<fntdz) {
+							newfntdz = partd;
+						} else if (fntind==0 || ground->frontsz[fntind-1]<=sl->z){
+							newfntdz = sl->z;
+						}
+
+						partd -=newfntdz;
+					}
+
+			} else if (fntz<=sl->z) {
+					break;
+			}
+
+			fntind--;
+
+		 }
+
+		 newfntz = sl->z+sl->dz-newfntdz;     // Note: 'newfntz' is from top, but 'newfntdz' is from bottom here
+		 if (newfntz<=sl->z+0.01*sl->dz) {
+			 newfntz=sl->z+0.01*sl->dz;     // this will keep the front within a layer, otherwise may cause mathmatic issue
+			 newfntdz = 0.99*sl->dz;
+		 }
+
+		 sl->frozen = 0;
+		 if (frozenstate == 1) {    // may not be needed, but just for in case
+			 sl->ice += sl->liq*newfntdz/sl->dz;
+			 sl->liq -= sl->liq*newfntdz/sl->dz;
+		 } else {
+			 sl->liq += sl->ice*newfntdz/sl->dz;
+			 sl->ice -= sl->ice*newfntdz/sl->dz;
+		 }
+
+		 dse = 0.;
+	 }
+}
+
+// fronts moving downward
+void Stefan::frontsDownDeque(const double &newfntz, const int &newfnttype){
+
+	int numfnt = ground->frontsz.size();
+
+	if (numfnt<=0){
+		if (newfntz<ground->lstsoill->z+ground->lstsoill->dz){
+			ground->frontsz.push_front(newfntz);
+			ground->frontstype.push_front(newfnttype);
+		}
+	} else {
+
+		// first, sweep all fronts, if any, above the new front, which assummed to penetrate through the soil profile downwardly
+		double dzres = 0.;    // the difference of new front and its closest upper existing front
+		while (ground->frontsz.size()>0 && newfntz>=ground->frontsz[0]) {
+				dzres = newfntz - ground->frontsz[0];      // this will update when do the loop
+				ground->frontsz.pop_front();
+				ground->frontstype.pop_front();
+		}
+
+		// then, only need to deal with the updated top front, which always lower than the new front
+		if ((ground->frontsz.size()<=0) || (newfnttype!=ground->frontstype[0])) {
+			if (newfntz<ground->lstsoill->z+ground->lstsoill->dz){
+				ground->frontsz.push_front(newfntz);
+				ground->frontstype.push_front(newfnttype);
+			}
+		} else {   // same front type, then need to move the front down
+			ground->frontsz[0] += dzres;              // this 'dzres' actually is the residue after new front swept all its above fronts
+			                                          // which used to move same-type front down, but no need for different-type front
+			                                          // because a new front has already added above.
+		}
+
+	 }
+}
+
+// fronts moving upward
+void Stefan::frontsUpDeque(const double &newfntz, const int &newfnttype){
+
+	int numfnt = ground->frontsz.size();
+
+	if (numfnt<=0) {
+		if (newfntz>ground->fstsoill->z){
+			ground->frontsz.push_back(newfntz);
+			ground->frontstype.push_back(newfnttype);
+		}
+	} else {
+
+		// first, sweep all fronts, if any, below the new front, which assummed to penetrate through the soil profile upwardly
+		double dzres = 0.;    // the difference of new front and its closest lower existing front
+		while (ground->frontsz.size()>0 && newfntz<=ground->frontsz[numfnt-1]) {
+			dzres = newfntz - ground->frontsz[numfnt];      // this will update when do the loop
+			ground->frontsz.pop_back();
+			ground->frontstype.pop_back();
+			numfnt = ground->frontsz.size();      // this is needed for 'while' loop
+		}
+
+		// then, only need to deal with the updated uppest front, which always higher than the new front
+		numfnt = ground->frontsz.size();
+		if ((numfnt<=0) || (newfnttype!=ground->frontstype[numfnt-1])) {
+			if (newfntz>ground->fstsoill->z){
+				ground->frontsz.push_back(newfntz);
+				ground->frontstype.push_back(newfnttype);
+			}
+		} else {   // same front type, then need to move the front down
+			ground->frontsz[numfnt-1] += dzres;              // this 'dzres' actually is the residue after new front swept all its below fronts
+			                                          // which used to move same-type front up, but no need for different-type front
+			                                          // because a new front has already added above.
+		}
+
+	 }
+};
+
+double Stefan::getDegSecNeeded(const double & dz,
  				const double & volwat,  const double & tk, const double & sumresabv){
  	/*input
  	 * 	   dz: the thickness of  fraction of (or whole)  soil layer: 
  	 *     volwat: volumetric water content, either ice or liquid water
  	 *     tk: thermal conductivity of that part of (or whole) layer
- 	 *     tdrv: the driving temperature
  	 *     sumresabv: the sum of resistance for all the layers above
  	 */
  	 double needed=0.;
  	 
  	 double effvolwat = volwat;
- 	// double lhfv = LHFUS *1000.; // volumetric latent heat fusion of water
  	 double lhfv = 3.34e8;
  	 needed = lhfv * effvolwat * dz * (sumresabv +0.5 * dz/tk);
  	 
  	 return needed;
- };
+};
  
- //calculate partial depth based on extra degree seconds
- double Stefan::getPartialDepth(const double & volwat, const double & tk,
+//calculate partial depth based on extra degree seconds
+double Stefan::getPartialDepth(const double & volwat, const double & tk,
  								const double & sumresabv, const double & dse){
-/* input
- *  dse: extra degree second
- */ 									
+	/* input
+	 *  dse: extra degree second
+	 */
  	double partd;
  	double effvolwat = volwat;
  
- 	//double lhfv = LHFUS *1000.; // volumetric latent heat fusion of water
  	double lhfv = 3.34e8;
  	double firstp = tk * sumresabv;
  	double second1 = tk * tk * sumresabv * sumresabv;
  	double second2 = 2 * tk * dse/(lhfv * effvolwat);
- 	partd = -1 * firstp  + sqrt(second1 + second2) ;
+ 	partd = -1 * firstp  + sqrt(second1 + second2);
  	
  	return partd;
  };
  
- //check the validity of fronts in soil column
- void Stefan::checkFrontsValidity(Layer *fstsoill){
- 	Layer*currl=fstsoill;
- 	SoilLayer* sl;
- 	//int upfrnt =0;
- 	//int curfrnt;
- 	//int numfnt =0;
- 	/*
- 	int prevfrozen = fstsoill->frozen;
-
- 	vector<int> fntattv;
- 	while(currl!=NULL){
- 		if(currl->isSoil()){
- 		  sl = dynamic_cast<SoilLayer*>(currl);
- 		  if(fabs(sl->frozen -prevfrozen +0.0)>1){
- 		  	 cout <<"frozen and unfrozen discontinuity in stefan\n";
- 		  	 exit(-1);
- 		  }
- 		  sl->checkFronts();
- 		  prevfrozen = sl->frozen;
- 		}else{
- 		  break;
- 		}
-
- 		currl=currl->nextl;
- 	};*/
-
- 	int prevfnt =0;
- 	int numfnt;
- 	while(currl!=NULL){
- 			if(currl->isSoil()){
- 		  sl = dynamic_cast<SoilLayer*>(currl);
- 		  numfnt=sl->fronts.size();
- 		  for(int i=0; i<numfnt; i++){
- 		  	if(i==0){
- 		  	 if(currl->prevl !=NULL){
- 		  	 	if(currl->prevl->isSoil()){
- 		  	 	SoilLayer* psl = dynamic_cast<SoilLayer*>(currl->prevl);
- 		  	 	if(psl->fronts.size()==0){
- 		  	 		if(psl->frozen != sl->fronts[i]->frzing){
- 		  	 			string msg = "front should have same attribute as previous layer frozen state";
-  						char* msgc = const_cast< char* > ( msg.c_str());
-  						throw Exception(msgc, I_FRONT_INCONSISTENT);
-
- 		  	 		}
-
- 		  	 	}
-
- 		  	 }
- 		  	 }
- 		  	}
-
- 		  	 if(sl->fronts[i]->frzing ==prevfnt){
-
- 		  	 	 string msg = "adjacent fronts should be different";
- // 						char* msgc = const_cast< char* > ( msg.c_str());
- // 						throw Exception(msgc, I_FRONT_INCONSISTENT);     //Yuan: don't crash the model
- 		  	 }else{
- 		  	    prevfnt = sl->fronts[i]->frzing ;
- 		  	 }
- 		  };
-
- 		}else{
- 		  break;
- 		}
-
- 		currl=currl->nextl;
- 	};
-
-
- 	/*
- 	Layer*currl=fstsoill;
- 	SoilLayer* sl;
-
- 	while(currl!=NULL){
- 		if(currl->isSoil()){
- 		  sl = dynamic_cast<SoilLayer*>(currl);
-
- 		  if(sl->fronts.size()==1||sl->fronts.size()==3 ){
- 		  	if(sl->prevl!=NULL  && sl->nextl!=NULL){
- 		  	if(sl->prevl->frozen == sl->nextl->frozen  && sl->nextl->frozen !=0){
-
- 		  			 cout <<"frozen states are the same above and below layer with front\n";
- 		  	       exit(-1);
- 		  	}
-
- 		  }
- 		  } else   if(sl->fronts.size()==2){
- 		  	if(sl->prevl!=NULL  && sl->nextl!=NULL){
- 		  	if(sl->prevl->frozen != sl->nextl->frozen  && sl->nextl->frozen !=0  && sl->prevl->frozen !=0 ){
-
- 		  			 cout <<"frozen states should be  the same above and below layer with front\n";
- 		  	       exit(-1);
- 		  	}
-
- 		  }
- 		  }
-
- 		}else{
- 		  break;
- 		}
-
- 		currl=currl->nextl;
- 	}*/
- };
-
- void Stefan::interpSnowTemp(Layer* frontl, Layer* fstsoill,const double & tdrv){
-
-
-   	double tsoil = fstsoill->nextl->tem;
-   	// get total snow depth
-   	double dzsum =frontl->z+fstsoill->dz;
-   	double deltat = tdrv -tsoil;
-   	double dzsno;
-   	double dzsoi;
-   	double dz;
-   	double gradient;
-   	if(dzsum >0){
-   		gradient = deltat/dzsum;
-
-   		Layer* currl =fstsoill;
-   		while(currl!=NULL){
-   			if(currl->isSoil()){
-   				dzsoi = currl->dz;
-   				dz = dzsoi;
-   			}else{
-   				dzsno = currl->z;
-   				dz = dzsno +dzsoi;
-   			}
-   			currl->tem = tsoil + gradient * dz;
-   			currl=currl->prevl;
-   		}
-   	}
-
- };
-
  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
  // update soil temperatures
  
-void Stefan::updateTemps(const double & tdrv, Layer *frontl, Layer *backl ,Layer* fstsoill,
+void Stefan::updateTemps(const double & tdrv, Layer *toplayer, Layer *botlayer,
   						Layer* fstfntl, Layer *lstfntl ){
   	   
-     itsumall =0;
-     itsumabv =0;
-     itsumblw =0;
-  	 
-     for(int i=0; i<MAX_GRN_LAY+2; i++){
-    	 t[i] =-999.;
-     }
+    Layer* currl=toplayer;
+    while(currl!=NULL){
+    	temold[currl->indl-1] = currl->tem;          // 'currl->indl' starting from 1
+    	currl=currl->nextl;
+    }
+
+	 itsumall =0;
   	
-  	 
-  //	 Layer* currl=frontl;
-  	 
   	 if(fstfntl ==NULL && lstfntl==NULL){
   		 // no fronts in soil column
-  		 // for virtual layer
-  		 processWholeColumn(frontl, backl, fstfntl, lstfntl, tdrv);
+  		 processLayersNofront(toplayer, tdrv);
   		 itsumall =itsum;
 
-  	 }else if(fstfntl->indl ==lstfntl->indl){
+  	 }else if(fstfntl->indl ==lstfntl->indl){     // only one layer with fronts
   		  //added
-  		  processAboveLayers(frontl, backl, fstfntl, lstfntl, tdrv);
+  		  processLayersAbvfront(toplayer, fstfntl, tdrv);
+   		 itsumall =itsum;
 
-  		  if(lstfntl->indl<backl->indl){
-  			  processBelowLayers(frontl, backl, fstfntl, lstfntl, tdrv);
-  			  itsumblw=itsum;
+  		  if(lstfntl->indl<botlayer->indl){
+  			  processLayersBlwfront(toplayer, lstfntl);
+  			  itsumall +=itsum;
   		  }
 
-  		  //Yuan: The below-frontLayer calculation seems not correct, so the following added
-  		  if (fstfntl->indl>frontl->indl && fstfntl->indl<backl->indl) {
-  			  fstfntl->tem = (fstfntl->prevl->tem*fstfntl->prevl->dz
-  					         +fstfntl->nextl->tem*fstfntl->nextl->dz)
-  		                  /(fstfntl->prevl->dz+fstfntl->nextl->dz);
-  		  }
-  		  itsumall=itsumabv +itsumblw;
+  	 }else if(fstfntl->indl !=lstfntl->indl){  		 // there are at least two different layers which contain front(s)
 
-  	 }else if(fstfntl->indl !=lstfntl->indl){
-  	   		 // there are two different layers which contain front(s)
-
-  		 processAboveLayers(frontl, backl, fstfntl, lstfntl, tdrv);
+  		 processLayersAbvfront(toplayer, fstfntl, tdrv);
+  		 itsumall = itsum;
   	  
-  		 if(lstfntl->indl<backl->indl){
-  			 processBelowLayers(frontl, backl, fstfntl, lstfntl, tdrv);
-  			 itsumblw=itsum;
+  		 if(lstfntl->indl<botlayer->indl){
+  			 processLayersBlwfront(toplayer, lstfntl);
+  			 itsumall += itsum;
   	  	
-  			 processBetweenLayers(frontl, backl, fstfntl, lstfntl, tdrv);
+  			 processLayersBtnfront(toplayer, fstfntl, lstfntl);
+  	  		 itsumall += itsum;
   		 }
 
-  		 itsumall=itsumabv +itsumblw;
   	  
   	 }
-  	 
-  	 //check wheter is nan
-  	 for(int il=0 ; il<MAX_GRN_LAY+2; il++){
-   	
+
+     //
+  	 currl=toplayer;
+     while(currl!=NULL){
+
+    	 currl->tem   = tld[currl->indl];
+    	 currl->tcond = currl->getThermalConductivity();
+
+    	 currl=currl->nextl;
+     }
+
+     //check whether is nan
+/*  	 for(int il=0 ; il<MAX_GRN_LAY+2; il++){
+
   		 if(isnan(tld[il])){
-	 
+
   			 string msg = "tld is nan";
-  			 //char* msgc = const_cast< char* > ( msg.c_str());
-  			 //throw Exception(msgc, I_NAN_TLD); //Yuan: don't crash the model
-  			 tld[il]=tid[il];       //Yuan: rather the initial values (this is a temperary settle!!!!)
-  			 break;
+  			 cout<<msg+"\n";
+			 tld[il]=tid[il];       //Yuan: rather the initial values (this is a temperary settle!!!!)
+  			 //break;
   		 }
   	 }
-  	
+*/
 };
 
-void Stefan::processWholeColumn(Layer* frontl, Layer *backl, Layer*fstfntl, Layer*lstfntl, const double & tdrv){
+void Stefan::processLayersNofront(Layer* toplayer, const double & tdrv){
      double tc, hcap;
   	 int startind, endind;
 
      int ind=0;
   	 t[ind] = tdrv;
+  	 s[ind] = 0.;
   	 e[ind] = tdrv;
-  	 s[ind] =0.;
-  	 cn[ind] =1e20f;// assume very big thermal conductivity for t his virtual layer
-  	 cap[ind] =0.; // assume no heat capacity for this virtual layer
-   //  cn[ind] =  frontl->getThermalConductivity() * 10/frontl->dz; //1e20f;// assume very big thermal conductivity for this virtual layer
-  //	 cap[ind] = frontl->getHeatCapacity()/10. * frontl->dz; //0.; // assume no heat capacity for this virtual layer
+  	 cn[ind]  = 1e20f;// assume very big thermal conductivity for this virtual layer
+  	 cap[ind] = 0.; // assume no heat capacity for this virtual layer
 
-  	 Layer* currl =frontl;
+  	 Layer* currl =toplayer;
   	 while(currl!=NULL){
   	 	ind++;
-  	 	t[ind] =currl->tem;
+
+  	 	t[ind] =currl->tem;      // NOTE: t[ind] starting from 1 here
   	 	dx[ind] = currl->dz;
   	 	tc = currl->getThermalConductivity();
   	 	hcap= currl->getHeatCapacity();
   	 	cn[ind] = tc/dx[ind];
   	 	cap[ind] = hcap * dx[ind];
   	 	currl=currl->nextl;
+
   	 }
 
-  	 ind =backl->indl+1;
+  	 ind++;
   	 t[ind] = t[ind-1];
  	 s[ind] = 0.;
  	 e[ind]= t[ind];
-     startind =0; //always zero
+
+ 	 startind =0; //always zero
      endind= ind; //
-     iterate(startind, endind, true, true, frontl);
-
-     currl=frontl;
-     while(currl!=NULL){
-
-       currl->tem= tld[currl->indl];
-       // Yuan: for output
-	   currl->tcond = currl->getThermalConductivity();
-
-       currl=currl->nextl;
-     }
-     if(tdrv<0 && frontl->tem<tdrv){
-       frontl->tem = tdrv;
-     }else if(tdrv>0 && frontl->tem>tdrv){
-       frontl->tem = tdrv;
-     }
+     iterate(startind, endind, true, true, toplayer);
 
 };
 
-void Stefan::processAboveLayers(Layer* frontl, Layer *backl, Layer*fstfntl, Layer*lstfntl, const double & tdrv){
+void Stefan::processLayersAbvfront(Layer* toplayer, Layer*fstfntl, const double & tdrv){
 	double tc, hcap;
   	int startind, endind;
-  	//If during spring, when the thawing front is within 15 cm and the soil thickness is
-  	//not in increasing order, it is possible that updated soil temperature is greater than 50 degC
-  	// when this case happened use linear interpolation
-  	SoilLayer* fsl = dynamic_cast<SoilLayer*>(fstfntl);
 
-  	int frzfnt = fsl->fronts[0]->frzing;
-  	/*SoilLayer* fsl = dynamic_cast<SoilLayer*>(fstfntl);
-  	float fstfntz = fsl->fronts[0]->dz + fsl->z;
-  	int frzfnt = fsl->fronts[0]->frzing;
-
-  	bool dzincreasing =true;
-  	if(frzfnt==-1 && fstfntz<0.2){
-
-
-  		if(fstfntl->solind>=3){
-  		   if(fstfntl->prevl->dz < fstfntl->prevl->prevl->dz){
-  		   	 dzincreasing =false;
-  		   }else if(fsl->fronts[0]->dz  < fstfntl->prevl->dz){
-  		     	dzincreasing =false;
-  		   }
-
-  		}
-
-  		if(!dzincreasing){
-  			//cout <<"interpolate upper layers\n";
-  			interpolateUpperTemps5Front(tdrv, frontl);
-  			return;
-  		}
-
-  	}else 	if (fstfntl->indl<2) {
-  		interpolateUpperTemps5Front(tdrv, frontl);
-  		return;
-  	}*/
-
-  	int ind=0;
+  	int ind=0;         // a virtual layer containing Tair information
   	t[ind] = tdrv;
   	e[ind] = tdrv;
-  	s[ind] =0.;
-  	cn[ind] =1e20f;// assume very big thermal conductivity for this virtual layer
-  	cap[ind] =0.; // assume no heat capacity for this virtual layer
+  	s[ind] = 0.;
+  	cn[ind]  = 1e20f;// assume very big thermal conductivity for this virtual layer
+  	cap[ind] = 0.; // assume no heat capacity for this virtual layer
 
-  	Layer* currl =frontl;
+  	Layer* currl =toplayer;
   	while(currl!=NULL){
   	 	ind++;
   	 	t[ind] =currl->tem;
-  	 	if(currl->frozen==1 && t[ind]>0){
-  	 		t[ind] =-0.01;
-  	 	}else if (currl->frozen==-1 &&t[ind]<0){
-  	 		t[ind] =0.01;
-  	 	}
   	 	dxold[ind] = dx[ind];
   	 	dx[ind] = currl->dz;
   	 	tc = currl->getThermalConductivity();
@@ -776,46 +620,28 @@ void Stefan::processAboveLayers(Layer* frontl, Layer *backl, Layer*fstfntl, Laye
 
   	 	currl=currl->nextl;
   	 	if(currl!=NULL){
-  	 		if(currl->indl >fstfntl->indl)break;
+  	 		if(currl->indl >fstfntl->indl) break;
   	 	}
+
+
   	 }
 
-  	 if(frzfnt==1){
-  		 t[ind] = -0.1; //near front tem can be assumed to be zero
+  	 ind++;
+  	 if(fstfntl->frozen==1){   // the first front layer as the bottom of this column
+  		 t[ind] = -0.01; // front tem can be assumed to be near zero
   	 }else{
-  		 t[ind] =0.1;
+  		 t[ind] = 0.01;
   	 }
-  	 ind =fstfntl->indl+1;
-  	 t[ind] = 0;
  	 s[ind] = 0.;
  	 e[ind]= t[ind];
-     startind =0; //always zero
-     endind= ind; //
-     iterate(startind, endind, false, true, frontl);
 
-     currl=frontl;
-     while(currl!=NULL){
-
-       currl->tem= tld[currl->indl];
-
-       // Yuan: for output
-	   currl->tcond = currl->getThermalConductivity();
-
-       currl=currl->nextl;
-       if(currl!=NULL){
-    	   if(currl->indl>fstfntl->indl) break;
-       }
-     }
-
-     if(tdrv<0 && frontl->tem<tdrv){
-    	 frontl->tem = tdrv;
-     }else if(tdrv>0 && frontl->tem>tdrv){
-    	 frontl->tem = tdrv;
-     }
+     startind = 0;
+     endind   = ind;
+     iterate(startind, endind, false, true, ground->toplayer);
 
 };
 
-void Stefan::processBelowLayers(Layer* frontl, Layer *backl, Layer*fstfntl, Layer*lstfntl, const double & tdrv){
+void Stefan::processLayersBlwfront(Layer* toplayer, Layer* lstfntl){
     double tc, hcap;
   	int startind, endind;
 
@@ -824,17 +650,9 @@ void Stefan::processBelowLayers(Layer* frontl, Layer *backl, Layer*fstfntl, Laye
   	 e[ind] = 0.;
   	 s[ind] = 0.;
 
-     SoilLayer* slstfntl = dynamic_cast<SoilLayer*>(lstfntl);
-     int numfnt = slstfntl->fronts.size();
-
-     dx[ind] = max( (double)0.5 * lstfntl->dz,(double) lstfntl->dz -slstfntl->fronts[numfnt-1]->dz);
-     if(slstfntl->fronts[numfnt-1]->frzing==1){
-  	 	cn[ind] = slstfntl->getUnfThermCond()/dx[ind];
-  	 	cap[ind] = slstfntl->getUnfVolHeatCapa()*dx[ind];
-  	 }else if(slstfntl->fronts[numfnt-1]->frzing==-1){
-  	 	cn[ind] = slstfntl->getFrzThermCond()/dx[ind];
-  	 	cap[ind] = slstfntl->getFrzVolHeatCapa()*dx[ind];
-  	 }
+     dx[ind] = lstfntl->dz;
+ 	 cn[ind]  = lstfntl->getThermalConductivity()/dx[ind];
+  	 cap[ind] = lstfntl->getHeatCapacity()*dx[ind];
 
      Layer*	 currl =lstfntl->nextl;
   	 while(currl!=NULL){
@@ -862,65 +680,26 @@ void Stefan::processBelowLayers(Layer* frontl, Layer *backl, Layer*fstfntl, Laye
 
  	 startind =lstfntl->indl;
      endind= ind; //
-     iterate(startind, endind, true, false, frontl);
-
-     currl=lstfntl->nextl;
-     int il=0;
-     while(currl!=NULL){
-
-       il++;
-       currl->tem= tld[lstfntl->indl+il];
-       if(currl->frozen==1 && currl->tem>0){
-       	 currl->tem=-0.01;
-       }else if(currl->frozen==-1 && currl->tem<0){
-       	 currl->tem=0.01;
-       }
-
-       // Yuan: for output
-	   currl->tcond = currl->getThermalConductivity();
-
-       currl=currl->nextl;
-     }
+     iterate(startind, endind, true, false, toplayer);
 
 };
 
 
-void Stefan::processBetweenLayers(Layer* frontl, Layer *backl, Layer*fstfntl, Layer*lstfntl, const double & tdrv){
-
-/*
-	//simply assign zeros between fronts
-	Layer* currl=fstfntl->nextl;
-	SoilLayer* sl  	;
-
-     while(currl!=NULL){
-       if(currl->indl> lstfntl->indl){
-       	 break;
-       }else{
-       	 sl = dynamic_cast<SoilLayer*>(currl);
-       	 sl->adjustTem5State();    //update the temperature based on fronts
-       }
-
- 	   currl->tcond = currl->getThermalConductivity();  //Yuan: needed for output
-
-       currl=currl->nextl;
-     }
-*/
+void Stefan::processLayersBtnfront(Layer *toplayer, Layer*fstfntl, Layer*lstfntl){
 
 	double tc, hcap;
   	int startind, endind;
     if(lstfntl->indl - fstfntl->indl <2){
-        fstfntl->nextl->tem = 0.;
         return;
     }
 
      int ind=fstfntl->indl;
   	 t[ind] = 0; //assume the front is the top interface of virtual layer
   	 if(fstfntl->nextl->frozen ==1){
-  		 t[ind] =-0.1;
+  		 t[ind] = -0.1;
   	 }else  if(fstfntl->nextl->frozen ==-1){
-  		 t[ind] =0.1;
+  		 t[ind] = 0.1;
   	 }
-
   	 e[ind] = 0.;
   	 s[ind] = 0.;
 
@@ -934,6 +713,7 @@ void Stefan::processBetweenLayers(Layer* frontl, Layer *backl, Layer*fstfntl, La
   	 	cn[ind] = tc/dx[ind];
   	 	cap[ind] = hcap * dx[ind];
   	 	currl=currl->nextl;
+
   	 	if(currl->indl >= lstfntl->indl) break;
   	 }
 
@@ -944,345 +724,155 @@ void Stefan::processBetweenLayers(Layer* frontl, Layer *backl, Layer*fstfntl, La
 
  	 startind =fstfntl->indl;
      endind= ind; //
-     iterate(startind, endind, false, false, frontl);
-
-     currl=fstfntl; //->nextl;
-     int il = 0;
-     while(currl!=NULL){
-    	 il++;
-    	 currl->tem= tld[startind +il];
-    	 if(currl->tem>0 && currl->frozen==1){
-    		 currl->tem=-0.01;
-    	 }else if (currl->tem<0 && currl->frozen==-1){
-    		 currl->tem =0.01;
-    	 }
-
-    	 currl->tcond = currl->getThermalConductivity();  //Yuan: needed for output
-
-    	 currl=currl->nextl;
-    	 if(currl->indl >= lstfntl->indl) break;
-     }
+     iterate(startind, endind, false, false, toplayer);
 
 };
 
-void Stefan::iterate(const int &startind, const int &endind, const bool & lstlaybot, const bool & fstlaytop, Layer *frontl){
+void Stefan::iterate(const int &startind, const int &endind, const bool & lstlaybot, const bool & fstlaytop, Layer *toplayer){
   	
+	itsum =0;
 	tschanged = true;
 	tmld =0; // tmld is time that is last determined
-	
-	itsum =0;
-	/* at beginning of update, tleft is one day*/
-	tleft = 1;
-	tstep =TSTEPORG; ;
+
+	tleft = 1.0;          /* at beginning of update, tleft is one day*/
+	tstep = TSTEPORG;
 	
 	for(int il =startind ; il<=endind; il++){
-	  tid[il] = t[il]; // temperature at the begin of one day	
-	  tld[il] = t[il]; // the last determined temperature
+	  tid[il] = t[il];      // temperature at the begin of one day
+	  tld[il] = t[il];      // the last determined temperature
 	}
 
-	while(tmld<1){
-		//cout <<"TMLD " << tmld << " time step " << tstep << "\n";
+	while(tmld<1.0){
+
 		for(int i=startind; i<=endind; i++){
 	 		tis[i] = tld[i];	
 		}
-		int st = updateOneTimeStep(startind, endind, lstlaybot, fstlaytop, frontl);
+		int st = updateOneTimeStep(startind, endind, lstlaybot, fstlaytop, toplayer);
 
-		if(st==-1) {
-	  	// half the time step	
-	  	 tstep = tstep/2;
-	  	 if(tstep < 1.e-6){
-//	  	   throw Exception("tstep is too small in Stefan", ERRORKEY(I_TEM_TSTEP_SMALL));
-	  	   cout<<"tstep is too small in Stefan\n";
-	  	   return;     //Yuan: don't break
-	  	 }
-	  	 tschanged = true;
-		}else if(st==0){
-		 // find one solution for one timestep, advance to next one
-		 tleft -= tstep;
-		 tmld += tstep;
+		if(st==-1 && tstep >= TSTEPMIN) {
+			// half the time step
+			tstep = tstep/2;
+			tschanged = true;
+		}else if(st==0 || tstep<TSTEPMIN){
+			// find one solution for one timestep, advance to next one
+			tleft -= tstep;
+			tmld += tstep;
 		 
-		 // find the proper timestep for rest period
+			// find the proper timestep for rest period
+			if(!tschanged){ // if timestep has not been changed during last time step
+				if(tstep<TSTEPMAX){
+					tstep *=2;
+					tschanged = true;
+				}
+			}else{
+				tschanged =false;
+			}
 		 
-		 if(!tschanged){ // if timestep has not been changed during last time step 
-		 	if(tstep<TSTEPMAX){
-		 	  tstep *=2;
-		 	  tschanged = true;
-		    }		    
-		 }else{
-		    tschanged =false;	
-		 }
-		 // make sure tleft is greater than zero
-		 tstep = min(tleft, tstep);	
-		 if(tstep==0)tmld=1;
+			// make sure tleft is greater than zero
+			tstep = min(tleft, tstep);
+
+			if(tstep==0)tmld=1;
 		}
 	}// end of while
   	
-  };
-  
- 
-int Stefan::updateOneTimeStep(const int startind, const int & endind, const bool & lstlaybot, const bool & fstlaytop, Layer *frontl){
+};
+
+int Stefan::updateOneTimeStep(const int startind, const int & endind, const bool & lstlaybot, const bool & fstlaytop, Layer *toplayer){
 	int status =-1;
-	int is;
 	
 	for(int i=startind; i<=endind; i++){
-	 		tii[i] = tis[i];	
+	     tii[i] = tis[i];
 	}
 		 
 	for (int it=1; it<=ITMAX; it++){
-	  is = updateOneIteration( startind, endind, lstlaybot,fstlaytop, frontl);
-	  if(is==0){// success
-	  	status = is;
-	  	for(int i=startind; i<=endind; i++){
-	 		tld[i] = tit[i];	
+		status = updateOneIteration(startind, endind, lstlaybot, fstlaytop, toplayer);
+		if(status==0 || it==ITMAX){// success or max. iterative times
+			for(int i=startind; i<=endind; i++){
+				tld[i] = tit[i];
+			}
+
+			return status;
+		}else if(status ==-1){// the difference between iteration is too big, iterate again
+			for(int i=startind; i<=endind; i++){
+				tii[i] = tit[i];
+			}
+
 		}
-		
-	  	
-	   return status;
-	  }else if(is ==-1){// the difference between iteration is too big, iterate again
-	  	for(int i=startind; i<=endind; i++){
-	 		tii[i] = tit[i];
-		}
-		status = is;
-	  }
 	  
 	}
-	// for iterating five times, there is no solution,
-	// reduce the time step redo it.
 
 	return status;
 }; 
   
-  
-/*! the main calculation will be done here*/
-int Stefan::updateOneIteration( const int startind, const int & endind, const bool & lstlaybot ,const bool & fstlaytop, Layer *frontl){
+int Stefan::updateOneIteration(const int startind, const int & endind, const bool & lstlaybot ,const bool & fstlaytop, Layer *toplayer){
 	itsum++;
 	double tself, tdown, tup, t1, t2;
 	double hclat;
     double dt = tstep *86400.;
+
+    // adjusting snow-layers' heat capacity (Yuan: but why?)
     if(fstlaytop){
-      Layer* currl =frontl;
-      int il=0;
-      while(currl!=NULL){
-      	if(currl->isSnow()){
-      		il =currl->indl;
-      		if(currl->indl==1){
-      		   tself = tii[1];
-	  	       tdown = tii[2];
-	  		   t1 = tself;
-	  		   t2 = (tdown + tself)/2.;	
-	  		   if(t1>0 || t2>0){
-	  		   	 hclat =3.337e5 *(currl->ice)/currl->dz;
-	  		   	 cap[1] = ( currl->getHeatCapacity()+hclat)*currl->dz;
-	  		   }else{
-	  		   	 cap[1] = currl->getHeatCapacity()*currl->dz;
-	  		   }
-      		}else{
-      			tself = tii[il];
-	  			tup = tii[il-1];
-	  			t2 = tself;
-	  			t1 = (tup + tself)/2.;
-	  			if(t1*t2<0){
-	  		   	 hclat =3.337e5 *(currl->ice)/currl->dz;
-	  		   	 cap[il] = ( currl->getHeatCapacity()+hclat)*currl->dz;
-	  		   }else{
-	  		   	 cap[il] = currl->getHeatCapacity()*currl->dz;
-	  		   }
+    	Layer* currl =toplayer;
+    	int il=0;
+    	while(currl!=NULL){
+    		if(currl->isSnow){
+    			il =currl->indl;
+    			if(currl->indl==1){
+    				tself = tii[1];
+    				tdown = tii[2];
+    				t1 = tself;
+    				t2 = (tdown + tself)/2.;
+    				if(t1>0 || t2>0){
+    					hclat =3.337e5 *(currl->ice)/currl->dz;
+    					cap[1] = ( currl->getHeatCapacity()+hclat)*currl->dz;
+    				}else{
+    					cap[1] = currl->getHeatCapacity()*currl->dz;
+    				}
+    			}else{
+    				tself = tii[il];
+    				tup = tii[il-1];
+    				t2 = tself;
+    				t1 = (tup + tself)/2.;
+    				if(t1*t2<0){
+    					hclat =3.337e5 *(currl->ice)/currl->dz;
+    					cap[il] = (currl->getHeatCapacity()+hclat)*currl->dz;
+    				}else{
+    					cap[il] = currl->getHeatCapacity()*currl->dz;
+    				}
       			
-      		}
-      	}else if(currl->isSoil()){
-      	    break;
-      	}
-      	currl=currl->nextl;
-      }	
+    			}
+
+    		} else if(currl->isSoil){
+    			break;
+    		}
+
+    		currl=currl->nextl;
+
+    	}
     }
 
-/*    for(int il=startind+2 ; il<endind; il++){
-   	
-    	if(isnan(tii[il])){
-    		string msg = "tii is nan";
-    		char* msgc = const_cast< char* > ( msg.c_str());
-    		throw Exception(msgc, I_NAN_TLD);
+    double endlayergflux=0.;
+    if (lstlaybot) endlayergflux = 0.50; // bottom soil layer heat flux assumed as 0 (be careful here!)
+    cns.geBackward(startind, endind, tii, cn, cap, s, e, dt, endlayergflux);
+	cns.cnForward(startind, endind, tii, tit, s, e);
+
+	int numl = 0;
+	double tdiff = 0.;
+	for(int il =startind; il<=endind ; il++){
+	  	tdiff+=fabs(tii[il]-tit[il]);
+	  	numl++;
+
+/*    	if(isnan(tii[il])){
+    		return -1;
     	}
-		
-    	if(isnan(tit[il])){
-    		string msg = "tit is nan";
-    		char* msgc = const_cast< char* > ( msg.c_str());
-    		throw Exception(msgc, I_NAN_TLD);
+	  	if(isnan(tit[il])){
+    		return -1;
     	}
-	 
-		if(tii[il]>50){  
-			string msg = "tii too big";
-			char* msgc = const_cast< char* > ( msg.c_str());
-			throw Exception(msgc, I_TOO_BIG_TII);
-	  	}else if(tii[il]<-70){	  	  
-	  		string msg = "tii too small";
-	  		char* msgc = const_cast< char* > ( msg.c_str());
-	  		throw Exception(msgc, I_TOO_SMALL_TII);  	 
-	  	}
-	  	
-    }
-*/	
-    cns.geBackward(startind, endind, tii, dx, cn,cap, s, e, dt , lstlaybot); 
-	cns.cnForward(startind, endind, tii, tit, s, e );		
-  
-	for(int il =startind +2; il<endind ; il++){
-         
-	  	if( fabs(tii[il]-tit[il])>ttole){ // always return 0
-	  		if(il>1){
-	  		    return -1;  // first layer will be changed accoring to driving tem, so don't compare this layer
-	  		}
-	  	}
-	  	
-	  	if(tit[il]>50){
-//	  	    cout << "Error in Stefan:updateOneIteration\n";
-	        return -1;	  
-	    }
+*/
 	} 	
+  	if(tdiff>ttole*numl){
+		return -1;         // return for further iteration
+  	}
   
 	return 0; 
 };
-  
-void Stefan::interpolateUpperTemps5Front(const double & tdrv, Layer* frontl){
-	//find the first layer with front
-	Layer * currl =frontl;
-	Layer* fstfntl1=NULL;
-	SoilLayer* sl;
-
-	while(currl!=NULL){
-		if(currl->isRock())break;
- 	
-		if(currl->isSoil()){
- 	 	  sl = dynamic_cast<SoilLayer*>(currl);
-		  if(sl->fronts.size()>0){
-		  	fstfntl1 = currl;
-		  	break;
-		  } 		
-		}
-
-		currl =currl->nextl;
-	}
-
-	if(fstfntl1==NULL)return;
-	if(fstfntl1->indl<=1)return;
-	SoilLayer* fsl = dynamic_cast<SoilLayer*>(fstfntl1);
-    double soildzsum = fstfntl1->z+fsl->fronts[0]->dz;
- 	double dzsum = soildzsum;
- 	
- 	if(frontl->isSnow()){
- 	  dzsum +=frontl->z;	
- 	}
- 	
-  	double deltat = tdrv -0;
-  	double gradient;
-  	if(dzsum >0){
-  		gradient = deltat/dzsum;
-  		currl=frontl;
-  	
-  		double localdz;
-  		double orgtemp, interptemp;
-  		while (currl!=NULL){
-  			orgtemp = currl->tem;
-  			if(currl->isSnow()){
-  				localdz = currl->z + soildzsum;
-  				interptemp = localdz * gradient;
-  				currl->tem = (orgtemp + interptemp)/2.;
-  			}else if(currl->isSoil()){
-  				localdz =soildzsum-currl->z;
-  				interptemp = localdz * gradient;
-  	 	
-  				currl->tem =(orgtemp + interptemp)/2.;
-  	 	
-  				if(currl->indl == fstfntl1->indl)break;
-  	 	
-  			}
-
-  			currl=currl->nextl;
-  		}
-  	
-	}
-
-};
-
-void Stefan::updateUpperTemps5Front(Layer* fstfntl, const double & beforedse , const double & afterdse, 
-				const double & tdrv, const int & frzing, const double & dz, const double & abvres){
-			
-			
-	return; // for test		
-	//frzing and dz are for lstfntl
-    //return;
-	double secinday =86400.;
-	
-	double sumresabv =abvres;
-	
-	//double dsused= beforedse - afterdse;
-	//double secused = dsused/fabs(tdrv);//time used to have zero leftdse after the move of soil fronts
-	
-	
-	Layer *currl;
-	double volwat = fstfntl->getEffVolWater();
-
-	double tkfrontorg;
-	double tkres;
-	
-	if(tdrv>0){
-		tkfrontorg = fstfntl->getFrzThermCond();
-	}else {
-		tkfrontorg = fstfntl->getUnfThermCond();
-	}
-
-	double dsn = getDegSecNeeded(  dz, volwat,tkfrontorg, sumresabv);
-	
-	
-    if(temupdated[fstfntl->indl-1]){
-    if(frzing==1){
-      fstfntl->tem +=-dsn/secinday;
-	 }else if(frzing==-1){
-	  fstfntl->tem +=dsn/secinday;
-	}
-    }else{// first time
-    	if(frzing==1){
-    	  fstfntl->tem =-dsn/secinday ;
-		 }else if(frzing==-1){
-		  fstfntl->tem =dsn/secinday;
-		}
-		temupdated[fstfntl->indl-1]=true;
-    }
-    
-	
-	
-	currl=fstfntl->prevl;//no phase changed above
-	while(currl!=NULL){
-			if(tdrv>0){
-				tkres = currl->getUnfThermCond();
-			}else {
-				tkres = currl->getFrzThermCond();
-			}
-			sumresabv += currl->dz/tkres;
-			// here the dz, volwat, tkfront are all for the partd 
-			dsn =  getDegSecNeeded(  dz, volwat,tkfrontorg,sumresabv);
-
-			
-			if(temupdated[currl->indl-1]){
-			    if(frzing==1){
-			      currl->tem +=-dsn/secinday;
-				 }else if(frzing==-1){
-				  currl->tem +=dsn/secinday;
-				}
-			}else{// first time
-			    	if(frzing==1){
-			    	  currl->tem =-dsn/secinday ;
-					 }else if(frzing==-1){
-					  currl->tem =dsn/secinday;
-					}
-					temupdated[currl->indl-1]=true;
-			    }
-
-		currl=currl->prevl;
-		
-	};
-	
-	
-};
-
-
-
