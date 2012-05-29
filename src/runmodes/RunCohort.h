@@ -1,4 +1,4 @@
-/*
+/**
  * This class is used to run a cohort: from input to output
  *  
  */
