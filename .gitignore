@@ -1,1 +1,3 @@
-docs/html/*
+DATA/output/*.nc
+*.o
+docs/*
