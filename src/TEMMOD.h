@@ -1,4 +1,4 @@
-/*
+/**
  * Definition of TEM run mode and output options
  * 
  * for extrarun and siterun, need first spinnup and than transient run
