@@ -29,9 +29,9 @@
 %rename(clone) operator=;
 
 			%{
-				#include "lookup\CohortLookup.h"
-				#include "lookup\SoilLookup.h"
+				#include "lookup/CohortLookup.h"
+				#include "lookup/SoilLookup.h"
 			%}
 
-			%include "lookup\CohortLookup.h"
-			%include "lookup\SoilLookup.h"
+			%include "lookup/CohortLookup.h"
+			%include "lookup/SoilLookup.h"

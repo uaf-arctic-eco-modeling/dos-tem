@@ -29,19 +29,19 @@
 %rename(clone) operator=;
 
 			%{
-				#include "data\BgcData.h"
-				#include "data\CohortData.h"
-				#include "data\EnvData.h"
-				#include "data\FirData.h"
-				#include "data\GridData.h"
-				#include "data\RegionData.h"
-				#include "data\RestartData.h"
+				#include "data/BgcData.h"
+				#include "data/CohortData.h"
+				#include "data/EnvData.h"
+				#include "data/FirData.h"
+				#include "data/GridData.h"
+				#include "data/RegionData.h"
+				#include "data/RestartData.h"
 			%}
 
-			%include "data\BgcData.h"
-			%include "data\CohortData.h"
-			%include "data\EnvData.h"
-			%include "data\FirData.h"
-			%include "data\GridData.h"
-			%include "data\RegionData.h"
-			%include "data\RestartData.h"
+			%include "data/BgcData.h"
+			%include "data/CohortData.h"
+			%include "data/EnvData.h"
+			%include "data/FirData.h"
+			%include "data/GridData.h"
+			%include "data/RegionData.h"
+			%include "data/RestartData.h"
