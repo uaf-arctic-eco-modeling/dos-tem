@@ -1,0 +1,13 @@
+c:/TEM/Simulations/Test_Regner/output/
+c:/TEM/Simulations/Test_Regner/regiondata/
+c:/TEM/Simulations/Test_Regner/griddata/
+c:/TEM/Simulations/Test_Regner/cohort/eq/
+c:/TEM/Simulations/Test_Regner/cohort/sp/
+c:/TEM/Simulations/Test_Regner/cohort/tr/
+c:/TEM/Simulations/Test_Regner/runcht-eq.nc
+c:/TEM/Simulations/Test_Regner/output/restart-eq.nc
+eq
+restart
+test-regioner
+withclimate
+withco2

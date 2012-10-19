@@ -1,0 +1,47 @@
+/*
+ * coredata.i
+ *
+ */
+
+	%module coredata
+
+//Translate operators
+%rename(add) operator+;
+%rename(elementAt) operator[];
+%rename(getValue) operator();
+%rename(subtract) operator-;
+%rename(multiply) operator*;
+%rename(divide) operator/;
+%rename(equals) operator==;
+%rename(unEquals) operator!=;
+%rename(shiftLeft) operator<<;
+%rename(shiftRight) operator>>;
+%rename(lessThan) operator<;
+%rename(lessThanOrEquals) operator<=;
+%rename(greaterThan) operator>=;
+%rename(greaterThanOrEquals) operator>=;
+%rename(addOne) operator++;
+%rename(subtractOne) operator--;
+%rename(addAndAssign) operator+=;
+%rename(subtractAndAssign) operator-=;
+%rename(multiplyAndAssign) operator*=;
+%rename(divideAndAssign) operator/=;
+%rename(clone) operator=;
+
+			%{
+				#include "data\BgcData.h"
+				#include "data\CohortData.h"
+				#include "data\EnvData.h"
+				#include "data\FirData.h"
+				#include "data\GridData.h"
+				#include "data\RegionData.h"
+				#include "data\RestartData.h"
+			%}
+
+			%include "data\BgcData.h"
+			%include "data\CohortData.h"
+			%include "data\EnvData.h"
+			%include "data\FirData.h"
+			%include "data\GridData.h"
+			%include "data\RegionData.h"
+			%include "data\RestartData.h"
