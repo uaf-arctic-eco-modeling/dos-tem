@@ -398,7 +398,8 @@ void GridInputer::getFireSize(int fyear[], int fseason[], int fsize[], const int
  	}
 
  	//get the data for recid
-	fsyrV->set_cur((long)0);
+ 	int rec0= 0;
+	fsyrV->set_cur(rec0);
 	NcBool nb1 = fsyrV->get(&fyear[0],numyr);
 	if(!nb1){
 	 	string msg = "problem in reading fire year in GridInputer::getFireSize";
@@ -423,7 +424,6 @@ void GridInputer::getFireSize(int fyear[], int fseason[], int fsize[], const int
 	}
 
 };
-
 
 void GridInputer::setModelData(ModelData* mdp){
 	md = mdp;

@@ -47,8 +47,11 @@ Ground::~Ground(){
 }
 
 //////////////////////////////////////////////////////////////////////////////
-void Ground::updateDaily(const int & yrcnt, const int & year,
+int Ground::updateDaily(const int & yrcnt, const int & year,
 			 const int & mind, const int & id, const double & tdrv2, const double & dayl){
+
+	int error = 0;
+
 	double tsurface;
 	double trans, melt, evap, rnth;
 	curyrcnt = yrcnt;
@@ -126,15 +129,18 @@ void Ground::updateDaily(const int & yrcnt, const int & year,
     if(fstfntl==NULL && lstfntl==NULL ){ // there is no front
      	if(frontl->isSoil()){
        		if((tstate==1 && tdrv1>0) || (tstate==-1 && tdrv1<0) || tstate==0){//create front
-       	 		soil.stefan.updateFronts(tdrv1, frontl, backl,fstsoill, lstminl,mind);
+       	 		error = soil.stefan.updateFronts(tdrv1, frontl, backl,fstsoill, lstminl,mind);
        		// stefan.checkFrontsValidity(fstsoill);
        		}
      	}
     }else{
-		soil.stefan.updateFronts(tdrv1, frontl, backl,fstsoill, lstminl,mind);
-		soil.stefan.checkFrontsValidity(fstsoill);
+		error = soil.stefan.updateFronts(tdrv1, frontl, backl,fstsoill, lstminl,mind);
+		error = soil.stefan.checkFrontsValidity(fstsoill);
     }
    
+    if (error != 0) return error;
+
+    ///////////////////////////////////
     updateFstLstFntLay();
 	soil.stefan.updateTemps(tdrv1, frontl, backl,fstsoill, fstfntl, lstfntl);
     
@@ -302,6 +308,7 @@ void Ground::updateDaily(const int & yrcnt, const int & year,
 
 	//soil.endOfDay(grow,  curyrcnt, tdrv);
 		
+	return 0;
 };
 
 void Ground::updateAllLayers(){
@@ -862,10 +869,10 @@ void Ground::initializeLayerStructure(){
 };  
 
 
-void Ground::initializeLayerStructure5restart(RestartData * resin){ 
+int Ground::initializeLayerStructure5restart(RestartData * resin){
 
+	cleanSnowSoilLayers();
 	if(rocklayercreated){
-		cleanSnowSoilLayers();
 		initSnowSoilLayers5Restart(resin);
 	}else{
 		initRockLayers();
@@ -889,7 +896,7 @@ void Ground::initializeLayerStructure5restart(RestartData * resin){
 	
 	rock.initializeState5restart(lstminl, resin);
 	soil.richard.updateSoilStructure(fstsoill);
-    soil.stefan.checkFrontsValidity(fstsoill);	 
+    return soil.stefan.checkFrontsValidity(fstsoill);
 }; 
 
 void Ground::setFstSoilLayer(){// only called at the time of initializing soil layers
@@ -1114,9 +1121,7 @@ void Ground::checkSnowBlwSoil(){
 }
 
 void Ground::initSnowSoilLayers5Restart(RestartData * resin){
-  
-   // cleanSnowSoilLayers();
-  
+
     int numsoil=0;
 	
 	double dzsoil[MAX_SOI_LAY];
@@ -1365,6 +1370,12 @@ void Ground::updateShlwThickness(){
 		}
 	}
 
+	soil.peat.oldshlwthick = soil.peat.shlwthick;
+    soil.peat.olddlstshlw  = soil.peat.dlstshlw;
+
+    soil.peat.shlwnum = num;
+	soil.peat.shlwthick = thick;
+
 	bool samerange =soil.peat.sameShlwThickRange(thick);
 	
 	SoilLayer* upsl ;
@@ -1428,26 +1439,24 @@ void Ground::updateShlwThickness(){
 		}
 	
 	}else{
-		soil.peat.oldshlwthick = soil.peat.shlwthick;
-	  	soil.peat.shlwthick    = thick;
-	    soil.peat.olddlstshlw  = soil.peat.dlstshlw;
 	    //need to change the front in a layer so that the frontdz should not be greater than the layer thickness
 	    currl =fstshlwl;
 	    SoilLayer* sl;
 	    while(currl!=NULL){
 		
-		if(currl->indl<=lstshlwl->indl){
-			sl = dynamic_cast<SoilLayer*>(currl);
-			sl->adjustFronts();
-		}else{
-		 break;	
-		}
-		currl =currl->nextl;
-	};
+	    	if(currl->indl<=lstshlwl->indl){
+	    		sl = dynamic_cast<SoilLayer*>(currl);
+	    		sl->adjustFronts();
+	    	}else{
+	    		break;
+	    	}
+	    	currl =currl->nextl;
+	    }
 	
 	}
 	
-	
+	soil.peat.dlstshlw = soil.peat.shlwdza[soil.peat.shlwnum-1];
+
 }
 
 void Ground::updateDeepThickness(){
@@ -1464,6 +1473,7 @@ void Ground::updateDeepThickness(){
 		double prevdz =-1;
 		while(currl!=NULL){
 			if(currl->indl<=lstdeepl->indl){
+
 				thick +=currl->dz;
 				if(currl->dz<0.02){
 			 		thin =true;	
@@ -1480,6 +1490,11 @@ void Ground::updateDeepThickness(){
 			currl =currl->nextl;
 		}
 	}
+
+  	soil.peat.olddeepthick =soil.peat.deepthick;
+
+  	soil.peat.deepnum = num;
+	soil.peat.deepthick = thick;
 
 	bool samerange =soil.peat.sameDeepThickRange(thick);
 	SoilLayer* upsl ;
@@ -1542,8 +1557,6 @@ void Ground::updateDeepThickness(){
 		}	
 	
 	}else{
-	  	soil.peat.olddeepthick =soil.peat.deepthick;
-	  	soil.peat.deepthick =thick;
 	  	
 	  	//need to change the front in a layer so that the frontdz should not be greater than the layer thickness
 	    currl =fstdeepl;
@@ -1828,9 +1841,9 @@ void Ground::divideOneSoilLayerU2L(SoilLayer*usl, SoilLayer* lsl, const double &
 	  	 	 }else if(oldtopfront!=0){
 	  	       usl->frozen = oldtopfront;
 	  	     }else{
-	  	     	 string msg = "cannot determine soil frozen state ";
- 	 			 char* msgc = const_cast< char* > ( msg.c_str());
- 		 		 throw Exception(msgc, I_FROZEN_STATE);
+	  	     	 //string msg = "cannot determine soil frozen state ";
+ 	 			 //char* msgc = const_cast< char* > ( msg.c_str());
+ 		 		// throw Exception(msgc, I_FROZEN_STATE);
 	  	     }
 	  	     
 	  	 	  
@@ -1851,9 +1864,9 @@ void Ground::divideOneSoilLayerU2L(SoilLayer*usl, SoilLayer* lsl, const double &
 	  	 	  }else if(oldbotfront!=0){
 	  	 	  	lsl->frozen= - oldbotfront;
 	  	 	  }else{
-	  	 	  	 string msg = "cannot determine soil frozen state ";
- 	 			 char* msgc = const_cast< char* > ( msg.c_str());
- 		 		 throw Exception(msgc, I_FROZEN_STATE);
+	  	 	  	 //string msg = "cannot determine soil frozen state ";
+ 	 			 //char* msgc = const_cast< char* > ( msg.c_str());
+ 		 		 //throw Exception(msgc, I_FROZEN_STATE);
 	  	 	  }
 	  	 	 
 	  	 	  }

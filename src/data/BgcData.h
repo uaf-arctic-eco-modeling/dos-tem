@@ -10,13 +10,13 @@
 #include "../inc/states.h"
 #include "EnvData.h"
 
-#include <iostream>
-#include <math.h>
-
 #include "RegionData.h"
 #include "GridData.h"
 #include "CohortData.h"
 
+#include <iostream>
+#include <math.h>
+#include <algorithm>
 #include <vector>
 #include <deque>
 using namespace std;

@@ -868,7 +868,7 @@ void Soil_Env::resetFineRootFrac(Layer* fstsoill){
    ed->m_soid.maxrootind =0;
    for(int il =0; il <MAX_SOI_LAY; il++){
    	 if(ed->m_soid.maxrootratio < ed->m_sois.rootfrac[il]){
-   	     ed->m_soid.maxrootratio =ed->m_sois.rootfrac[il]	;
+   	     ed->m_soid.maxrootratio =ed->m_sois.rootfrac[il];
    	     ed->m_soid.maxrootind =il;
    	 }
    	
@@ -881,9 +881,16 @@ double Soil_Env::getFineRootFrac(const double & layertop, const double & layerbo
 	double totfrfrac ;
 	double topcm = (layertop-mossthick) * 100.;   //Yuan: mossthick removed here
 	double botcm = (layerbot-mossthick) * 100.;   //Yuan: mossthick removed here
-	//determine the layer index of layertop and layerbot
-	int indtop = (int) floor(topcm/10.);   //Yuan: the uppermost layer
-	int indbot = (int) floor(botcm/10.);
+
+	// dynamically changing root interval (10 intervals of max. 100 cm depth)
+	double deltartdep = 10.0; // max. 10 cm x 10 root-layers, which is defined in 'CohortLookup.cpp'::assignRootParams()
+    if (fd->ysf<=20) {
+    	deltartdep = 2.0+8.0*0.05*fd->ysf;   // a very simple linearly increasing max. root-layer depth at 0.05 cm per year, at least 2 cm
+    }
+
+	//determine the root-layer index of layertop and layerbot
+	int indtop = (int) floor(topcm/deltartdep);   //Yuan: the uppermost layer
+	int indbot = (int) floor(botcm/deltartdep);
 	
 	totfrfrac=0.;
 /*
@@ -920,21 +927,26 @@ double Soil_Env::getFineRootFrac(const double & layertop, const double & layerbo
 	double sumfractop = 0.0;
 	double sumfracbot = 0.0;
 	if (indtop ==0) {
-		sumfractop = envpar.frprod_frac[indtop]/10.0*topcm;
+		sumfractop = envpar.frprod_frac[indtop]/deltartdep*topcm;
+	} else if (indtop >= 9) {
+		sumfractop = envpar.frprod_frac[indtop];
 	} else {
-		sumfractop = (envpar.frprod_frac[indtop]-envpar.frprod_frac[indbot-1])/10.0
-				    * (topcm-indtop*10.);
+		sumfractop = (envpar.frprod_frac[indtop]-envpar.frprod_frac[indtop-1])/deltartdep
+				    * (topcm-indtop*deltartdep);
 	}
 
 	if (indbot ==0) {
-		sumfracbot = envpar.frprod_frac[indbot]/10.0*botcm;
+		sumfracbot = envpar.frprod_frac[indbot]/deltartdep*botcm;
+	} else if (indbot >= 9) {
+		sumfracbot = envpar.frprod_frac[indbot];
 	} else {
-		sumfracbot = (envpar.frprod_frac[indbot]-envpar.frprod_frac[indbot-1])/10.0
-				    * (botcm-indtop*10.);
+		sumfracbot = (envpar.frprod_frac[indbot]-envpar.frprod_frac[indbot-1])/deltartdep
+				    * (botcm-indbot*deltartdep);
 	}
 
 	totfrfrac = sumfracbot - sumfractop;
 	if (totfrfrac<0.0) totfrfrac = 0.0;
+	if (totfrfrac>1.0) totfrfrac = 1.0;
 	
 	return totfrfrac; 
 	
@@ -1094,9 +1106,9 @@ void Soil_Env::layer2structmonthly(Layer* fstsoill){
 
 	ed->m_soid.actual_num_soil=ind;
 	if(ed->m_sois.dz[0] ==2){
-		string msg = "the first soil layer cannot be deep organic";
- 		char* msgc = const_cast< char* > ( msg.c_str());
- 		throw Exception(msgc, I_LAYER_FIRST_DEEP);
+		//string msg = "the first soil layer cannot be deep organic";
+ 		//char* msgc = const_cast< char* > ( msg.c_str());
+ 		//throw Exception(msgc, I_LAYER_FIRST_DEEP);
 		 
 	}
 		 
@@ -1235,17 +1247,17 @@ void Soil_Env::retrieveDailyFronts(Layer* fstsoill){
    		  		iff++;
    		  		if(iff>=MAX_NUM_FNT){
    		  		 
-   		  		 string msg = "The number of freezing fronts is more than MAX_OUT_FNT ";
- 				char* msgc = const_cast< char* > ( msg.c_str());
- 				throw Exception(msgc, I_TOO_MANY_FRZ_FRONTS);
+   		  		// string msg = "The number of freezing fronts is more than MAX_OUT_FNT ";
+ 				//char* msgc = const_cast< char* > ( msg.c_str());
+ 				//throw Exception(msgc, I_TOO_MANY_FRZ_FRONTS);
    		  		}
    		  		ed->d_soid.frzfnt[iff] = top + sl->fronts[i]->dz;
    		  	}else if(sl->fronts[i]->frzing==-1){
    		  		itf++;
    		  		if(itf>=MAX_NUM_FNT){
-   		  		 string msg = "The number of Thawing fronts is more than MAX_OUT_FNT ";
- 				char* msgc = const_cast< char* > ( msg.c_str());
- 				throw Exception(msgc, I_TOO_MANY_THW_FRONTS);
+   		  		 //string msg = "The number of Thawing fronts is more than MAX_OUT_FNT ";
+ 				//char* msgc = const_cast< char* > ( msg.c_str());
+ 				//throw Exception(msgc, I_TOO_MANY_THW_FRONTS);
    		  		}
    		  		ed->d_soid.thwfnt[itf] = top + sl->fronts[i]->dz;
    		  	}

@@ -9,8 +9,8 @@
 #include <cmath>
 using namespace std;
 
-#include "netcdfcpp.h"
-#include "ncvalues.h"
+#include <netcdfcpp.h>
+#include <ncvalues.h>
 
 #include "../util/Exception.h"
 

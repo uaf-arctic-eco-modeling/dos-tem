@@ -16,7 +16,7 @@
 #include <cmath>
 using namespace std;
 
-#include "netcdfcpp.h"
+#include <netcdfcpp.h>
 
 //from TEMcore/..
 #include "../util/Exception.h"

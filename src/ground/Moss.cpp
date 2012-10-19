@@ -25,7 +25,7 @@ void Moss::updateThicknesses(int type[], double dz[],const int & maxnum){
 	num =0;
 	thick =0.;
    for(int i=0;i<maxnum; i++){
-   	  if(type[i] ==0){
+   	  if(type[i] <=0){
    	  	dza[num] = dz[i];
    	  	num ++;
    	  	thick += dz[i];

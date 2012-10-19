@@ -5,8 +5,8 @@
  * 
  */
 
-#include "netcdfcpp.h"
-#include "ncvalues.h"
+#include <netcdfcpp.h>
+#include <ncvalues.h>
 
 #include <iostream>
 #include <string>

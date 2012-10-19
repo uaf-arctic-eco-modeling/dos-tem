@@ -6,14 +6,15 @@
 #include "../inc/diagnostics.h"
 #include "../inc/fluxes.h"
 #include "../inc/states.h"
-#include "EnvData.h"
 #include "../inc/timeconst.h"
-
-#include <iostream>
-#include <math.h>
+#include "EnvData.h"
 #include "RegionData.h"
 #include "GridData.h"
 #include "CohortData.h"
+
+#include <algorithm>
+#include <iostream>
+#include <math.h>
 
 class FirData{
  	public:
@@ -28,9 +29,6 @@ class FirData{
 		atm2soi_fir y_a2soi;
 
 		bool useseverity;
-
-//in Eric's algorithm, season, fire size 
-
 
 		void init();
     	void beginOfYear();

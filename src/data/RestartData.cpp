@@ -11,7 +11,6 @@ RestartData::~RestartData(){
 void RestartData::reinitValue(){
 	
 	chtid=-999;
-	
 	perma = -999;
 
 	for(int il =0;il<MAX_SNW_LAY; il++){
@@ -65,6 +64,8 @@ void RestartData::reinitValue(){
     deadn=-999;
     prveetmx= -999;
     prvpetmx= -999;
+    foliagemx= -999;
+	lai = -999;
     unnormleaf= -999;
     prvunnormleafmx= -999;
     prvtopt= -999;
@@ -73,9 +74,7 @@ void RestartData::reinitValue(){
     kdhum= -999;
     kdmin= -999;
     kdslow= -999;
-    foliagemx= -999;
 	ysf =-999;
 	burnedn =-999;
-	lai = -999; 
 };
 

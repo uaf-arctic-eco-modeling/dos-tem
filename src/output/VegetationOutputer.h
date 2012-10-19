@@ -4,8 +4,8 @@
 #ifndef VEGETATIONOUTPUTER_H_
 #define VEGETATIONOUTPUTER_H_
 
-#include "netcdfcpp.h"
-#include "ncvalues.h"
+#include <netcdfcpp.h>
+#include <ncvalues.h>
 
 #include "SiteOutputer.h"
 #include "../inc/timeconst.h"

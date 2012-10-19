@@ -4,8 +4,8 @@
 #ifndef ATMOSPHEREOUTPUTER_H_
 #define ATMOSPHEREOUTPUTER_H_
 
-#include "netcdfcpp.h"
-#include "ncvalues.h"
+#include <netcdfcpp.h>
+#include <ncvalues.h>
 
 #include "SiteOutputer.h"
 #include "../run/AtmOutData.h"

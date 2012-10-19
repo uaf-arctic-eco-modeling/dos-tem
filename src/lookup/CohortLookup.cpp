@@ -2,6 +2,15 @@
 #include "CohortLookup.h"
 
 CohortLookup::CohortLookup(){
+
+}
+
+CohortLookup::~CohortLookup(){
+
+}
+
+void CohortLookup::init(){
+
    assignVegetationParams();
    assignLeafParams();
    assignMicrobeParams();

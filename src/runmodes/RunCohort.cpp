@@ -9,6 +9,7 @@
 #include "RunCohort.h"
 
 RunCohort::RunCohort(){
+ 	cohortcount = 0;
 	jcalifilein = true;    // switch for reading calibrated parameters; can be reset outside
 	ccdriverout = false;  // switch for output calirestart.nc; can be reset outside
 }
@@ -164,14 +165,12 @@ int RunCohort::reinit(const int &cid, const int &eqcid, const int &rescid){
 
 	 // may update the calibrated pars from Jcalinput.txt file, which from calibration run
 	 if (jcalifilein) {
-		 if (jcalparfile.compare("")==0) {
-			 svegtype.str("");  //clear-up before use
-			 svegtype<<cht.cd->vegtype;   //convert vegtype to string
-			 sdrgtype.str("");
-			 sdrgtype<<cht.cd->drgtype;   //convert drgtype to string
-			 jcalparfile = "config/Jcalinput"
-		                     +svegtype.str()+sdrgtype.str()+".txt";
-		 }
+		 svegtype.str("");  //clear-up before use
+		 svegtype<<cht.cd->vegtype;   //convert vegtype to string
+		 sdrgtype.str("");
+		 sdrgtype<<cht.cd->drgtype;   //convert drgtype to string
+		 jcalparfile = "config/Jcalinput"
+                     +svegtype.str()+sdrgtype.str()+".txt";
 			
 		 setCalibrationParameters(&cht.chtlu, jcalparfile);
 		 if (cht.md->consoledebug) {
@@ -205,38 +204,39 @@ int RunCohort::reinit(const int &cid, const int &eqcid, const int &rescid){
 		 resinputer->getAGEsnow(cht.resid.AGEsnow, rescid);
 		 resinputer->getRHOsnow(cht.resid.RHOsnow, rescid);
 		 
-		 resinputer->getTYPEsoil(cht.resid.TYPEsoil, rescid);
-		 resinputer->getFROZENsoil(cht.resid.FROZENsoil, rescid);
-		 resinputer->getDZsoil(cht.resid.DZsoil, rescid);
 		 resinputer->getTSsoil(cht.resid.TSsoil, rescid);
+		 resinputer->getDZsoil(cht.resid.DZsoil, rescid);
 		 resinputer->getLIQsoil(cht.resid.LIQsoil, rescid);
 		 resinputer->getICEsoil(cht.resid.ICEsoil, rescid);
+		 resinputer->getFROZENsoil(cht.resid.FROZENsoil, rescid);
 		 resinputer->getNONC(cht.resid.NONCsoil, rescid);
 		 resinputer->getREAC(cht.resid.REACsoil, rescid);
-		 
+		 resinputer->getTYPEsoil(cht.resid.TYPEsoil, rescid);
 		 resinputer->getTYPEmin(cht.resid.TYPEmin, rescid);
+
 		 resinputer->getDZrock(cht.resid.DZrock, rescid);
 		 resinputer->getTSrock(cht.resid.TSrock, rescid);
 		 resinputer->getFrontZ(cht.resid.frontZ, rescid);
 		 resinputer->getFrontFT(cht.resid.frontFT, rescid);
 
-		 resinputer->getVEGC(cht.resid.vegc, rescid);
-		 resinputer->getDEADC(cht.resid.deadc, rescid);
+		 resinputer->getSOLN(cht.resid.soln, rescid);
+		 resinputer->getAVLN(cht.resid.avln, rescid);
 		 resinputer->getWDEBRIS(cht.resid.wdebris, rescid);
 		 resinputer->getSTRN(cht.resid.strn, rescid);
 		 resinputer->getSTON(cht.resid.ston, rescid);
+		 resinputer->getVEGC(cht.resid.vegc, rescid);
+		 resinputer->getDEADC(cht.resid.deadc, rescid);
 		 resinputer->getDEADN(cht.resid.deadn, rescid);
-		 resinputer->getC2N(cht.resid.c2n, rescid);
-		 resinputer->getSOLN(cht.resid.soln, rescid);
-		 resinputer->getAVLN(cht.resid.avln, rescid);
 		 
-		 resinputer->getLAI(cht.resid.lai, rescid);
-		 resinputer->getFOLIAGEMX(cht.resid.foliagemx, rescid);
-		 resinputer->getUNNORMLEAF(cht.resid.unnormleaf, rescid);
-		 resinputer->getPRVUNNORMLEAFMX(cht.resid.prvunnormleafmx, rescid);
 		 resinputer->getPRVEETMX(cht.resid.prveetmx, rescid);
 		 resinputer->getPRVPETMX(cht.resid.prvpetmx, rescid);
+		 resinputer->getFOLIAGEMX(cht.resid.foliagemx, rescid);
+
+		 resinputer->getLAI(cht.resid.lai, rescid);
+		 resinputer->getUNNORMLEAF(cht.resid.unnormleaf, rescid);
+		 resinputer->getPRVUNNORMLEAFMX(cht.resid.prvunnormleafmx, rescid);
 		 resinputer->getPRVTOPT(cht.resid.prvtopt, rescid);
+		 resinputer->getC2N(cht.resid.c2n, rescid);
 		 
 		 resinputer->getKDFIB(cht.resid.kdfib, rescid);
 		 resinputer->getKDHUM(cht.resid.kdhum, rescid);
@@ -254,7 +254,8 @@ int RunCohort::reinit(const int &cid, const int &eqcid, const int &rescid){
 	 }
 
 	 //reset other initial state variables
-	 cht.reset();
+	 errcode = cht.reset();
+	 if (errcode != 0) return -9;
 	 	 
 	 //output options
      cht.outputSpinup = false;
@@ -289,46 +290,58 @@ int RunCohort::reinit(const int &cid, const int &eqcid, const int &rescid){
      return 0;
 };
 
-void RunCohort::run(){
+int RunCohort::run(){
 
+	int error = 0;
 	try {
 	
 		if(cht.md->runeq){
-    		runEquilibrium();
+    		error = runEquilibrium();
+		    if (error != 0) return error;
+
     		cht.updateRestartOutputBuffer(1);
 		}
 		
 		if(cht.md->runsp){
-    		runSpinup();
+    		error = runSpinup();
+		    if (error != 0) return error;
     		cht.updateRestartOutputBuffer(2);
-    		
+
 		}
 		
 		if(cht.md->runtr){
 			if (!cht.md->runsc) {
-				runTransit();
-				cht.updateRestartOutputBuffer(3);
+				error = runTransit();
+	 		    if (error != 0) return error;
+	 		    cht.updateRestartOutputBuffer(3);
 
 			//Yuan: scenario run is exactly same as transient run, except for period
 		    //  So, the climate/co2/fire data are put these two together
 			} else {
-				runScenario();
+				error = runScenario();
+	 		    if (error != 0) return error;
+
 			}
 		}
 
 		//restart.nc always output
-		resout->outputVariables(cht.cohortcount);
+		resout->outputVariables(cohortcount);
 	
   	} catch (Exception &exception){
-  		cout <<"problem in run for cohort"<<cht.cohortcount<<"\n";
+  		cout <<"problem in run for cohort"<<cohortcount<<"\n";
   		cht.failed =true;
   		cht.errorid = exception.getErrorCode();
   		exception.mesg();
   	}
+
+  	return 0;
 	
 }; 
 
-void RunCohort::runEquilibrium(){
+int RunCohort::runEquilibrium(){
+
+	int error = 0;
+
 	cht.timer->reset();
 
 	/*
@@ -344,14 +357,14 @@ void RunCohort::runEquilibrium(){
 	
 	//at first run TEM 500 years, with only env module is on
 	 cht.envmodule =true;
-     cht.ecomodule =false;
-     cht.dsbmodule =false;
-     cht.dslmodule= false;
-     cht.veupdateLAI5Vegc =false;
+         cht.ecomodule =false;
+         cht.dsbmodule =false;
+         cht.dslmodule= false;
+         cht.veupdateLAI5Vegc =false;
    	 cht.friderived = false;
-     cht.fd->ysf =1000;
-     bool assigneq =false;
-     bool useeq=false;
+         cht.fd->ysf =1000;
+         bool assigneq =false;
+         bool useeq=false;
 	 for (int iy=0; iy<500; iy++){
 	   int yrcnt =iy;
 	   if(iy==499)assigneq =true;
@@ -426,36 +439,45 @@ void RunCohort::runEquilibrium(){
   	 cht.friderived = true;    //When call DSB module (fire), using FRI to determine fire year
   	                  // and the fire season/size use the FIRST one in the gd.season[]/gd.size[]
   	 int outputyrind = 0;
-  	 int nfri = min((int)(MAX_EQ_YR/cht.fd->gd->fri), 20);   //max. 10000+1FRI yrs or 20 FRI
+  	 int nfri = min((int)(MAX_EQ_YR/cht.fd->gd->fri), 10);   //max. 10000+1FRI yrs or 10 FRI
 
 	 for (int iy=0; iy<(nfri+1)*cht.fd->gd->fri-2; iy++){   //Yuan: -2 will make the final restart.nc not the fire year, but two years ago
 		 int yrcnt =iy;
 		 for (int im=0; im<12;im++){
 	   		int currmind=  im;
 	   		int dinmcurr = cht.timer->getDaysInMonth(im);;
-	   		cht.updateMonthly(outputyrind, yrcnt, currmind, dinmcurr, false, false);
+
+	   		error = cht.updateMonthly(outputyrind, yrcnt, currmind, dinmcurr, false, false);
+		    if (error != 0) return error;
 
 	   		if (SITEMODE) {
 	   			siteoutput(outputyrind, currmind);
 	   		}
 
+    		cht.updateRestartOutputBuffer(1);
+
 	   		cht.timer->advanceOneMonth();
 		 }
 
 		if (cht.outRegn){
-			rout->outputYearCohortVars(outputyrind, cht.cohortcount);
+			rout->outputYearCohortVars(outputyrind, cohortcount);
 		}
 
  		if(cht.md->consoledebug) {
  			cout <<" Equilibrium run: year "<<iy <<" @cohort "<<cht.cd->eqchtid<<"\n";
  		}
 
-		outputyrind++;
+ 		outputyrind++;
 	}
+
+	 return 0;
 
 };
 
-void RunCohort::runSpinup(){
+int RunCohort::runSpinup(){
+
+	int error = 0;
+
 	cht.timer->reset();
 
 	cht.bd->baseline =1;
@@ -465,12 +487,11 @@ void RunCohort::runSpinup(){
 	cht.dsbmodule =true;
 	cht.envmodule =true;
     cht.ecomodule =true;
-    cht.dslmodule= true;
-    //cht.dslmodule= false;    //for testing
+    cht.dslmodule =true;
 	 
     cht.veupdateLAI5Vegc =true;
-	cht.equiled =true;
-    cht.friderived =true;  //Yuan: will change after reaching the first fire year
+	cht.equiled          =true;
+    cht.friderived       =true;  //Yuan: will change after reaching the first fire year
 	 
 	for(int iy=cht.timer->spinbegyr; iy<=cht.timer->spinendyr; iy++){
 
@@ -483,8 +504,9 @@ void RunCohort::runSpinup(){
 	        int currmind=  im;
 	        int dinmcurr = cht.timer->getDaysInMonth(im);;
 	   
-	   		cht.updateMonthly(outputyrind, yrcnt, currmind, dinmcurr , false,false);
-			
+	   		error = cht.updateMonthly(outputyrind, yrcnt, currmind, dinmcurr , false,false);
+  	        if (error != 0) return error;
+
 	   		if (SITEMODE) {
 	   			siteoutput(outputyrind, currmind);
 	   		}
@@ -494,7 +516,7 @@ void RunCohort::runSpinup(){
 	    }
 
 	    if (cht.outRegn){
-			rout->outputYearCohortVars(outputyrind, cht.cohortcount);
+			rout->outputYearCohortVars(outputyrind, cohortcount);
 		}
 	    
 	    if(cht.md->consoledebug){	
@@ -504,10 +526,15 @@ void RunCohort::runSpinup(){
 	}
 	
 	cht.spined =true;
+
+	return 0;
 	 
 };
 
-void RunCohort::runTransit(){
+int RunCohort::runTransit(){
+
+	int error = 0;
+
 	cht.timer->reset();
 
  	cht.dsbmodule =true; 
@@ -536,8 +563,10 @@ void RunCohort::runTransit(){
 	    for(int im=0; im<12;im++){
 	        int currmind=  im;
 	        int dinmcurr = cht.timer->getDaysInMonth(im);
-	        cht.updateMonthly(outputyrind, yrcnt, currmind, dinmcurr,false, false);
-			
+
+	        error = cht.updateMonthly(outputyrind, yrcnt, currmind, dinmcurr,false, false);
+		    if (error != 0) return error;
+
 	        if (SITEMODE){
 	        	siteoutput(outputyrind, currmind);
 	        }
@@ -546,7 +575,7 @@ void RunCohort::runTransit(){
 	    }
 	    
 		if (cht.outRegn){
-			rout->outputYearCohortVars(outputyrind, cht.cohortcount);
+			rout->outputYearCohortVars(outputyrind, cohortcount);
 		}
 
 	    if(cht.md->consoledebug){
@@ -555,13 +584,17 @@ void RunCohort::runTransit(){
 	    	<<" @cohort "<<cht.cd->trchtid<<"\n";
 	    }
 	}
-	
 	 
 	cht.transed =true;	
 	
+	return 0;
+
 };
 
-void RunCohort::runScenario(){
+int RunCohort::runScenario(){
+
+	int error = 0;
+
 	cht.timer->reset();
 
  	cht.dsbmodule =true;
@@ -590,7 +623,9 @@ void RunCohort::runScenario(){
 	    for(int im=0; im<12;im++){
 	        int currmind=  im;
 	        int dinmcurr = cht.timer->getDaysInMonth(im);
-	        cht.updateMonthly(outputyrind, yrcnt, currmind, dinmcurr,false, false);
+
+	        error = cht.updateMonthly(outputyrind, yrcnt, currmind, dinmcurr,false, false);
+		    if (error != 0) return error;
 
 	        if (SITEMODE){
 	        	siteoutput(outputyrind, currmind);
@@ -600,7 +635,7 @@ void RunCohort::runScenario(){
 	    }
 
 		if (cht.outRegn){
-			rout->outputYearCohortVars(outputyrind, cht.cohortcount);
+			rout->outputYearCohortVars(outputyrind, cohortcount);
 		}
 
 	    if(cht.md->consoledebug){
@@ -610,9 +645,9 @@ void RunCohort::runScenario(){
 	    }
 	}
 
-
 	cht.transed =true;
 
+	return 0;
 };
 
 void RunCohort::siteoutput(const int & outputyrind, const int & currmind){

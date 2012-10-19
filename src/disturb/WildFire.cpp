@@ -56,8 +56,7 @@ void WildFire::prepareDrivingData(const bool runsp, const bool runtr, const bool
 	}
 
 	//Yuan: season's month index order (0~11):
-	int morder[12] = {1,2,3, 4,5,6, 7,8,9, 10,11,0};  //Yuan: season: 1, 2(early fire), 3(late fire), and 4 with 3 months in the order
-	vector<int> firemonths;
+	//int morder[12] = {1,2,3, 4,5,6, 7,8,9, 10,11,0};  //Yuan: season: 1, 2(early fire), 3(late fire), and 4 with 3 months in the order
 
     int calyr =0;
 
@@ -78,10 +77,7 @@ void WildFire::prepareDrivingData(const bool runsp, const bool runtr, const bool
     			severity[in] = fd->cd->spseverity[in];
 
     			int fsindx=season[in]-1;  //note: season index starting from 1
-    		    for (int i=0; i<3; i++) firemonths.push_back(morder[fsindx*3+i]);
-    			random_shuffle(firemonths.begin(),firemonths.end());  //randomly pick-up a month for fire occurence
-    			month[in]=*firemonths.begin();
-    			firemonths.clear();
+    			month[in]=fsindx*3+2;   // middle of the season
 
     		    //Yuan: the following modified based on the change of grid-level input:
 		    	if (calyr < fd->gd->fireyear[0]) {
@@ -115,10 +111,7 @@ void WildFire::prepareDrivingData(const bool runsp, const bool runtr, const bool
     			severity[in+MAX_SP_FIR_OCR_NUM] = fd->cd->trseverity[in];
 
     			int fsindx=season[in+MAX_SP_FIR_OCR_NUM]-1;   //note: season index starting from 1
-    		    for (int i=0; i<3; i++) firemonths.push_back(morder[fsindx*3+i]);
-    			random_shuffle(firemonths.begin(),firemonths.end());  //randomly pick-up a month for fire occurence
-    			month[in+MAX_SP_FIR_OCR_NUM]=*firemonths.begin();
-    			firemonths.clear();
+    			month[in+MAX_SP_FIR_OCR_NUM]=fsindx*3+2;   // middle of the season
 
 		    	if (calyr < fd->gd->fireyear[0]) {
     				size[in+MAX_SP_FIR_OCR_NUM]  = fd->gd->firesize[0];   //Yuan: need further modification here??
@@ -461,10 +454,11 @@ double WildFire::getBurnThick(){
     	 }
      }
 
-     if(bthick <0){
-     	string msg = "burn thickness should be greater than zero";
- 		char* msgc = const_cast< char* > ( msg.c_str());
- 		throw Exception(msgc, I_BURN_ZERO);
+     if(bthick <0.){
+//     	string msg = "burn thickness should be greater than zero";
+// 		char* msgc = const_cast< char* > ( msg.c_str());
+// 		throw Exception(msgc, I_BURN_ZERO);
+    	 bthick = 0.;
      }
 
      if(bthick <ed->m_soid.mossthick){

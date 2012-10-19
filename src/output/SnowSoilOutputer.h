@@ -4,8 +4,8 @@
 #ifndef SNOWSOILOUTPUER_H_
 #define SNOWSOILOUTPUER_H_
 #include <iostream>
-#include "netcdfcpp.h"
-#include "ncvalues.h"
+#include <netcdfcpp.h>
+#include <ncvalues.h>
 
 #include "SiteOutputer.h"
 #include "../run/SnowSoilOutData.h"

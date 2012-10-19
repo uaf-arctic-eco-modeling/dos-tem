@@ -130,7 +130,7 @@ int Integrator::adapt(float pstate[]){
   	float time = 0.0;
   	float dt = 1.0;
   	int mflag = 0;
-  	long nintmon = 0;
+  	int nintmon = 0;
   	float oldstate[NUMEQ];
   	float  ptol =0.01;
  // temporary

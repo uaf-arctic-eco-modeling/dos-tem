@@ -10,7 +10,7 @@ Peat::~Peat(){
 
 
 bool Peat::sameShlwThickRange(const double & thickness){
-  /// if the thickness and shlwthick not in the same range, there is a need to reconstruct peat layers
+  /// if the thickness and previous shlwthick not in the same range, there is a need to reconstruct peat layers
   bool same =false;	
 	if(shlwnum==2){
 		if(shlwdza[0]>shlwdza[1]){
@@ -24,23 +24,23 @@ bool Peat::sameShlwThickRange(const double & thickness){
 		  return same;
 		}
 	}
-	if(thickness <0.02 && shlwthick <0.02){
+	if(thickness <0.02 && oldshlwthick <0.02){
 		return true;
-	}else if(thickness <0.04  && thickness >=0.01&& shlwthick <0.04 && shlwthick>=0.02){
+	}else if(thickness <0.04  && thickness >=0.01&& oldshlwthick <0.04 && oldshlwthick>=0.02){
 		return true;
-	}else if(thickness <0.06  && thickness >=0.04&& shlwthick <0.06 && shlwthick>=0.04){
+	}else if(thickness <0.06  && thickness >=0.04&& oldshlwthick <0.06 && oldshlwthick>=0.04){
 		return true;
-	}else if(thickness <0.10  && thickness >=0.06&& shlwthick <0.10 && shlwthick>=0.06){
+	}else if(thickness <0.10  && thickness >=0.06&& oldshlwthick <0.10 && oldshlwthick>=0.06){
 		return true;
-	}else if(thickness <0.15  && thickness >=0.10&& shlwthick <0.15 && shlwthick>=0.10){
+	}else if(thickness <0.15  && thickness >=0.10&& oldshlwthick <0.15 && oldshlwthick>=0.10){
 		return true;
-	}else if(thickness <0.20  && thickness >=0.15&& shlwthick <0.20 && shlwthick>=0.15){
+	}else if(thickness <0.20  && thickness >=0.15&& oldshlwthick <0.20 && oldshlwthick>=0.15){
 		return true;
-	}else if(thickness <0.28  && thickness >=0.20&& deepthick <0.28 && deepthick>=0.20){
+	}else if(thickness <0.28  && thickness >=0.20&& olddeepthick <0.28 && olddeepthick>=0.20){
 		return true;
-	}else if(thickness <0.40  && thickness >=0.28&& deepthick <0.40 && deepthick>=0.28){
+	}else if(thickness <0.40  && thickness >=0.28&& olddeepthick <0.40 && olddeepthick>=0.28){
 		return true;
-	} else if(thickness >=0.4  && deepthick>=0.4){
+	} else if(thickness >=0.4  && olddeepthick>=0.4){
 		return true;
 	}
 

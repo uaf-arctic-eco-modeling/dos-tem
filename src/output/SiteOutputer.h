@@ -7,8 +7,9 @@
 
 #ifndef SITEOUTPUTER_H_
 #define SITEOUTPUTER_H_
-#include "netcdfcpp.h"
-#include "ncvalues.h"
+
+#include <netcdfcpp.h>
+#include <ncvalues.h>
 
 #include <iostream>
 #include <sstream>

@@ -1,4 +1,4 @@
-/**
+/*
  * This class is used to run a cohort: from input to output
  *  
  */
@@ -37,7 +37,7 @@ class RunCohort {
 	    
  	 	int reinit(const int &cid, const int &eqcid, const int &rescid);
 
-     	void run();
+     	int run();
 
 	 	void siteoutput(const int & outputyrind, const int & currmind);
 	    void setRestartOutputer(RestartOutputer * resoutp);
@@ -45,6 +45,7 @@ class RunCohort {
   				VegetationOutputer * svegoutp, SnowSoilOutputer * sssloutp);
 		void setRegionalOutputer(RegnOutputer *routp);
 	 	
+		int cohortcount;
  		Cohort cht;
  		
  		GridInputer *ginputer;
@@ -68,7 +69,7 @@ class RunCohort {
  		
  		bool ccdriverout; 		
 
-		void runEquilibrium();
+		int runEquilibrium();
 		void setCalibrationParameters(CohortLookup* chtlu, string& jtxtfile);
 		void setCalibrationInits(CohortLookup* chtlu, string& jtxtfile);
 
@@ -77,9 +78,9 @@ class RunCohort {
 		stringstream svegtype;
 		stringstream sdrgtype;
 
- 		void runSpinup();
- 		void runTransit();
- 		void runScenario();
+ 		int runSpinup();
+ 		int runTransit();
+ 		int runScenario();
  		
 };
 #endif /*RUNCOHORT_H_*/

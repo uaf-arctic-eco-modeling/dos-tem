@@ -37,7 +37,7 @@ class Ground: public DoubleLinkedList {
 	public :
       	Ground();
       	~Ground();
-	  	void updateDaily(const int & yrcnt, const int & year,
+	  	int updateDaily(const int & yrcnt, const int & year,
 		const int & mind, const int & id, const double & tdrv, const double & dayl);
   		//    void updateMonthlyEnviron(const int & yrcnt,const int & year, const int & month, const int & dinmcurr);
 
@@ -49,7 +49,7 @@ class Ground: public DoubleLinkedList {
 		void checkSnowLayers();
 
 		void initializeLayerStructure();
-		void initializeLayerStructure5restart(RestartData * resin);
+		int initializeLayerStructure5restart(RestartData * resin);
 		//void setOutputer(SnowSoilOutputer * out);
 
 		/* pointers to other components*/

@@ -20,11 +20,11 @@ class Stefan{
   Stefan();
   ~Stefan();
 
-  void updateFronts(const double & tdrv, Layer *frontl, Layer *backl,Layer *fstsoill, Layer* lstminl, const int &mind);
+  int updateFronts(const double & tdrv, Layer *frontl, Layer *backl,Layer *fstsoill, Layer* lstminl, const int &mind);
   
   void updateTemps(const double & tdrv, Layer *frontl, Layer *backl,Layer *fstsoill, Layer* fstfntl, Layer*lstfntl);
   
-  void checkFrontsValidity(Layer *fstsoill);
+  int checkFrontsValidity(Layer *fstsoill);
    int itsumall;
   /*! the maximum allowable time step (double)*/
   private:

@@ -49,14 +49,10 @@ void Vegetation_Env::initializeState5restart(RestartData* resin){
 	
 	for(int i=0; i<10; i++){
 		eetmxa[i]=resin->eetmxA[i]; //resin->getEETMXA(eetmxa, ed->cd->reschtid);
-		if(eetmxa[i]>0){
-			ed->eetmxque.push_back(eetmxa[i]);
-		}
+		ed->eetmxque.push_back(eetmxa[i]);
 
 		petmxa[i]=resin->petmxA[i]; //resin->getPETMXA(petmxa, ed->cd->reschtid);
-		if(petmxa[i]>0){
-			ed->petmxque.push_back(petmxa[i]);
-		}
+		ed->petmxque.push_back(petmxa[i]);
 	 	
 	} 
 }

@@ -5,8 +5,8 @@
 
  */
 
-#include "netcdfcpp.h"
-#include "ncvalues.h"
+#include <netcdfcpp.h>
+#include <ncvalues.h>
 
 #include <math.h>
 #include <iostream>
@@ -34,10 +34,6 @@ class RestartOutputer {
 		void defineRestartVariables();
 		void outputVariables(const int & chtcount);
 		void setRestartOutData(RestartData * resodp);
-
-		bool runeq;
-		bool runsp;
-		bool runtr;
 
 		RestartData * resod;
 

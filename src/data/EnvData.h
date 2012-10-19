@@ -1,25 +1,24 @@
 #ifndef ENVDATA_H_
 #define ENVDATA_H_
+
 #include "../inc/diagnostics.h"
 #include "../inc/fluxes.h"
 #include "../inc/states.h"
 #include "../inc/layerconst.h"
-//using namespace layer;
- 
 
 #include "../inc/timeconst.h"
-//using namespace  timec;
 #include "RegionData.h"
 #include "GridData.h"
 #include "CohortData.h"
 
+#include <algorithm>
 #include <deque>
 using namespace std;
 
 class EnvData{
   public:
   	EnvData();
-  	~EnvData();	 
+  	~EnvData();
 
     double daylengths[365];
   	// for daily
@@ -96,14 +95,7 @@ class EnvData{
     
     /*! initial concentration of carbon dioxide in ppmv*/
     double initco2;
-   
-    /*! here is a special case, define carbon in env data
-     * for passing orgc to bgcdata.m_sois.orgc
-     * after the maniputlation of thickness of layer , the layer's carbon should also be changed
-     * however in soil_env there is no pointer point to bd.orgc
-     * */
-    //double orgc[MAX_SOI_LAY];
-    
+
     // yr value
     int permafrost; // whether a site is a permafrost
     double y_ald; // active layer depth  //Yuan: yearly max.

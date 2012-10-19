@@ -11,7 +11,11 @@
 
 	class CohortLookup {
   		public:
-  			CohortLookup();	
+  			CohortLookup();
+  			~CohortLookup();
+
+  			void init();
+
   			// for vegetation			  
   			float kc[MAX_VEG_TYPE];
   			float ki[MAX_VEG_TYPE];

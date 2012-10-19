@@ -1,6 +1,7 @@
 #ifndef REGIONDATA_H_
 #define REGIONDATA_H_
 
+#include <algorithm>
 #include "../inc/timeconst.h"
 
 class RegionData{

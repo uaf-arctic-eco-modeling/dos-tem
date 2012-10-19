@@ -1,6 +1,8 @@
 #ifndef COHORTDATA_H_
 #define COHORTDATA_H_
 
+#include <algorithm>
+
 #include "../inc/timeconst.h"
 
 class CohortData{

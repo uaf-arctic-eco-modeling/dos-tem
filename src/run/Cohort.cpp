@@ -2,7 +2,6 @@
 
 Cohort::Cohort(){
  	rheqflag   = 1;
- 	cohortcount= 0;
  	friderived = false;   //this is default, can be modified
 };
 
@@ -46,13 +45,16 @@ void Cohort::init(){
  	integrator.setVegetation_Bgc(&vb);
  	integrator.setBgcData(bd);
  	integrator.setEnvData(ed);
+
+ 	chtlu.init();
  
 };
 
-void Cohort::reset() {
+int Cohort::reset() {
   
-	 int drgtype = cd->drgtype;
- 	 int vegtype = cd->vegtype;
+	int errcode = 0;
+	int drgtype = cd->drgtype;
+    int vegtype = cd->vegtype;
  	  
  	 // initial state variables
 
@@ -130,7 +132,7 @@ void Cohort::reset() {
  		fire.initializeState5restart(&resid);
  		vb.initializeState5restart(&resid);
  		ve.initializeState5restart(&resid);
- 		ground.initializeLayerStructure5restart(&resid);
+ 		errcode = ground.initializeLayerStructure5restart(&resid);
  		sb.initializeState5restart(ground.fstsoill,&resid);
  	}	 
 
@@ -139,6 +141,7 @@ void Cohort::reset() {
 		veenvlai[i] =  ve.envlaiall[i];
 	}
 
+ 	return errcode;
 };
 
 void Cohort::setTime(Timer * timerp){
@@ -428,8 +431,9 @@ int Cohort::timerOutputYearIndex(bool equiled, bool spined, bool outputSpinup){
 	return timer->getOutputYearIndex(equiled, spined, outputSpinup);
 };
 
-void Cohort::updateMonthly(const int & outputyrind,const int & yrcnt, const int & currmind, 
+int Cohort::updateMonthly(const int & outputyrind,const int & yrcnt, const int & currmind,
              const int & dinmcurr, const bool & assigneq, const bool & useeq){
+	int error = 0;
 	
 	if (veupdateLAI5Vegc) {
 		ve.updateLAI5Vegc=true;
@@ -451,7 +455,9 @@ void Cohort::updateMonthly(const int & outputyrind,const int & yrcnt, const int 
   
   	int calyr = timer->getCalendarYear(equiled, spined);
   	if(envmodule){
-  		updateMonthly_Env( yrcnt,calyr, currmind, dinmcurr, assigneq );
+  		error = updateMonthly_Env( yrcnt,calyr, currmind, dinmcurr, assigneq );
+        if (error != 0) return error;
+
   	}
   
   	if(ecomodule){
@@ -467,7 +473,9 @@ void Cohort::updateMonthly(const int & outputyrind,const int & yrcnt, const int 
 		if (envmodule && ecomodule) {    // Yuan: otherwise will cause fatal default?
 			updateRegionalOutputBuffer(currmind);
 		}
-	}  	
+	}
+
+	return 0;
 
 };
 
@@ -559,9 +567,11 @@ void Cohort::updateMonthly_Dsl(const int & currmind){
 /////////////////////////////////////////////////////////
 //Environment Module Calling at monthly time-step, but involving daily time-step running
 /////////////////////////////////////////////////////////
-void Cohort::updateMonthly_Env(const int & yrcnt,const int &  calyr, 
+int Cohort::updateMonthly_Env(const int & yrcnt,const int &  calyr,
 			const int & currmind, const int & dinmcurr, const bool & assigneq){
-				
+
+	int error = 0;
+
 	double tdrv, daylength; 
 
 	//update the atmosphere first
@@ -643,7 +653,8 @@ void Cohort::updateMonthly_Env(const int & yrcnt,const int &  calyr,
 		// calculate vegetation water dynamics
 		ve.updateDaily(daylength);
 		// ground/soil water dynamics
-		ground.updateDaily(yrcnt, calyr, currmind, id, tdrv, daylength);
+		error = ground.updateDaily(yrcnt, calyr, currmind, id, tdrv, daylength);
+		if (error != 0) return error;
 		
 		ground.soil.layer2structdaily(ground.fstsoill);
 		ground.soil.retrieveDailyOutputs(ground.fstsoill,ground.fstminl, ground.lstminl, ground.backl);
@@ -680,6 +691,8 @@ void Cohort::updateMonthly_Env(const int & yrcnt,const int &  calyr,
 	  	}
     }
 	
+	return 0;
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -1516,6 +1529,10 @@ void Cohort::updateRestartOutputBuffer(const int & stage){
  	int soilcount =-1;
  	int rockcount =-1;
  	int frontcount =-1;
+
+ 	int shlwno = 0;
+ 	int deepno = 0;
+
  	while(currl!=NULL){
  		//Snow layers
  		if(currl->isSnow()){
@@ -1546,8 +1563,10 @@ void Cohort::updateRestartOutputBuffer(const int & stage){
  			  pl = dynamic_cast<PeatLayer*>(currl);
  		  	  if(pl->isFibric){
  		  		  resod->TYPEsoil[soilcount] =1;
+ 		  		  shlwno++;
  		  	  }else if(pl->isHumic){
  		  		  resod->TYPEsoil[soilcount] =2;
+ 		  		  deepno++;
  		  	  }
  		  }else if(sl->isMineral()){
  		  	  resod->TYPEsoil[soilcount] = 3;
@@ -1574,6 +1593,10 @@ void Cohort::updateRestartOutputBuffer(const int & stage){
  		currl =currl->nextl;	
  	}
  	
+ 	if (shlwno>MAX_SLW_LAY || deepno>MAX_DEP_LAY){
+ 		cout<<"checking!\n";
+ 	}
+
  	for(int il =0; il<MAX_SOI_LAY ; il++){
  		if(resod->TYPEsoil[il] >=0){
  	      resod->NONCsoil[il] =bd->m_sois.nonc[il];

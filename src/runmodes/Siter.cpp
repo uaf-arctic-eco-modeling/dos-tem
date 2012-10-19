@@ -221,7 +221,7 @@ void Siter::run(){
 		runcht.run();
 	}
 
-    runcht.cht.cohortcount++;
+    runcht.cohortcount++;
  		
 };
 

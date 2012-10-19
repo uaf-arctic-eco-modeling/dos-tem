@@ -10,12 +10,9 @@ FirData::~FirData(){
 	
 };
 
-
 void FirData::init(){
 	ysf =0;
 };
-
-
 
 void FirData::beginOfYear(){
 	y_soid.burnthick =0.;

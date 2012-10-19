@@ -9,8 +9,8 @@ CohortInputer::~CohortInputer(){
 }
 
 void CohortInputer::init(){
-	useseverity = md->useseverity;
   	if(md!=NULL){
+                useseverity = md->useseverity;
   		if(md->runsp){
   			initSpChtidFile(md->spchtinputdir);
     		initSpinupFire(md->spchtinputdir);

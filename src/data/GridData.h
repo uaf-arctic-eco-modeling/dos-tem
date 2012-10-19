@@ -1,7 +1,9 @@
 #ifndef GRIDDATA_H_
 #define GRIDDATA_H_
+
+#include <algorithm>
 #include "../inc/timeconst.h"
-//using namespace  timec;
+
 class GridData{
   public:
   	GridData();

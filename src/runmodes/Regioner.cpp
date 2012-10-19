@@ -134,6 +134,33 @@ void Regioner::run(){
 	for ( jj=runchtlist.begin() ; jj!=runchtlist.end(); jj++){
 		int chtid = *jj;
 		
+		// clean-up and re-setup for the next cohort (Yuan: July 13, 2012)
+		gd = GridData();
+		cd = CohortData();
+		ed = EnvData();
+		bd = BgcData();
+		fd = FirData();
+        //rgrid.~Grid();
+		//rgrid = Grid();
+		//runcht.cht.~Cohort();
+		runcht.cht = Cohort();
+
+		bd.setEnvData(&ed);
+		rgrid.setEnvData(&ed);
+ 		rgrid.setRegionData(&rd);
+ 		rgrid.setGridData(&gd);
+ 		runcht.cht.setTime(&timer);
+ 		runcht.cht.setProcessData(&ed, &bd, &fd);
+ 		runcht.cht.setModelData(&md);
+ 		runcht.cht.setInputData(&rd, &gd, &cd);
+ 		runcht.cht.setAtmData(&rgrid);
+		if(!md.runeq) {
+			runcht.cht.setRegnOutData(&regnod);
+		}
+ 		runcht.cht.setRestartOutData(&resod);
+  		runcht.cht.init();
+
+  		// starting run here
 		errout.chtid = chtid;
 		
 		//get the eqchtid, spchtid/trchtid, restart-id, and cruid
@@ -235,6 +262,7 @@ void Regioner::run(){
  
 	    	//cohort-level data for a cohort
 			runcht.jcalifilein=true;  // for reading Jcalinput.txt, the default is true (must be done before re-initiation)
+			runcht.jcalparfile="";
 			runcht.ccdriverout=false;  //don't change to true for regioner
 				
 			error = runcht.reinit(cid, eqcid, rescid); //reinit for a new cohort
@@ -254,7 +282,20 @@ void Regioner::run(){
     				if (md.consoledebug)
     					cout<<"cohort: "<<chtid<<" @ "<<md.runstages
 							<<" - running! \n";
-    				runcht.run();
+    				error = runcht.run();
+      				if (error!=0) {
+      	    			if(md.consoledebug){
+      	    				cout<<"problem in running cohort in Regioner::run \n";
+      	    			}
+
+       					rout.missingValues(MAX_OREGN_YR, runcht.cohortcount);
+
+       					errout.errorid = -4;
+        				errout.outputVariables(errcount);
+        				errcount+=1;
+
+    					continue;     //jump over to next cohort, due to run cohort error
+      				}
     			}
 
     		} catch (Exception &exception){
@@ -263,7 +304,7 @@ void Regioner::run(){
     					cout <<"problem in running cohort in Regioner::run\n";
     			}
 
-    			rout.missingValues(MAX_OREGN_YR, runcht.cht.cohortcount);
+    			rout.missingValues(MAX_OREGN_YR, runcht.cohortcount);
 
     			errout.errorid = -4;
     			errout.outputVariables(errcount);
@@ -276,14 +317,14 @@ void Regioner::run(){
 		} else { // end of cruid >=0 && other IDs>=0
 			cout<<"No grid exists for cohort: "<<chtid<<" - SKIPPED! \n";
 
-			rout.missingValues(MAX_OREGN_YR, runcht.cht.cohortcount);
+			rout.missingValues(MAX_OREGN_YR, runcht.cohortcount);
 
 			errout.errorid = -2;
 			errout.outputVariables(errcount);
 			errcount+=1;
 		} // end of cruid >=0 && errout.errorid ==0
 
-		runcht.cht.cohortcount++;
+		runcht.cohortcount++;
 		 
 	}// end of cohort loop
 	

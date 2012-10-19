@@ -56,7 +56,7 @@ void Layer::check(){
 }*/
 
 double Layer::getHeatCapacity(){ // volumetric heat capacity
-    	double hcap;
+    	double hcap = 0.;;
     	      if(isSoil()){
 				if(frozen==-1){
 					//hcap = spht;
@@ -78,7 +78,7 @@ double Layer::getHeatCapacity(){ // volumetric heat capacity
 };
     
 double Layer::getThermalConductivity(){
-    	double tc;
+    	double tc = 0.;
 				//if(tem>0){
 				//	tc = getUnfThermCond();
 				//}else {

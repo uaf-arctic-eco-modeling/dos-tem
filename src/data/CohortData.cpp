@@ -8,4 +8,3 @@ CohortData::CohortData(){
 CohortData::~CohortData(){
 
 };
-
