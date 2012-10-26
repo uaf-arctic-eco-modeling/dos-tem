@@ -1,0 +1,120 @@
+<?xml version="1.0" ?>
+<project default="main">
+  <property file="build.properties" />
+
+  <target name="main" depends="Compile,
+                               Jar">
+    <echo>Finished building the JDVM application.</echo>
+       
+  </target>
+
+  <!-- ## Create SWIG wrappers  (Linux)             # -->
+  <target name="Swigify">
+    <echo>Creating SWIG wrappers</echo>
+       <exec dir="." executable="swig" failonerror="true">
+          <arg line="-v -java -c++ -outdir DOSTEMrunjava/TEMJNI/ DOSTEMwrappercpp/src/TEMrun.i"/>
+       </exec>
+
+  </target>
+
+
+  <!-- ############################################## -->
+  <!-- ## Create Shared Libraries                   # -->
+  <!-- ############################################## -->
+  <target name="CreateSharedLibraries" depends="Swigify">
+    <mkdir dir="lib"/>
+
+
+    <echo>Creating Shared Library of C++ core</echo>
+    <!-- For some reason macro expansion not working...?
+         The compilation breaks unless there are hardcoded 
+         paths to jni.h as below. Ideally would use this setup
+         with $(JAVADIR):
+
+                     -I$(JAVADIR)/include 
+                     -I$(JAVADIR)/include/linux
+    -->
+    <exec dir="." executable="${CXX}" failonerror="true" os="Linux">
+          <arg line="${CFLAGS} -fpic -shared
+          			-o DOSTEMrunjava/libtemcore.so 
+          			DOSTEMwrappercpp/src/TEMrun_wrap.cxx 
+          			-I/usr/lib/jvm/java-1.6.0-sun-1.6.0.30/include/linux 
+          			-I/usr/lib/jvm/java-1.6.0-sun-1.6.0.30/include"/>
+    </exec>
+
+ </target>
+
+
+
+  
+  <!-- ############################################## -->
+  <!-- ## Compile Java Sources                      # -->
+  <!-- ############################################## -->
+  <target name="Compile">
+    <echo>Compiling java sources</echo>
+    <mkdir dir="tmp"/>
+    <javac srcdir="." destdir="tmp">
+        <classpath>
+               <pathelement location="/home/tobey/javanetcdf"/>
+        </classpath>
+        <sourcepath>
+               <pathelement location="../DATA"/>
+               <pathelement location="../calTEM"/>
+               <pathelement location="../INPUT"/>
+               <pathelement location="../OUTPUT"/>
+               <pathelement location="../runTEM"/>
+        </sourcepath>
+    </javac>
+
+  </target>
+
+
+  <!-- ############################################## -->
+  <!-- ## Create the DVM jar file                   # -->
+  <!-- ############################################## -->
+  <target name="Jar" depends="Compile">
+      <echo>Compressing into DVM.jar file</echo>
+      <jar destfile="TEMCalibrator.jar" basedir="tmp" 
+            includes="*.class" >
+         <manifest>
+                <attribute name="Author" value="${author}"/>
+                <section name="Shared">
+                    <attribute name="Title" value="DVM Java Wrapper and GUI"/>
+                </section>
+         </manifest>
+      </jar>
+      
+  </target>
+
+
+
+   
+   
+  <!-- ############################################## -->
+  <!-- ## Clean Up The Mess                         # -->
+  <!-- ############################################## -->
+  <target name="distclean" depends="clean">
+
+  </target>
+
+
+  <target name="clean">
+
+    
+    <echo>Removing DOSTEMrunjava/TEMJNI ...</echo>
+    <delete dir="DOSTEMrunjava/TEMJNI" />
+    <mkdir dir="DOSTEMrunjava/TEMJNI" />
+    
+    <echo>Removing DOSTEMrunjava/libtemcore.so ...</echo>
+    <delete file="DOSTEMrunjava/libtemcore.so" />
+
+    <echo>Removing DOSTEMwrappercpp/src/TEMrun_wrap.cxx ...</echo>
+    <delete file="DOSTEMwrappercpp/src/TEMrun_wrap.cxx" />
+    
+
+    
+  </target>
+
+
+
+</project>
