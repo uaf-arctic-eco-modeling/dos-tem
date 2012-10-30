@@ -2,9 +2,11 @@
 <project default="main">
   <property file="build.properties" />
 
-  <target name="main" depends="Compile,
+  <target name="main" depends="Swigify,
+                               CreateSharedLibraries,
+  							   Compile,
                                Jar">
-    <echo>Finished building the JDVM application.</echo>
+    <echo>Finished building the dos-tem-calibrator.</echo>
        
   </target>
 
@@ -12,7 +14,7 @@
   <target name="Swigify">
     <echo>Creating SWIG wrappers</echo>
        <exec dir="." executable="swig" failonerror="true">
-          <arg line="-v -java -c++ -outdir DOSTEMrunjava/TEMJNI/ DOSTEMwrappercpp/src/TEMrun.i"/>
+          <arg line="-v -java -c++ -package TEMJNI -outdir DOSTEMrunjava/TEMJNI/ DOSTEMwrappercpp/src/TEMrun.i"/>
        </exec>
 
   </target>
@@ -22,8 +24,6 @@
   <!-- ## Create Shared Libraries                   # -->
   <!-- ############################################## -->
   <target name="CreateSharedLibraries" depends="Swigify">
-    <mkdir dir="lib"/>
-
 
     <echo>Creating Shared Library of C++ core</echo>
     <!-- For some reason macro expansion not working...?
@@ -52,34 +52,42 @@
   <!-- ############################################## -->
   <target name="Compile">
     <echo>Compiling java sources</echo>
-    <mkdir dir="tmp"/>
-    <javac srcdir="." destdir="tmp">
+
+    <javac srcdir="DOSTEMrunjava/" destdir="DOSTEMrunjava/">
         <classpath>
-               <pathelement location="/home/tobey/javanetcdf"/>
+               <pathelement location="/home/tobey/javanetcdf-2.2.22"/>
+               <pathelement location="/home/tobey/assorted_java_libs/l2fprod-common-all/l2fprod-common-all.jar"/>
+               <pathelement location="/home/tobey/assorted_java_libs/jchart2d-3/jchart2d-3.2.2.jar"/>
+               <pathelement location="/home/tobey/assorted_java_libs/netcdfAll-2.2.22/netcdfUI-2.2.22.jar"/>
+               <pathelement location="/home/tobey/assorted_java_libs/logging-log4j-1.2.9/dist/lib/log4j-1.2.9.jar"/>
+               <pathelement location="/home/tobey/assorted_java_libs/l2fprod-common-tasks/l2fprod-common-all.jar"/>
+               <pathelement location="DOSTEMrunjava/TEMJNI"/>
         </classpath>
+       <!--
         <sourcepath>
-               <pathelement location="../DATA"/>
-               <pathelement location="../calTEM"/>
-               <pathelement location="../INPUT"/>
-               <pathelement location="../OUTPUT"/>
-               <pathelement location="../runTEM"/>
+               <pathelement location="../DOSTEMrunjava/DATA"/>
+               <pathelement location="../DOSTEMrunjava/calTEM"/>
+               <pathelement location="../DOSTEMrunjava/INPUT"/>
+               <pathelement location="../DOSTEMrunjava/OUTPUT"/>
+               <pathelement location="../DOSTEMrunjava/runTEM"/>
         </sourcepath>
+        -->
     </javac>
 
   </target>
 
 
   <!-- ############################################## -->
-  <!-- ## Create the DVM jar file                   # -->
+  <!-- ## Create the dos-tem-calibrator jar file    # -->
   <!-- ############################################## -->
   <target name="Jar" depends="Compile">
-      <echo>Compressing into DVM.jar file</echo>
-      <jar destfile="TEMCalibrator.jar" basedir="tmp" 
+      <echo>Compressing into dos-tem-calibrator.jar file</echo>
+      <jar destfile="dos-tem-calibrator.jar" basedir="DOSTEMrunjava" 
             includes="*.class" >
          <manifest>
                 <attribute name="Author" value="${author}"/>
                 <section name="Shared">
-                    <attribute name="Title" value="DVM Java Wrapper and GUI"/>
+                    <attribute name="Title" value="dos-tem-calibrator and gui"/>
                 </section>
          </manifest>
       </jar>
@@ -99,16 +107,11 @@
 
 
   <target name="clean">
-
-    
-    <echo>Removing DOSTEMrunjava/TEMJNI ...</echo>
     <delete dir="DOSTEMrunjava/TEMJNI" />
     <mkdir dir="DOSTEMrunjava/TEMJNI" />
     
-    <echo>Removing DOSTEMrunjava/libtemcore.so ...</echo>
     <delete file="DOSTEMrunjava/libtemcore.so" />
 
-    <echo>Removing DOSTEMwrappercpp/src/TEMrun_wrap.cxx ...</echo>
     <delete file="DOSTEMwrappercpp/src/TEMrun_wrap.cxx" />
     
 
