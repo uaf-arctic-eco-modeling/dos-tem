@@ -122,10 +122,10 @@
     		<pathelement location="" />
     	</sourcepath>
         <classpath>
-               <pathelement location="/home/tobey/assorted_java_libs/l2fprod-common-all/l2fprod-common-all.jar"/>
-               <pathelement location="/home/tobey/assorted_java_libs/jchart2d-3/jchart2d-3.2.2.jar"/>
-               <pathelement location="/home/tobey/assorted_java_libs/netcdfAll-2.2.22/netcdfUI-2.2.22.jar"/>
-               <pathelement location="/home/tobey/assorted_java_libs/logging-log4j-1.2.9/dist/lib/log4j-1.2.9.jar"/>
+               <pathelement location="jars/l2fprod-common-all.jar"/>
+               <pathelement location="jars/jchart2d-3.2.2.jar"/>
+               <pathelement location="jars/netcdfUI-2.2.22.jar"/>
+               <pathelement location="jars/log4j-1.2.9.jar"/>
                <pathelement location="DOSTEMrunjava/TEMJNI"/>
         </classpath>
 
@@ -158,7 +158,7 @@
                 <!--
                 <attribute name="Class-Path" value="jars/jchart2d-3.2.2.jar;jars/l2fprod-common-all.jar;jars/log4j-1.2.9.jar;jars/netcdfUI-2.2.22.jar" />
                 -->
-                <attribute name="Class-Path" value="/home/tobey/assorted_java_libs/l2fprod-common-all/l2fprod-common-all.jar;/home/tobey/assorted_java_libs/jchart2d-3/jchart2d-3.2.2.jar;/home/tobey/assorted_java_libs/netcdf-2.2.22/netcdfUI-2.2.22.jar;/home/tobey/assorted_java_libs/logging-log4j-1.2.9/dist/lib/log4j-1.2.9.jar" />
+                <attribute name="Class-Path" value="jars/l2fprod-common-all.jar jars/jchart2d-3.2.2.jar jars/netcdfUI-2.2.22.jar jars/log4j-1.2.9.jar" />
          </manifest>
       </jar>
       
