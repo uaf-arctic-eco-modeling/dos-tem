@@ -58,9 +58,11 @@
   <!-- ## Compile Java Sources                      # -->
   <!-- ############################################## -->
   <target name="Compile">
+  
     <echo>Compiling java sources</echo>
+    <mkdir dir="tmp" />
 
-    <javac srcdir="DOSTEMrunjava/" destdir="DOSTEMrunjava/">
+    <javac srcdir="DOSTEMrunjava/" destdir="tmp">
         <classpath>
                <pathelement location="/home/tobey/javanetcdf-2.2.22"/>
                <pathelement location="/home/tobey/assorted_java_libs/l2fprod-common-all/l2fprod-common-all.jar"/>
@@ -89,13 +91,14 @@
   <!-- ############################################## -->
   <target name="Jar" depends="Compile">
       <echo>Compressing into dos-tem-calibrator.jar file</echo>
-      <jar destfile="dos-tem-calibrator.jar" basedir="DOSTEMrunjava" 
+      <jar destfile="dos-tem-calibrator.jar" basedir="tmp" 
             includes="*.class" >
          <manifest>
                 <attribute name="Author" value="${author}"/>
                 <section name="Shared">
                     <attribute name="Title" value="dos-tem-calibrator and gui"/>
                 </section>
+                <attribute name="Main-Class" value="TEMCalibrator" />
          </manifest>
       </jar>
       
@@ -109,19 +112,21 @@
   <!-- ## Clean Up The Mess                         # -->
   <!-- ############################################## -->
   <target name="distclean" depends="clean">
-
+	<delete dir="lib" />
+	<mkdir dir="lib" />
   </target>
 
 
   <target name="clean">
+    <delete dir="tmp" />
+    <mkdir dir="tmp" />
+<!--    
     <delete dir="DOSTEMrunjava/TEMJNI" />
     <mkdir dir="DOSTEMrunjava/TEMJNI" />
-    
+
     <delete file="DOSTEMrunjava/libtemcore.so" />
-
     <delete file="DOSTEMwrappercpp/src/TEMrun_wrap.cxx" />
-    
-
+-->
     
   </target>
 
