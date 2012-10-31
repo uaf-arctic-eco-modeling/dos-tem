@@ -1,0 +1,14 @@
+# all auto generated swig stuff...
+*.class
+
+*.so
+*_wrap.cxx
+*.jar
+
+
+# for some reason can't get it to ignore
+# TEMJNI directory?
+TEMJNI/
+
+
+DOSTEM
