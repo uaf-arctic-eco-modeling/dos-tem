@@ -4,6 +4,7 @@
 *.so
 *_wrap.cxx
 *.jar
+*.o
 
 
 # for some reason can't get it to ignore
