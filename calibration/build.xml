@@ -106,7 +106,7 @@
   <!-- ############################################## -->
   <!-- ## Compile Java Sources                      # -->
   <!-- ############################################## -->
-  <target name="Compile">
+  <target name="Compile" depends="CreateSharedLibraries">
   
     <echo>Compiling java sources</echo>
     <mkdir dir="tmp" />
@@ -148,14 +148,17 @@
   <!-- ############################################## -->
   <target name="Jar" depends="Compile">
       <echo>Compressing into dos-tem-calibrator.jar file</echo>
-      <jar destfile="dos-tem-calibrator.jar" basedir="tmp" 
-            includes="*.class" >
+      <jar destfile="dos-tem-calibrator.jar" basedir="tmp">
          <manifest>
                 <attribute name="Author" value="${author}"/>
                 <section name="Shared">
                     <attribute name="Title" value="dos-tem-calibrator and gui"/>
                 </section>
                 <attribute name="Main-Class" value="TEMCalibrator" />
+                <!--
+                <attribute name="Class-Path" value="jars/jchart2d-3.2.2.jar;jars/l2fprod-common-all.jar;jars/log4j-1.2.9.jar;jars/netcdfUI-2.2.22.jar" />
+                -->
+                <attribute name="Class-Path" value="/home/tobey/assorted_java_libs/l2fprod-common-all/l2fprod-common-all.jar;/home/tobey/assorted_java_libs/jchart2d-3/jchart2d-3.2.2.jar;/home/tobey/assorted_java_libs/netcdf-2.2.22/netcdfUI-2.2.22.jar;/home/tobey/assorted_java_libs/logging-log4j-1.2.9/dist/lib/log4j-1.2.9.jar" />
          </manifest>
       </jar>
       
@@ -194,5 +197,5 @@
 <!--
 experiementing with class path...
 
--cp "/home/tobey/assorted_java_libs/l2fprod-common-all/l2fprod-common-all.jar:/home/tobey/assorted_java_libs/jchart2d-3/jchart2d-3.2.2.jar:/home/tobey/assorted_java_libs/netcdf-2.2.22/netcdfUI-2.2.22.jar:/home/tobey/assorted_java_libs/logging-log4j-1.2.9/dist/lib/log4j-1.2.9.jar"
+-classpath "dos-tem-calibrator.jar;/home/tobey/assorted_java_libs/l2fprod-common-all/l2fprod-common-all.jar;/home/tobey/assorted_java_libs/jchart2d-3/jchart2d-3.2.2.jar;/home/tobey/assorted_java_libs/netcdf-2.2.22/netcdfUI-2.2.22.jar;/home/tobey/assorted_java_libs/logging-log4j-1.2.9/dist/lib/log4j-1.2.9.jar;/home/tobey/assorted_java_libs/logging-log4j-1.2.9/dist/classes/"
 -->

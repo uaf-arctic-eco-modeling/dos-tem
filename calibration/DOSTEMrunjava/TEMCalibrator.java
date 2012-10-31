@@ -9,7 +9,7 @@ import javax.swing.SpringLayout;
 
 import calTEM.*;
 import GUI.*;
-import runTEM.runner;
+import runTEM.runner; // not sure why not all symbols from this dir??
 
 public class TEMCalibrator {
 	
@@ -56,9 +56,9 @@ public class TEMCalibrator {
 		System.out.println("University of Alaska Fairbanks");
 		
 		//logger
-		org.apache.log4j.BasicConfigurator.configure();
-	    org.apache.log4j.Logger logger = org.apache.log4j.Logger.getRootLogger();
-	    logger.setLevel(org.apache.log4j.Level.OFF);	
+		//org.apache.log4j.BasicConfigurator.configure();
+	    //org.apache.log4j.Logger logger = org.apache.log4j.Logger.getRootLogger();
+	    //logger.setLevel(org.apache.log4j.Level.OFF);	
 
 	    //			
 		if (GUI) {			
