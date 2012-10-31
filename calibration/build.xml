@@ -43,8 +43,57 @@
     <mkdir dir="lib" />
     <exec dir="tmp" executable="${CXX}" failonerror="true" os="Linux">
           <arg line="${CFLAGS} -fpic -shared
-          			-o ../lib/libtemcore.so 
+          			-o ../lib/libtemcore.so
           			../DOSTEMwrappercpp/src/TEMrun_wrap.cxx 
+          			../DOSTEMwrappercpp/src/atmosphere/AtmosUtil.cpp
+					../DOSTEMwrappercpp/src/atmosphere/Atmosphere.cpp
+          			../DOSTEMwrappercpp/src/data/BgcData.cpp
+          			../DOSTEMwrappercpp/src/data/CohortData.cpp
+          			../DOSTEMwrappercpp/src/data/EnvData.cpp
+          			../DOSTEMwrappercpp/src/data/FirData.cpp
+          			../DOSTEMwrappercpp/src/data/GridData.cpp
+          			../DOSTEMwrappercpp/src/data/RegionData.cpp
+          			../DOSTEMwrappercpp/src/data/RestartData.cpp
+          			../DOSTEMwrappercpp/src/disturb/WildFire.cpp
+					../DOSTEMwrappercpp/src/ground/DoubleLinkedList.cpp
+          			../DOSTEMwrappercpp/src/ground/Ground.cpp
+          			../DOSTEMwrappercpp/src/ground/Mineral.cpp
+          			../DOSTEMwrappercpp/src/ground/Moss.cpp
+          			../DOSTEMwrappercpp/src/ground/Peat.cpp
+          			../DOSTEMwrappercpp/src/ground/Richard.cpp
+          			../DOSTEMwrappercpp/src/ground/Rock.cpp
+          			../DOSTEMwrappercpp/src/ground/Snow_Env.cpp
+          			../DOSTEMwrappercpp/src/ground/Soil_Bgc.cpp
+					../DOSTEMwrappercpp/src/ground/Soil_Env.cpp
+          			../DOSTEMwrappercpp/src/ground/Stefan.cpp
+          			../DOSTEMwrappercpp/src/ground/layer/Front.cpp
+          			../DOSTEMwrappercpp/src/ground/layer/Layer.cpp
+          			../DOSTEMwrappercpp/src/ground/layer/MineralLayer.cpp
+          			../DOSTEMwrappercpp/src/ground/layer/MossLayer.cpp
+          			../DOSTEMwrappercpp/src/ground/layer/OutputDepth.cpp
+          			../DOSTEMwrappercpp/src/ground/layer/PeatLayer.cpp
+          			../DOSTEMwrappercpp/src/ground/layer/RockLayer.cpp
+					../DOSTEMwrappercpp/src/ground/layer/SnowLayer.cpp
+          			../DOSTEMwrappercpp/src/ground/layer/SoilLayer.cpp
+          			../DOSTEMwrappercpp/src/lookup/CCohortLookup.cpp
+          			../DOSTEMwrappercpp/src/lookup/CohortLookup.cpp
+          			../DOSTEMwrappercpp/src/lookup/SoilLookup.cpp
+          			../DOSTEMwrappercpp/src/run/AtmOutData.cpp
+          			../DOSTEMwrappercpp/src/run/Cohort.cpp
+          			../DOSTEMwrappercpp/src/run/Controller.cpp
+          			../DOSTEMwrappercpp/src/run/Grid.cpp
+					../DOSTEMwrappercpp/src/run/ModelData.cpp
+          			../DOSTEMwrappercpp/src/run/RegnOutData.cpp
+          			../DOSTEMwrappercpp/src/run/SiteIn.cpp
+          			../DOSTEMwrappercpp/src/run/SnowSoilOutData.cpp
+          			../DOSTEMwrappercpp/src/run/SoilClm.cpp
+          			../DOSTEMwrappercpp/src/run/Timer.cpp
+          			../DOSTEMwrappercpp/src/run/VegOutData.cpp
+          			../DOSTEMwrappercpp/src/util/CrankNicholson.cpp
+          			../DOSTEMwrappercpp/src/util/Exception.cpp
+          			../DOSTEMwrappercpp/src/util/FileChecking.cpp
+          			../DOSTEMwrappercpp/src/util/Integrator.cpp
+          			../DOSTEMwrappercpp/src/util/Interpolator.cpp
           			-I/usr/lib/jvm/java-1.6.0-sun-1.6.0.30/include/linux 
           			-I/usr/lib/jvm/java-1.6.0-sun-1.6.0.30/include"/>
     </exec>
@@ -63,15 +112,23 @@
     <mkdir dir="tmp" />
 
     <javac srcdir="DOSTEMrunjava/" destdir="tmp">
+    	
+    	<src path="DOSTEMrunjava" />
+    	<src path="tmp" />
+
+    	<sourcepath>
+    		<pathelement location="" />
+    		<pathelement location="" />
+    		<pathelement location="" />
+    	</sourcepath>
         <classpath>
-               <pathelement location="/home/tobey/javanetcdf-2.2.22"/>
                <pathelement location="/home/tobey/assorted_java_libs/l2fprod-common-all/l2fprod-common-all.jar"/>
                <pathelement location="/home/tobey/assorted_java_libs/jchart2d-3/jchart2d-3.2.2.jar"/>
                <pathelement location="/home/tobey/assorted_java_libs/netcdfAll-2.2.22/netcdfUI-2.2.22.jar"/>
                <pathelement location="/home/tobey/assorted_java_libs/logging-log4j-1.2.9/dist/lib/log4j-1.2.9.jar"/>
-               <pathelement location="/home/tobey/assorted_java_libs/l2fprod-common-tasks/l2fprod-common-all.jar"/>
                <pathelement location="DOSTEMrunjava/TEMJNI"/>
         </classpath>
+
        <!--
         <sourcepath>
                <pathelement location="../DOSTEMrunjava/DATA"/>
@@ -114,6 +171,7 @@
   <target name="distclean" depends="clean">
 	<delete dir="lib" />
 	<mkdir dir="lib" />
+	<delete file="dos-tem-calibrator.jar" /> 
   </target>
 
 
@@ -130,6 +188,11 @@
     
   </target>
 
-
-
 </project>
+
+
+<!--
+experiementing with class path...
+
+-cp "/home/tobey/assorted_java_libs/l2fprod-common-all/l2fprod-common-all.jar:/home/tobey/assorted_java_libs/jchart2d-3/jchart2d-3.2.2.jar:/home/tobey/assorted_java_libs/netcdf-2.2.22/netcdfUI-2.2.22.jar:/home/tobey/assorted_java_libs/logging-log4j-1.2.9/dist/lib/log4j-1.2.9.jar"
+-->
