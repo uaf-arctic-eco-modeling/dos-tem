@@ -1,3 +1,9 @@
 DATA/output/*.nc
+
+# executable name
+DOSTEM
+
 *.o
+
+
 docs/*
