@@ -454,10 +454,11 @@ double WildFire::getBurnThick(){
     	 }
      }
 
-     if(bthick <0){
-     	string msg = "burn thickness should be greater than zero";
- 		char* msgc = const_cast< char* > ( msg.c_str());
- 		throw Exception(msgc, I_BURN_ZERO);
+     if(bthick <0.){
+//     	string msg = "burn thickness should be greater than zero";
+// 		char* msgc = const_cast< char* > ( msg.c_str());
+// 		throw Exception(msgc, I_BURN_ZERO);
+    	 bthick = 0.;
      }
 
      if(bthick <ed->m_soid.mossthick){

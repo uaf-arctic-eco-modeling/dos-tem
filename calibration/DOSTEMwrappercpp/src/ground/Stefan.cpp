@@ -15,8 +15,11 @@ Stefan::~Stefan(){
 
 
 
- void Stefan::updateFronts(const double & tdrv, Layer *frontl, Layer *backl,Layer *fstsoill, Layer* lstminl, const int & mind){
- 	for(int i=0; i<backl->indl; i++){
+int Stefan::updateFronts(const double & tdrv, Layer *frontl, Layer *backl,Layer *fstsoill, Layer* lstminl, const int & mind){
+
+	int error = 0;
+
+	for(int i=0; i<backl->indl; i++){
  	     temupdated[i]=false;;	
  	     temold[i] =-999.;
  	}
@@ -65,12 +68,16 @@ Stefan::~Stefan(){
  		  if(currl->isSnow()){
  		  	processSnowLayer( tkres,tkfront ,dse,sumresabv,  tdrv, currl);
  		  }else if(currl->isSoil()){
- 		  	sl = dynamic_cast<SoilLayer*>(currl);
- 		     sl->checkFronts();
+ 		  	 sl = dynamic_cast<SoilLayer*>(currl);
+ 		     error = sl->checkFronts();
+ 		     if (error != 0) return error;
+
  		  	 processSoilLayer5Top(frozenstate, tkres, tkfront, dse,  sumresabv, tdrv0,
  								 sl, frontl, backl);
- 			 sl->checkFronts();				 
- 			sl->updateWater5Front();					 
+ 			 error = sl->checkFronts();
+ 		     if (error != 0) return error;
+
+ 			 sl->updateWater5Front();
  							 
  		  }
  		
@@ -161,9 +168,12 @@ Stefan::~Stefan(){
  	
  	}
 
- 	checkFrontsValidity(fstsoill);
+ 	error = checkFrontsValidity(fstsoill);
  	//interpolate soil/snow temperatures
  	//interpolateUpperTemps5Front(tdrv, frontl);
+    if (error != 0) return error;
+
+    return 0;
  };
  
  void Stefan::processSnowLayer(double const & tkres, double const & tkfront ,
@@ -458,7 +468,7 @@ void  Stefan::processSoilLayer5Bot(const int &frozenstate, double const & tkres,
  };
  
  //check the validity of fronts in soil column
- void Stefan::checkFrontsValidity(Layer *fstsoill){
+ int Stefan::checkFrontsValidity(Layer *fstsoill){
  	Layer*currl=fstsoill;
  	SoilLayer* sl;
  	//int upfrnt =0;
@@ -499,8 +509,8 @@ void  Stefan::processSoilLayer5Bot(const int &frozenstate, double const & tkres,
  		  	 		if(psl->frozen != sl->fronts[i]->frzing){
  		  	 			string msg = "front should have same attribute as previous layer frozen state";
   						char* msgc = const_cast< char* > ( msg.c_str());
-  						throw Exception(msgc, I_FRONT_INCONSISTENT);
-
+  						//throw Exception(msgc, I_FRONT_INCONSISTENT);
+  						return -1;
  		  	 		}
 
  		  	 	}
@@ -561,6 +571,8 @@ void  Stefan::processSoilLayer5Bot(const int &frozenstate, double const & tkres,
 
  		currl=currl->nextl;
  	}*/
+
+ 	return 0;
  };
 
  void Stefan::interpSnowTemp(Layer* frontl, Layer* fstsoill,const double & tdrv){
@@ -650,7 +662,7 @@ void Stefan::updateTemps(const double & tdrv, Layer *frontl, Layer *backl ,Layer
   	 }
   	 
   	 //check wheter is nan
-/*  	 for(int il=0 ; il<MAX_GRN_LAY+2; il++){
+  	 for(int il=0 ; il<MAX_GRN_LAY+2; il++){
    	
   		 if(isnan(tld[il])){
 	 
@@ -661,7 +673,7 @@ void Stefan::updateTemps(const double & tdrv, Layer *frontl, Layer *backl ,Layer
   			 break;
   		 }
   	 }
-*/
+  	
 };
 
 void Stefan::processWholeColumn(Layer* frontl, Layer *backl, Layer*fstfntl, Layer*lstfntl, const double & tdrv){
@@ -992,7 +1004,7 @@ void Stefan::iterate(const int &startind, const int &endind, const bool & lstlay
 	  	 tstep = tstep/2;
 	  	 if(tstep < 1.e-6){
 //	  	   throw Exception("tstep is too small in Stefan", ERRORKEY(I_TEM_TSTEP_SMALL));
-	  	   cout<<"tstep is too small in Stefan\n";
+//	  	   cout<<"tstep is too small in Stefan\n";
 	  	   return;     //Yuan: don't break
 	  	 }
 	  	 tschanged = true;

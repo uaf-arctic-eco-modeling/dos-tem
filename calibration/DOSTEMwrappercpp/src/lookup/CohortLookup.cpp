@@ -483,18 +483,18 @@ void CohortLookup::assignSoilTextureParams(){
  	float dum_ltrfalratiom2f[MAX_DRG_TYPE][MAX_VEG_TYPE] =  {{1,1,1,1},{1,1,1,1 }};
  	float dum_ltrfalratioh2f[MAX_DRG_TYPE][MAX_VEG_TYPE] =  {{1,1,1,1},{1,1,1,1 }};
 
-	float dum_coefshlwa[MAX_DRG_TYPE][MAX_VEG_TYPE] =  {{0.0603, 0.01927, 0.01927, 0.01927},
-                                                        {0.0603, 0.01386, 0.01386, 0.01386}};
-	float dum_coefshlwb[MAX_DRG_TYPE][MAX_VEG_TYPE] =  {{0.9497, 1.1247, 1.1247, 1.1247 },
-		                                                {0.9497, 1.0836, 1.0876, 1.0876}};
-	float dum_coefdeepa[MAX_DRG_TYPE][MAX_VEG_TYPE] =  {{0.1350, 0.02929, 0.02920, 0.02920},
-		                                                {0.1350, 0.03616, 0.03616, 0.03616}};
-	float dum_coefdeepb[MAX_DRG_TYPE][MAX_VEG_TYPE] =  {{0.7036, 1.2622, 1.2622, 1.2622 },
-		                                                {0.7036, 1.0802, 1.0802, 1.0802 }};
-	float dum_coefminea[MAX_DRG_TYPE][MAX_VEG_TYPE] =  {{0.1713, 0.039693, 0.039693, 0.039693},
-		                                                {0.1713, 0.04856, 0.04856, 0.04856}};
-	float dum_coefmineb[MAX_DRG_TYPE][MAX_VEG_TYPE] =  {{0.6931, 0.0667389, 0.0667389, 0.0667389},
-		                                                {0.6931, 0.06164, 0.06164, 0.06164}};
+	float dum_coefshlwa[MAX_DRG_TYPE][MAX_VEG_TYPE] =  {{0.01927, 0.01927, 0.01927, 0.01927},
+                                                        {0.01386, 0.01386, 0.01386, 0.01386}};
+	float dum_coefshlwb[MAX_DRG_TYPE][MAX_VEG_TYPE] =  {{1.1247, 1.1247, 1.1247, 1.1247 },
+		                                                {1.0836, 1.0836, 1.0876, 1.0876}};
+	float dum_coefdeepa[MAX_DRG_TYPE][MAX_VEG_TYPE] =  {{0.02929, 0.02929, 0.02920, 0.02920},
+		                                                {0.03616, 0.03616, 0.03616, 0.03616}};
+	float dum_coefdeepb[MAX_DRG_TYPE][MAX_VEG_TYPE] =  {{1.2622, 1.2622, 1.2622, 1.2622 },
+		                                                {1.0802, 1.0802, 1.0802, 1.0802 }};
+	float dum_coefminea[MAX_DRG_TYPE][MAX_VEG_TYPE] =  {{0.039693, 0.039693, 0.039693, 0.039693},
+		                                                {0.04856, 0.04856, 0.04856, 0.04856}};
+	float dum_coefmineb[MAX_DRG_TYPE][MAX_VEG_TYPE] =  {{0.0667389, 0.0667389, 0.0667389, 0.0667389},
+		                                                {0.06164, 0.06164, 0.06164, 0.06164}};
     //Yuan: the following parameters are changeable, the default are from
 		// Jenkinson et al, 1977, soil science 123: 298 - 305
 		//    when C is respired, 1 C will produce:

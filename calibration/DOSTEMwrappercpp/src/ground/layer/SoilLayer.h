@@ -154,7 +154,7 @@ class SoilLayer:public Layer{
      	
     SoilLookup* soillu;
     
-    void checkFronts();
+    int checkFronts();
     
     void adjustFronts();
     double getDryThermCond(const double & tcsolid, const double & bulkden, const double & partden);

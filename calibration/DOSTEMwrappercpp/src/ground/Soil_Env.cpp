@@ -884,9 +884,9 @@ double Soil_Env::getFineRootFrac(const double & layertop, const double & layerbo
 
 	// dynamically changing root interval (10 intervals of max. 100 cm depth)
 	double deltartdep = 10.0; // max. 10 cm x 10 root-layers, which is defined in 'CohortLookup.cpp'::assignRootParams()
-//    if (fd->ysf<=20) {
-//    	deltartdep = 2.0+8.0*0.05*fd->ysf;   // a very simple linearly increasing max. root-layer depth at 0.05 cm per year, at least 2 cm
-//    }
+    if (fd->ysf<=20) {
+    	deltartdep = 2.0+8.0*0.05*fd->ysf;   // a very simple linearly increasing max. root-layer depth at 0.05 cm per year, at least 2 cm
+    }
 
 	//determine the root-layer index of layertop and layerbot
 	int indtop = (int) floor(topcm/deltartdep);   //Yuan: the uppermost layer
@@ -929,24 +929,26 @@ double Soil_Env::getFineRootFrac(const double & layertop, const double & layerbo
 	if (indtop ==0) {
 		sumfractop = envpar.frprod_frac[indtop]/deltartdep*topcm;
 	} else if (indtop >= 9) {
-		sumfractop = envpar.frprod_frac[indtop];
+		sumfractop = envpar.frprod_frac[9];
 	} else {
 		sumfractop = (envpar.frprod_frac[indtop]-envpar.frprod_frac[indtop-1])/deltartdep
-				    * (topcm-indtop*deltartdep);
+				    * (topcm-indtop*deltartdep)
+				    +envpar.frprod_frac[indtop-1];
 	}
 
 	if (indbot ==0) {
 		sumfracbot = envpar.frprod_frac[indbot]/deltartdep*botcm;
 	} else if (indbot >= 9) {
-		sumfracbot = envpar.frprod_frac[indbot];
+		sumfracbot = envpar.frprod_frac[9];
 	} else {
 		sumfracbot = (envpar.frprod_frac[indbot]-envpar.frprod_frac[indbot-1])/deltartdep
-				    * (botcm-indbot*deltartdep);
+				    * (botcm-indbot*deltartdep)
+				    + envpar.frprod_frac[indbot-1];
 	}
 
 	totfrfrac = sumfracbot - sumfractop;
 	if (totfrfrac<0.0) totfrfrac = 0.0;
-	if (totfrfrac>1.0) totfrfrac = 1.0;
+	if (totfrfrac>100.0) totfrfrac = 100.0;
 	
 	return totfrfrac; 
 	
@@ -1106,9 +1108,9 @@ void Soil_Env::layer2structmonthly(Layer* fstsoill){
 
 	ed->m_soid.actual_num_soil=ind;
 	if(ed->m_sois.dz[0] ==2){
-		string msg = "the first soil layer cannot be deep organic";
- 		char* msgc = const_cast< char* > ( msg.c_str());
- 		throw Exception(msgc, I_LAYER_FIRST_DEEP);
+		//string msg = "the first soil layer cannot be deep organic";
+ 		//char* msgc = const_cast< char* > ( msg.c_str());
+ 		//throw Exception(msgc, I_LAYER_FIRST_DEEP);
 		 
 	}
 		 
@@ -1198,12 +1200,12 @@ void Soil_Env::retrieveDailyOutputs(Layer* fstsoill, Layer* fstminl, Layer* lstm
 
 	  	  //ed->d_soid.tcond[ind] = curr2->tcond;     //missing value is reported sometime!
 	  	  ed->d_soid.tcond[ind] = curr2->getThermalConductivity();
-/*	  	  if ((isnan(curr2->hcond)) || (curr2->frozen==1)) {
+	  	  if ((isnan(curr2->hcond)) || (curr2->frozen==1)) {
 	  		  ed->d_soid.hcond[ind] = 0.;
 	  	  } else {
 		  	  ed->d_soid.hcond[ind] = curr2->hcond;
 	  	  }
-*/
+
 	  	  ind++;
 	  	}
 	  	
@@ -1247,17 +1249,17 @@ void Soil_Env::retrieveDailyFronts(Layer* fstsoill){
    		  		iff++;
    		  		if(iff>=MAX_NUM_FNT){
    		  		 
-   		  		 string msg = "The number of freezing fronts is more than MAX_OUT_FNT ";
- 				char* msgc = const_cast< char* > ( msg.c_str());
- 				throw Exception(msgc, I_TOO_MANY_FRZ_FRONTS);
+   		  		// string msg = "The number of freezing fronts is more than MAX_OUT_FNT ";
+ 				//char* msgc = const_cast< char* > ( msg.c_str());
+ 				//throw Exception(msgc, I_TOO_MANY_FRZ_FRONTS);
    		  		}
    		  		ed->d_soid.frzfnt[iff] = top + sl->fronts[i]->dz;
    		  	}else if(sl->fronts[i]->frzing==-1){
    		  		itf++;
    		  		if(itf>=MAX_NUM_FNT){
-   		  		 string msg = "The number of Thawing fronts is more than MAX_OUT_FNT ";
- 				char* msgc = const_cast< char* > ( msg.c_str());
- 				throw Exception(msgc, I_TOO_MANY_THW_FRONTS);
+   		  		 //string msg = "The number of Thawing fronts is more than MAX_OUT_FNT ";
+ 				//char* msgc = const_cast< char* > ( msg.c_str());
+ 				//throw Exception(msgc, I_TOO_MANY_THW_FRONTS);
    		  		}
    		  		ed->d_soid.thwfnt[itf] = top + sl->fronts[i]->dz;
    		  	}

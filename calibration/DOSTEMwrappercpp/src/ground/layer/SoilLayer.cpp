@@ -461,18 +461,21 @@ void SoilLayer::adjustTem5State(){
    	 } 
 };
  
-void SoilLayer::checkFronts(){
+int SoilLayer::checkFronts(){
 	int numfnt = fronts.size();
 	for(int i=0; i<numfnt; i++){
 		if(fronts[i]->dz >dz){
  
-  	     string msg = "the front should be located in soil layer ";
- 	 		char* msgc = const_cast< char* > ( msg.c_str());
- 		 	throw Exception(msgc, I_FRONT_POSITION);
+  	     //string msg = "the front should be located in soil layer ";
+ 	 	//	char* msgc = const_cast< char* > ( msg.c_str());
+ 		 //	throw Exception(msgc, I_FRONT_POSITION);
+			return -1;
   	  
 		}
 	}
 	
+	return 0;
+
 };
    
 ///// some properties

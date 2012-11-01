@@ -92,7 +92,7 @@
 	 	Atmosphere * atm;
 	 	        
         void init();
-        void reset();
+        int reset();
         void setTime(Timer * timerp);
       	void setModelData(ModelData* md);
       	void setInputData(RegionData * rd, GridData * gd, CohortData *cd);
@@ -107,9 +107,9 @@
 		void fireDrivingData(bool runsp, bool runtr, bool runsc);
 		int  timerOutputYearIndex(bool equiled, bool spined, bool outputSpinup);
 		
- 	 	void updateMonthly(const int & yrcnt,const int &  curryr, const int & currmind,
+ 	 	int updateMonthly(const int & yrcnt,const int &  curryr, const int & currmind,
  	 					 const int & dinmcurr , const bool & assigneq, const bool & useeq);
-     	void updateMonthly_Env(const int & yrcnt,const int &  curryr, 
+     	int updateMonthly_Env(const int & yrcnt,const int &  curryr,
      			const int & currmind, const int & dinmcurr , const bool & assigneq);
 
  	 	void updateMonthly_Bgc(const int & yrcnt,const int &  curryr, 

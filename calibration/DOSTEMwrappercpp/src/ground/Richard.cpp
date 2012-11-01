@@ -46,7 +46,7 @@ void Richard::update(Layer * frontl, Layer *backl, Layer *fstsoill, Layer* drain
 	int ind = 0;
 	numal = 0;
 	double roottot =0.;
-    while(currl!=NULL){
+        while(currl!=NULL){
     	if(currl->isSoil()){
     		if(currl->frozen==-1){
     			ind++;
@@ -156,7 +156,7 @@ void Richard::iterate(Layer *fstsoill,const double & trans, const double & evap,
 		if(st==-1) {				
 			tstep = tstep/2;   // half the time step
 			if(tstep < 1.e-6){
-				string msg = "tstep is too small in richard2 ";
+//				string msg = "tstep is too small in richard2 ";
 //				char* msgc = const_cast< char* > ( msg.c_str());
 //				throw Exception(msgc, I_WAT_TSTEP_SMALL);   //Yuan: this will break the model
 //				cout<<msg<<"\n";
@@ -386,14 +386,13 @@ int Richard::updateOneIteration(Layer *fstsoill, const double & trans, const dou
 	// soil water for each layer after one iteration
     for(int il =1; il<=numal; il++){
     	liqit[il] = liqii[il] + dzmm[il] * dwat[il];
-/*    	if(isnan(liqit[il])){
+    	if(isnan(liqit[il])){
     		string msg = "water is nan in richard";
  //   		char* msgc = const_cast< char* > ( msg.c_str());
     		//throw Exception(msgc, I_NAN_WATER);
 
     		break;   //Yuan:
     	}
-*/
     }	
         
     //check the change of liquid water
