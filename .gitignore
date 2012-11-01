@@ -3,7 +3,7 @@
 
 *.so
 *_wrap.cxx
-*.jar
+./*.jar
 *.o
 
 
