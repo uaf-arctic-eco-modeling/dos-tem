@@ -1593,10 +1593,6 @@ void Cohort::updateRestartOutputBuffer(const int & stage){
  		currl =currl->nextl;	
  	}
  	
- 	if (shlwno>MAX_SLW_LAY || deepno>MAX_DEP_LAY){
- 		cout<<"checking!\n";
- 	}
-
  	for(int il =0; il<MAX_SOI_LAY ; il++){
  		if(resod->TYPEsoil[il] >=0){
  	      resod->NONCsoil[il] =bd->m_sois.nonc[il];

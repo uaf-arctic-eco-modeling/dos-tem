@@ -929,24 +929,26 @@ double Soil_Env::getFineRootFrac(const double & layertop, const double & layerbo
 	if (indtop ==0) {
 		sumfractop = envpar.frprod_frac[indtop]/deltartdep*topcm;
 	} else if (indtop >= 9) {
-		sumfractop = envpar.frprod_frac[indtop];
+		sumfractop = envpar.frprod_frac[9];
 	} else {
 		sumfractop = (envpar.frprod_frac[indtop]-envpar.frprod_frac[indtop-1])/deltartdep
-				    * (topcm-indtop*deltartdep);
+				    * (topcm-indtop*deltartdep)
+				    +envpar.frprod_frac[indtop-1];
 	}
 
 	if (indbot ==0) {
 		sumfracbot = envpar.frprod_frac[indbot]/deltartdep*botcm;
 	} else if (indbot >= 9) {
-		sumfracbot = envpar.frprod_frac[indbot];
+		sumfracbot = envpar.frprod_frac[9];
 	} else {
 		sumfracbot = (envpar.frprod_frac[indbot]-envpar.frprod_frac[indbot-1])/deltartdep
-				    * (botcm-indbot*deltartdep);
+				    * (botcm-indbot*deltartdep)
+				    + envpar.frprod_frac[indbot-1];
 	}
 
 	totfrfrac = sumfracbot - sumfractop;
 	if (totfrfrac<0.0) totfrfrac = 0.0;
-	if (totfrfrac>1.0) totfrfrac = 1.0;
+	if (totfrfrac>100.0) totfrfrac = 100.0;
 	
 	return totfrfrac; 
 	
