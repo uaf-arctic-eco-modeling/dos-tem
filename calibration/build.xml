@@ -5,9 +5,9 @@
   <property file="build.properties" />
   -->
   
-  <property name="CXX" value="g++" />
+  <property name="CXX" value="g++" /> 
   <property name="CFLAGS" value="" />
-  <property name="JAVADIR" value="" />
+  <property name="JAVADIR" value="/usr/lib/jvm/java-1.6.0-sun-1.6.0.30" />
   <property name="APPNAME" value="dos-tem-calibrator.jar" />
   <property name="CORESHAREDLIBNAME" value="libtemcore.so" />
   <property name="BUILDDIR" value="build" />
@@ -53,6 +53,8 @@
     <mkdir dir="lib" />
     <exec dir="${BUILDDIR}" executable="${CXX}" failonerror="true" os="Linux">
           <arg line="${CFLAGS} -fpic -shared
+                    -I${JAVADIR}/include/linux 
+                    -I${JAVADIR}/include
                     -o ../lib/libtemcore.so
                     ../DOSTEMwrappercpp/src/TEMrun_wrap.cxx 
                     ../DOSTEMwrappercpp/src/atmosphere/AtmosUtil.cpp
@@ -105,9 +107,7 @@
                     ../DOSTEMwrappercpp/src/util/Integrator.cpp
                     ../DOSTEMwrappercpp/src/util/Interpolator.cpp
                     ../DOSTEMwrappercpp/src/vegetation/Vegetation_Bgc.cpp
-                    ../DOSTEMwrappercpp/src/vegetation/Vegetation_Env.cpp
-                    -I/usr/lib/jvm/java-1.6.0-sun-1.6.0.30/include/linux 
-                    -I/usr/lib/jvm/java-1.6.0-sun-1.6.0.30/include"/>
+                    ../DOSTEMwrappercpp/src/vegetation/Vegetation_Env.cpp" />
     </exec>
 
  </target>
