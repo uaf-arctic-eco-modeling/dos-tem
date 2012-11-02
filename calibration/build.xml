@@ -1,0 +1,209 @@
+<?xml version="1.0" ?>
+<project default="main">
+  
+  <!-- Can eventually put properties in file like so:
+  <property file="build.properties" />
+  -->
+  
+  <property name="CXX" value="g++" />
+  <property name="CFLAGS" value="" />
+
+  <target name="main" depends="Swigify,
+                               CreateSharedLibraries,
+  							   Compile,
+                               Jar">
+    <echo>Finished building the dos-tem-calibrator.</echo>
+       
+  </target>
+
+  <!-- ## Create SWIG wrappers  (Linux)             # -->
+  <target name="Swigify">
+    <echo>Creating SWIG wrappers</echo>
+
+    <mkdir dir="tmp" />
+    <mkdir dir="tmp/TEMJNI" />
+
+       <exec dir="tmp" executable="swig" failonerror="true">
+          <arg line="-v -java -c++ -package TEMJNI -outdir TEMJNI ../DOSTEMwrappercpp/src/TEMrun.i"/>
+       </exec>
+
+  </target>
+
+
+  <!-- ############################################## -->
+  <!-- ## Create Shared Libraries                   # -->
+  <!-- ############################################## -->
+  <target name="CreateSharedLibraries" depends="Swigify">
+
+    <echo>Creating Shared Library of C++ core</echo>
+    <!-- For some reason macro expansion not working...?
+         The compilation breaks unless there are hardcoded 
+         paths to jni.h as below. Ideally would use this setup
+         with $(JAVADIR):
+
+                     -I$(JAVADIR)/include 
+                     -I$(JAVADIR)/include/linux
+    -->
+    
+    <mkdir dir="tmp" />
+    <mkdir dir="lib" />
+    <exec dir="tmp" executable="${CXX}" failonerror="true" os="Linux">
+          <arg line="${CFLAGS} -fpic -shared
+          			-o ../lib/libtemcore.so
+          			../DOSTEMwrappercpp/src/TEMrun_wrap.cxx 
+          			../DOSTEMwrappercpp/src/atmosphere/AtmosUtil.cpp
+					../DOSTEMwrappercpp/src/atmosphere/Atmosphere.cpp
+          			../DOSTEMwrappercpp/src/data/BgcData.cpp
+          			../DOSTEMwrappercpp/src/data/CohortData.cpp
+          			../DOSTEMwrappercpp/src/data/EnvData.cpp
+          			../DOSTEMwrappercpp/src/data/FirData.cpp
+          			../DOSTEMwrappercpp/src/data/GridData.cpp
+          			../DOSTEMwrappercpp/src/data/RegionData.cpp
+          			../DOSTEMwrappercpp/src/data/RestartData.cpp
+          			../DOSTEMwrappercpp/src/disturb/WildFire.cpp
+					../DOSTEMwrappercpp/src/ground/DoubleLinkedList.cpp
+          			../DOSTEMwrappercpp/src/ground/Ground.cpp
+          			../DOSTEMwrappercpp/src/ground/Mineral.cpp
+          			../DOSTEMwrappercpp/src/ground/Moss.cpp
+          			../DOSTEMwrappercpp/src/ground/Peat.cpp
+          			../DOSTEMwrappercpp/src/ground/Richard.cpp
+          			../DOSTEMwrappercpp/src/ground/Rock.cpp
+          			../DOSTEMwrappercpp/src/ground/Snow_Env.cpp
+          			../DOSTEMwrappercpp/src/ground/Soil_Bgc.cpp
+					../DOSTEMwrappercpp/src/ground/Soil_Env.cpp
+          			../DOSTEMwrappercpp/src/ground/Stefan.cpp
+          			../DOSTEMwrappercpp/src/ground/layer/Front.cpp
+          			../DOSTEMwrappercpp/src/ground/layer/Layer.cpp
+          			../DOSTEMwrappercpp/src/ground/layer/MineralLayer.cpp
+          			../DOSTEMwrappercpp/src/ground/layer/MossLayer.cpp
+          			../DOSTEMwrappercpp/src/ground/layer/OutputDepth.cpp
+          			../DOSTEMwrappercpp/src/ground/layer/PeatLayer.cpp
+          			../DOSTEMwrappercpp/src/ground/layer/RockLayer.cpp
+					../DOSTEMwrappercpp/src/ground/layer/SnowLayer.cpp
+          			../DOSTEMwrappercpp/src/ground/layer/SoilLayer.cpp
+          			../DOSTEMwrappercpp/src/lookup/CCohortLookup.cpp
+          			../DOSTEMwrappercpp/src/lookup/CohortLookup.cpp
+          			../DOSTEMwrappercpp/src/lookup/SoilLookup.cpp
+          			../DOSTEMwrappercpp/src/run/AtmOutData.cpp
+          			../DOSTEMwrappercpp/src/run/Cohort.cpp
+          			../DOSTEMwrappercpp/src/run/Controller.cpp
+          			../DOSTEMwrappercpp/src/run/Grid.cpp
+					../DOSTEMwrappercpp/src/run/ModelData.cpp
+          			../DOSTEMwrappercpp/src/run/RegnOutData.cpp
+          			../DOSTEMwrappercpp/src/run/SiteIn.cpp
+          			../DOSTEMwrappercpp/src/run/SnowSoilOutData.cpp
+          			../DOSTEMwrappercpp/src/run/SoilClm.cpp
+          			../DOSTEMwrappercpp/src/run/Timer.cpp
+          			../DOSTEMwrappercpp/src/run/VegOutData.cpp
+          			../DOSTEMwrappercpp/src/util/CrankNicholson.cpp
+          			../DOSTEMwrappercpp/src/util/Exception.cpp
+          			../DOSTEMwrappercpp/src/util/FileChecking.cpp
+          			../DOSTEMwrappercpp/src/util/Integrator.cpp
+          			../DOSTEMwrappercpp/src/util/Interpolator.cpp
+          			../DOSTEMwrappercpp/src/vegetation/Vegetation_Bgc.cpp
+					../DOSTEMwrappercpp/src/vegetation/Vegetation_Env.cpp
+          			-I/usr/lib/jvm/java-1.6.0-sun-1.6.0.30/include/linux 
+          			-I/usr/lib/jvm/java-1.6.0-sun-1.6.0.30/include"/>
+    </exec>
+
+ </target>
+
+
+
+  
+  <!-- ############################################## -->
+  <!-- ## Compile Java Sources                      # -->
+  <!-- ############################################## -->
+  <target name="Compile" depends="CreateSharedLibraries">
+  
+    <echo>Compiling java sources</echo>
+    <mkdir dir="tmp" />
+
+    <javac srcdir="DOSTEMrunjava/" destdir="tmp">
+    	
+    	<src path="DOSTEMrunjava" />
+    	<src path="tmp" />
+
+    	<sourcepath>
+    		<pathelement location="" />
+    		<pathelement location="" />
+    		<pathelement location="" />
+    	</sourcepath>
+        <classpath>
+               <pathelement location="jars/l2fprod-common-all.jar"/>
+               <pathelement location="jars/jchart2d-3.2.2.jar"/>
+               <pathelement location="jars/netcdfUI-2.2.22.jar"/>
+               <pathelement location="jars/log4j-1.2.9.jar"/>
+               <pathelement location="DOSTEMrunjava/TEMJNI"/>
+        </classpath>
+
+       <!--
+        <sourcepath>
+               <pathelement location="../DOSTEMrunjava/DATA"/>
+               <pathelement location="../DOSTEMrunjava/calTEM"/>
+               <pathelement location="../DOSTEMrunjava/INPUT"/>
+               <pathelement location="../DOSTEMrunjava/OUTPUT"/>
+               <pathelement location="../DOSTEMrunjava/runTEM"/>
+        </sourcepath>
+        -->
+    </javac>
+
+  </target>
+
+
+  <!-- ############################################## -->
+  <!-- ## Create the dos-tem-calibrator jar file    # -->
+  <!-- ############################################## -->
+  <target name="Jar" depends="Compile">
+      <echo>Compressing into dos-tem-calibrator.jar file</echo>
+      <jar destfile="dos-tem-calibrator.jar" basedir="tmp">
+         <manifest>
+                <attribute name="Author" value="${author}"/>
+                <section name="Shared">
+                    <attribute name="Title" value="dos-tem-calibrator and gui"/>
+                </section>
+                <attribute name="Main-Class" value="TEMCalibrator" />
+                <!--
+                <attribute name="Class-Path" value="jars/jchart2d-3.2.2.jar;jars/l2fprod-common-all.jar;jars/log4j-1.2.9.jar;jars/netcdfUI-2.2.22.jar" />
+                -->
+                <attribute name="Class-Path" value="jars/l2fprod-common-all.jar jars/jchart2d-3.2.2.jar jars/netcdfUI-2.2.22.jar jars/log4j-1.2.9.jar" />
+         </manifest>
+      </jar>
+      
+  </target>
+
+
+
+   
+   
+  <!-- ############################################## -->
+  <!-- ## Clean Up The Mess                         # -->
+  <!-- ############################################## -->
+  <target name="distclean" depends="clean">
+	<delete dir="lib" />
+	<mkdir dir="lib" />
+	<delete file="dos-tem-calibrator.jar" /> 
+  </target>
+
+
+  <target name="clean">
+    <delete dir="tmp" />
+    <mkdir dir="tmp" />
+<!--    
+    <delete dir="DOSTEMrunjava/TEMJNI" />
+    <mkdir dir="DOSTEMrunjava/TEMJNI" />
+
+    <delete file="DOSTEMrunjava/libtemcore.so" />
+    <delete file="DOSTEMwrappercpp/src/TEMrun_wrap.cxx" />
+-->
+    
+  </target>
+
+</project>
+
+
+<!--
+experiementing with class path...
+
+-classpath "dos-tem-calibrator.jar;/home/tobey/assorted_java_libs/l2fprod-common-all/l2fprod-common-all.jar;/home/tobey/assorted_java_libs/jchart2d-3/jchart2d-3.2.2.jar;/home/tobey/assorted_java_libs/netcdf-2.2.22/netcdfUI-2.2.22.jar;/home/tobey/assorted_java_libs/logging-log4j-1.2.9/dist/lib/log4j-1.2.9.jar;/home/tobey/assorted_java_libs/logging-log4j-1.2.9/dist/classes/"
+-->
