@@ -6,12 +6,11 @@
   -->
   
   <property name="CXX" value="g++" /> 
-  <property name="CFLAGS" value="" />
+  <property name="CFLAGS" value="-fpic -shared" />
   <property name="JAVADIR" value="/usr/lib/jvm/java-1.6.0-sun-1.6.0.30" />
   <property name="APPNAME" value="dos-tem-calibrator.jar" />
   <property name="CORESHAREDLIBNAME" value="libtemcore.so" />
   <property name="BUILDDIR" value="build" />
-  
   <property name="INCLUDES" value="-I${JAVADIR}/include/linux -I${JAVADIR}/include" />
   
 
@@ -31,10 +30,10 @@
 
     <mkdir dir="${BUILDDIR}" />
     <mkdir dir="${BUILDDIR}/TEMJNI" />
-
-       <exec dir="${BUILDDIR}" executable="swig" failonerror="true">
-          <arg line="-v -java -c++ -package TEMJNI -outdir TEMJNI ../DOSTEMwrappercpp/src/TEMrun.i"/>
-       </exec>
+  
+    <exec dir="${BUILDDIR}" executable="swig" failonerror="true">
+      <arg line="-v -java -c++ -package TEMJNI -outdir TEMJNI ../DOSTEMwrappercpp/src/TEMrun.i"/>
+    </exec>
 
   </target>
 
@@ -45,76 +44,68 @@
   <target name="CreateSharedLibraries" depends="Swigify">
 
     <echo>Creating Shared Library of C++ core</echo>
-    <!-- For some reason macro expansion not working...?
-         The compilation breaks unless there are hardcoded 
-         paths to jni.h as below. Ideally would use this setup
-         with $(JAVADIR):
-
-                     -I$(JAVADIR)/include 
-                     -I$(JAVADIR)/include/linux
-    -->
     
     <mkdir dir="${BUILDDIR}" />
     <mkdir dir="lib" />
-    <exec dir="${BUILDDIR}" executable="${CXX}" failonerror="true" os="Linux">
-          <arg line="${CFLAGS} -fpic -shared
-                    ${INCLUDES}
-                    -o ../lib/${CORESHAREDLIBNAME}
-                    ../DOSTEMwrappercpp/src/TEMrun_wrap.cxx 
-                    ../DOSTEMwrappercpp/src/atmosphere/AtmosUtil.cpp
-                    ../DOSTEMwrappercpp/src/atmosphere/Atmosphere.cpp
-                    ../DOSTEMwrappercpp/src/data/BgcData.cpp
-                    ../DOSTEMwrappercpp/src/data/CohortData.cpp
-                    ../DOSTEMwrappercpp/src/data/EnvData.cpp
-                    ../DOSTEMwrappercpp/src/data/FirData.cpp
-                    ../DOSTEMwrappercpp/src/data/GridData.cpp
-                    ../DOSTEMwrappercpp/src/data/RegionData.cpp
-                    ../DOSTEMwrappercpp/src/data/RestartData.cpp
-                    ../DOSTEMwrappercpp/src/disturb/WildFire.cpp
-                    ../DOSTEMwrappercpp/src/ground/DoubleLinkedList.cpp
-                    ../DOSTEMwrappercpp/src/ground/Ground.cpp
-                    ../DOSTEMwrappercpp/src/ground/Mineral.cpp
-                    ../DOSTEMwrappercpp/src/ground/Moss.cpp
-                    ../DOSTEMwrappercpp/src/ground/Peat.cpp
-                    ../DOSTEMwrappercpp/src/ground/Richard.cpp
-                    ../DOSTEMwrappercpp/src/ground/Rock.cpp
-                    ../DOSTEMwrappercpp/src/ground/Snow_Env.cpp
-                    ../DOSTEMwrappercpp/src/ground/Soil_Bgc.cpp
-                    ../DOSTEMwrappercpp/src/ground/Soil_Env.cpp
-                    ../DOSTEMwrappercpp/src/ground/Stefan.cpp
-                    ../DOSTEMwrappercpp/src/ground/layer/Front.cpp
-                    ../DOSTEMwrappercpp/src/ground/layer/Layer.cpp
-                    ../DOSTEMwrappercpp/src/ground/layer/MineralLayer.cpp
-                    ../DOSTEMwrappercpp/src/ground/layer/MossLayer.cpp
-                    ../DOSTEMwrappercpp/src/ground/layer/OutputDepth.cpp
-                    ../DOSTEMwrappercpp/src/ground/layer/PeatLayer.cpp
-                    ../DOSTEMwrappercpp/src/ground/layer/RockLayer.cpp
-                    ../DOSTEMwrappercpp/src/ground/layer/SnowLayer.cpp
-                    ../DOSTEMwrappercpp/src/ground/layer/SoilLayer.cpp
-                    ../DOSTEMwrappercpp/src/lookup/CCohortLookup.cpp
-                    ../DOSTEMwrappercpp/src/lookup/CohortLookup.cpp
-                    ../DOSTEMwrappercpp/src/lookup/SoilLookup.cpp
-                    ../DOSTEMwrappercpp/src/run/AtmOutData.cpp
-                    ../DOSTEMwrappercpp/src/run/Cohort.cpp
-                    ../DOSTEMwrappercpp/src/run/Controller.cpp
-                    ../DOSTEMwrappercpp/src/run/Grid.cpp
-                    ../DOSTEMwrappercpp/src/run/ModelData.cpp
-                    ../DOSTEMwrappercpp/src/run/RegnOutData.cpp
-                    ../DOSTEMwrappercpp/src/run/SiteIn.cpp
-                    ../DOSTEMwrappercpp/src/run/SnowSoilOutData.cpp
-                    ../DOSTEMwrappercpp/src/run/SoilClm.cpp
-                    ../DOSTEMwrappercpp/src/run/Timer.cpp
-                    ../DOSTEMwrappercpp/src/run/VegOutData.cpp
-                    ../DOSTEMwrappercpp/src/util/CrankNicholson.cpp
-                    ../DOSTEMwrappercpp/src/util/Exception.cpp
-                    ../DOSTEMwrappercpp/src/util/FileChecking.cpp
-                    ../DOSTEMwrappercpp/src/util/Integrator.cpp
-                    ../DOSTEMwrappercpp/src/util/Interpolator.cpp
-                    ../DOSTEMwrappercpp/src/vegetation/Vegetation_Bgc.cpp
-                    ../DOSTEMwrappercpp/src/vegetation/Vegetation_Env.cpp" />
-    </exec>
 
- </target>
+    <exec dir="${BUILDDIR}" executable="${CXX}" failonerror="true" os="Linux">
+      <arg line="${CFLAGS}
+                ${INCLUDES}
+                -o ../lib/${CORESHAREDLIBNAME}
+                ../DOSTEMwrappercpp/src/TEMrun_wrap.cxx 
+                ../DOSTEMwrappercpp/src/atmosphere/AtmosUtil.cpp
+                ../DOSTEMwrappercpp/src/atmosphere/Atmosphere.cpp
+                ../DOSTEMwrappercpp/src/data/BgcData.cpp
+                ../DOSTEMwrappercpp/src/data/CohortData.cpp
+                ../DOSTEMwrappercpp/src/data/EnvData.cpp
+                ../DOSTEMwrappercpp/src/data/FirData.cpp
+                ../DOSTEMwrappercpp/src/data/GridData.cpp
+                ../DOSTEMwrappercpp/src/data/RegionData.cpp
+                ../DOSTEMwrappercpp/src/data/RestartData.cpp
+                ../DOSTEMwrappercpp/src/disturb/WildFire.cpp
+                ../DOSTEMwrappercpp/src/ground/DoubleLinkedList.cpp
+                ../DOSTEMwrappercpp/src/ground/Ground.cpp
+                ../DOSTEMwrappercpp/src/ground/Mineral.cpp
+                ../DOSTEMwrappercpp/src/ground/Moss.cpp
+                ../DOSTEMwrappercpp/src/ground/Peat.cpp
+                ../DOSTEMwrappercpp/src/ground/Richard.cpp
+                ../DOSTEMwrappercpp/src/ground/Rock.cpp
+                ../DOSTEMwrappercpp/src/ground/Snow_Env.cpp
+                ../DOSTEMwrappercpp/src/ground/Soil_Bgc.cpp
+                ../DOSTEMwrappercpp/src/ground/Soil_Env.cpp
+                ../DOSTEMwrappercpp/src/ground/Stefan.cpp
+                ../DOSTEMwrappercpp/src/ground/layer/Front.cpp
+                ../DOSTEMwrappercpp/src/ground/layer/Layer.cpp
+                ../DOSTEMwrappercpp/src/ground/layer/MineralLayer.cpp
+                ../DOSTEMwrappercpp/src/ground/layer/MossLayer.cpp
+                ../DOSTEMwrappercpp/src/ground/layer/OutputDepth.cpp
+                ../DOSTEMwrappercpp/src/ground/layer/PeatLayer.cpp
+                ../DOSTEMwrappercpp/src/ground/layer/RockLayer.cpp
+                ../DOSTEMwrappercpp/src/ground/layer/SnowLayer.cpp
+                ../DOSTEMwrappercpp/src/ground/layer/SoilLayer.cpp
+                ../DOSTEMwrappercpp/src/lookup/CCohortLookup.cpp
+                ../DOSTEMwrappercpp/src/lookup/CohortLookup.cpp
+                ../DOSTEMwrappercpp/src/lookup/SoilLookup.cpp
+                ../DOSTEMwrappercpp/src/run/AtmOutData.cpp
+                ../DOSTEMwrappercpp/src/run/Cohort.cpp
+                ../DOSTEMwrappercpp/src/run/Controller.cpp
+                ../DOSTEMwrappercpp/src/run/Grid.cpp
+                ../DOSTEMwrappercpp/src/run/ModelData.cpp
+                ../DOSTEMwrappercpp/src/run/RegnOutData.cpp
+                ../DOSTEMwrappercpp/src/run/SiteIn.cpp
+                ../DOSTEMwrappercpp/src/run/SnowSoilOutData.cpp
+                ../DOSTEMwrappercpp/src/run/SoilClm.cpp
+                ../DOSTEMwrappercpp/src/run/Timer.cpp
+                ../DOSTEMwrappercpp/src/run/VegOutData.cpp
+                ../DOSTEMwrappercpp/src/util/CrankNicholson.cpp
+                ../DOSTEMwrappercpp/src/util/Exception.cpp
+                ../DOSTEMwrappercpp/src/util/FileChecking.cpp
+                ../DOSTEMwrappercpp/src/util/Integrator.cpp
+                ../DOSTEMwrappercpp/src/util/Interpolator.cpp
+                ../DOSTEMwrappercpp/src/vegetation/Vegetation_Bgc.cpp
+                ../DOSTEMwrappercpp/src/vegetation/Vegetation_Env.cpp" />
+    </exec>
+  </target>
 
 
 
@@ -128,22 +119,23 @@
     <mkdir dir="${BUILDDIR}" />
 
     <javac srcdir="DOSTEMrunjava/" destdir="${BUILDDIR}">
-        
-        <src path="DOSTEMrunjava" />
-        <src path="${BUILDDIR}" />
-
-        <sourcepath>
-            <pathelement location="" />
-            <pathelement location="" />
-            <pathelement location="" />
-        </sourcepath>
-        <classpath>
-               <pathelement location="jars/l2fprod-common-all.jar"/>
-               <pathelement location="jars/jchart2d-3.2.2.jar"/>
-               <pathelement location="jars/netcdfUI-2.2.22.jar"/>
-               <pathelement location="jars/log4j-1.2.9.jar"/>
-               <pathelement location="DOSTEMrunjava/TEMJNI"/>
-        </classpath>
+    
+      <src path="DOSTEMrunjava" />
+      <src path="${BUILDDIR}" />
+      
+      <sourcepath>
+        <pathelement location="" />
+        <pathelement location="" />
+        <pathelement location="" />
+      </sourcepath>
+  
+      <classpath>
+        <pathelement location="jars/l2fprod-common-all.jar"/>
+        <pathelement location="jars/jchart2d-3.2.2.jar"/>
+        <pathelement location="jars/netcdfUI-2.2.22.jar"/>
+        <pathelement location="jars/log4j-1.2.9.jar"/>
+        <pathelement location="DOSTEMrunjava/TEMJNI"/>
+      </classpath>
 
     </javac>
 
@@ -154,15 +146,18 @@
   <!-- ## Create the dos-tem-calibrator jar file    # -->
   <!-- ############################################## -->
   <target name="Jar" depends="Compile">
-      <echo>Compressing into dos-tem-calibrator.jar file</echo>
+      <echo>Compressing into ${APPNAME} file</echo>
       <jar destfile="dos-tem-calibrator.jar" basedir="${BUILDDIR}">
          <manifest>
-                <attribute name="Author" value="${author}"/>
-                <section name="Shared">
-                    <attribute name="Title" value="dos-tem-calibrator and gui"/>
-                </section>
-                <attribute name="Main-Class" value="TEMCalibrator" />
-                <attribute name="Class-Path" value="jars/l2fprod-common-all.jar jars/jchart2d-3.2.2.jar jars/netcdfUI-2.2.22.jar jars/log4j-1.2.9.jar" />
+          <attribute name="Author" value="${author}"/>
+          <section name="Shared">
+              <attribute name="Title" value="dos-tem-calibrator and gui"/>
+          </section>
+          <attribute name="Main-Class" value="TEMCalibrator" />
+          <attribute name="Class-Path" value="jars/l2fprod-common-all.jar 
+                                              jars/jchart2d-3.2.2.jar 
+                                              jars/netcdfUI-2.2.22.jar 
+                                              jars/log4j-1.2.9.jar" />
          </manifest>
       </jar>
       
@@ -174,7 +169,7 @@
   <target name="distclean" depends="clean">
     <delete dir="lib" />
     <mkdir dir="lib" />
-    <delete file="dos-tem-calibrator.jar" /> 
+    <delete file="${APPNAME}" /> 
   </target>
 
   <target name="clean">
