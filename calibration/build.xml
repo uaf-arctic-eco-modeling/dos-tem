@@ -23,7 +23,9 @@
        
   </target>
 
+  <!-- ############################################## -->
   <!-- ## Create SWIG wrappers  (Linux)             # -->
+  <!-- ############################################## -->
   <target name="Swigify">
     <echo>Creating SWIG wrappers</echo>
 
@@ -57,7 +59,7 @@
     <exec dir="${BUILDDIR}" executable="${CXX}" failonerror="true" os="Linux">
           <arg line="${CFLAGS} -fpic -shared
                     ${INCLUDES}
-                    -o ../lib/libtemcore.so
+                    -o ../lib/${CORESHAREDLIBNAME}
                     ../DOSTEMwrappercpp/src/TEMrun_wrap.cxx 
                     ../DOSTEMwrappercpp/src/atmosphere/AtmosUtil.cpp
                     ../DOSTEMwrappercpp/src/atmosphere/Atmosphere.cpp
@@ -143,15 +145,6 @@
                <pathelement location="DOSTEMrunjava/TEMJNI"/>
         </classpath>
 
-       <!--
-        <sourcepath>
-               <pathelement location="../DOSTEMrunjava/DATA"/>
-               <pathelement location="../DOSTEMrunjava/calTEM"/>
-               <pathelement location="../DOSTEMrunjava/INPUT"/>
-               <pathelement location="../DOSTEMrunjava/OUTPUT"/>
-               <pathelement location="../DOSTEMrunjava/runTEM"/>
-        </sourcepath>
-        -->
     </javac>
 
   </target>
@@ -169,19 +162,12 @@
                     <attribute name="Title" value="dos-tem-calibrator and gui"/>
                 </section>
                 <attribute name="Main-Class" value="TEMCalibrator" />
-                <!--
-                <attribute name="Class-Path" value="jars/jchart2d-3.2.2.jar;jars/l2fprod-common-all.jar;jars/log4j-1.2.9.jar;jars/netcdfUI-2.2.22.jar" />
-                -->
                 <attribute name="Class-Path" value="jars/l2fprod-common-all.jar jars/jchart2d-3.2.2.jar jars/netcdfUI-2.2.22.jar jars/log4j-1.2.9.jar" />
          </manifest>
       </jar>
       
   </target>
 
-
-
-   
-   
   <!-- ############################################## -->
   <!-- ## Clean Up The Mess                         # -->
   <!-- ############################################## -->
@@ -191,25 +177,9 @@
     <delete file="dos-tem-calibrator.jar" /> 
   </target>
 
-
   <target name="clean">
     <delete dir="${BUILDDIR}" />
     <mkdir dir="${BUILDDIR}" />
-<!--    
-    <delete dir="DOSTEMrunjava/TEMJNI" />
-    <mkdir dir="DOSTEMrunjava/TEMJNI" />
-
-    <delete file="DOSTEMrunjava/libtemcore.so" />
-    <delete file="DOSTEMwrappercpp/src/TEMrun_wrap.cxx" />
--->
-    
   </target>
 
 </project>
-
-
-<!--
-experiementing with class path...
-
--classpath "dos-tem-calibrator.jar;/home/tobey/assorted_java_libs/l2fprod-common-all/l2fprod-common-all.jar;/home/tobey/assorted_java_libs/jchart2d-3/jchart2d-3.2.2.jar;/home/tobey/assorted_java_libs/netcdf-2.2.22/netcdfUI-2.2.22.jar;/home/tobey/assorted_java_libs/logging-log4j-1.2.9/dist/lib/log4j-1.2.9.jar;/home/tobey/assorted_java_libs/logging-log4j-1.2.9/dist/classes/"
--->
