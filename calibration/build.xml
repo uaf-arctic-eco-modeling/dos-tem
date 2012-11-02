@@ -1,20 +1,38 @@
 <?xml version="1.0" ?>
 <project default="main">
   
-  <!-- Can eventually put properties in file like so:
-  <property file="build.properties" />
-  -->
-  
+  <condition property="is_mac" value="true">
+    <os name="Mac OS X" />
+  </condition>
+
+  <condition property="is_linux" value="true">
+    <os name="Linux" />
+  </condition>
+
   <property name="CXX" value="g++" /> 
-  <property name="CFLAGS" value="-fpic -shared" />
-  <property name="JAVADIR" value="/usr/lib/jvm/java-1.6.0-sun-1.6.0.30" />
   <property name="APPNAME" value="dos-tem-calibrator.jar" />
-  <property name="CORESHAREDLIBNAME" value="libtemcore.so" />
   <property name="BUILDDIR" value="build" />
-  <property name="INCLUDES" value="-I${JAVADIR}/include/linux -I${JAVADIR}/include" />
+
+  
+  <!-- define the operating system specific targets -->
+  <target name="setup_mac" if="is_mac">
+    <echo message="Setting Mac specific build settings..." />
+    <property name="CFLAGS" value="-dynamiclib -fPIC -shared" />
+    <property name="JAVADIR" value="/System/Library/Frameworks/JavaVM.framework/Versions/A/Headers" />
+    <property name="CORESHAREDLIBNAME" value="libtemcore.dylib" />
+    <property name="INCLUDES" value="-I${JAVADIR}" />
+  </target>
+
+  <target name="setup_linux" if="is_linux">
+    <echo message="Setting Linux (aeshna) specific build settings..." />
+    <property name="CFLAGS" value="-fpic -shared" />
+    <property name="JAVADIR" value="/usr/lib/jvm/java-1.6.0-sun-1.6.0.30" />
+    <property name="CORESHAREDLIBNAME" value="libtemcore.so" />
+    <property name="INCLUDES" value="-I${JAVADIR}/include -I${JAVADIR}/include/linux" />
+  </target>
   
 
-  <target name="main" depends="Swigify,
+  <target name="main" depends="setup_mac, setup_linux,Swigify,
                                CreateSharedLibraries,
                                Compile,
                                Jar">
@@ -47,7 +65,7 @@
     <mkdir dir="${BUILDDIR}" />
     <mkdir dir="lib" />
 
-    <exec dir="${BUILDDIR}" executable="${CXX}" failonerror="true" os="Linux">
+    <exec dir="${BUILDDIR}" executable="${CXX}" failonerror="true">
       <arg line="${CFLAGS}
                 ${INCLUDES}
                 -o ../lib/${CORESHAREDLIBNAME}
