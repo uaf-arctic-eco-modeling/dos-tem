@@ -37,7 +37,6 @@
 
   </target>
 
-
   <!-- ############################################## -->
   <!-- ## Create Shared Libraries                   # -->
   <!-- ############################################## -->
@@ -107,9 +106,6 @@
     </exec>
   </target>
 
-
-
-  
   <!-- ############################################## -->
   <!-- ## Compile Java Sources                      # -->
   <!-- ############################################## -->
@@ -118,17 +114,11 @@
     <echo>Compiling java sources</echo>
     <mkdir dir="${BUILDDIR}" />
 
-    <javac srcdir="DOSTEMrunjava/" destdir="${BUILDDIR}">
+    <javac destdir="${BUILDDIR}">
     
       <src path="DOSTEMrunjava" />
       <src path="${BUILDDIR}" />
       
-      <sourcepath>
-        <pathelement location="" />
-        <pathelement location="" />
-        <pathelement location="" />
-      </sourcepath>
-  
       <classpath>
         <pathelement location="jars/l2fprod-common-all.jar"/>
         <pathelement location="jars/jchart2d-3.2.2.jar"/>
@@ -138,7 +128,6 @@
       </classpath>
 
     </javac>
-
   </target>
 
 
