@@ -1,15 +1,12 @@
 # all auto generated swig stuff...
 *.class
 
-*.so
+lib/
 *_wrap.cxx
 dos-tem-calibrator.jar
 *.o
 
 
-# for some reason can't get it to ignore
-# TEMJNI directory?
 TEMJNI/
 
 
-DOSTEM
