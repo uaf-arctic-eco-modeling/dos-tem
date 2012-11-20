@@ -115,7 +115,7 @@ void Siter::init(const string &controlfile){
 void Siter::run(){
 	
 	// cohort id consistency in different run modes
-	int chtid = 1;
+	int chtid = 310595;
 	int error = 0;
 
 	int eqcid = 0; //the record order in the input files, NOT the cohort ID (chtid)

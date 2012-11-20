@@ -386,13 +386,14 @@ int Richard::updateOneIteration(Layer *fstsoill, const double & trans, const dou
 	// soil water for each layer after one iteration
     for(int il =1; il<=numal; il++){
     	liqit[il] = liqii[il] + dzmm[il] * dwat[il];
-    	if(isnan(liqit[il])){
+ /*   	if(isnan(liqit[il])){
     		string msg = "water is nan in richard";
  //   		char* msgc = const_cast< char* > ( msg.c_str());
     		//throw Exception(msgc, I_NAN_WATER);
 
     		break;   //Yuan:
     	}
+*/
     }	
         
     //check the change of liquid water

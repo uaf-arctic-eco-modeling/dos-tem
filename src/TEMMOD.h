@@ -13,8 +13,8 @@
 	
 	// defines the mode of run: Singe-site or Multiple-site (regional)
 
-	#define SITERUN
-//	#define REGNRUN
+//	#define SITERUN
+	#define REGNRUN
 
 	//the output time-step option(s) for SITE-RUN
 	#ifdef SITERUN
