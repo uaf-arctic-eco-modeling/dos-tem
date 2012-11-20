@@ -140,8 +140,8 @@ int RunCohort::reinit(const int &cid, const int &eqcid, const int &rescid){
     if (eqcid<0) return -1;
     cinputer->getVegetation(cht.cd->vegtype, eqcid);
 	cinputer->getDrainage( cht.cd->drgtype, eqcid);
-	if (cht.cd->vegtype<0 || cht.cd->vegtype>3) return -2;
-	if (cht.cd->drgtype<0 || cht.cd->drgtype>1) return -3;
+	if (cht.cd->vegtype<0 || cht.cd->vegtype>=MAX_VEG_TYPE) return -2;
+	if (cht.cd->drgtype<0 || cht.cd->drgtype>=MAX_DRG_TYPE) return -3;
 	
 	if(cht.md->runsp){
 	    if (cid<0) return -4;
