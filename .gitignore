@@ -1,5 +1,7 @@
 DATA/output/*.nc
 
+.DS_Store
+
 # executable name
 DOSTEM
 
