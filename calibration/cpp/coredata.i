@@ -1,9 +1,9 @@
 /*
- * corelookup.i
+ * coredata.i
  *
  */
 
-	%module corelookup
+	%module coredata
 
 //Translate operators
 %rename(add) operator+;
@@ -29,9 +29,19 @@
 %rename(clone) operator=;
 
 			%{
-				#include "lookup/CohortLookup.h"
-				#include "lookup/SoilLookup.h"
+				#include "../../src/data/BgcData.h"
+				#include "../../src/data/CohortData.h"
+				#include "../../src/data/EnvData.h"
+				#include "../../src/data/FirData.h"
+				#include "../../src/data/GridData.h"
+				#include "../../src/data/RegionData.h"
+				#include "../../src/data/RestartData.h"
 			%}
 
-			%include "lookup/CohortLookup.h"
-			%include "lookup/SoilLookup.h"
+			%include "../../src/data/BgcData.h"
+			%include "../../src/data/CohortData.h"
+			%include "../../src/data/EnvData.h"
+			%include "../../src/data/FirData.h"
+			%include "../../src/data/GridData.h"
+			%include "../../src/data/RegionData.h"
+			%include "../../src/data/RestartData.h"
