@@ -1,6 +1,0 @@
-#ifndef COHORTKEY_H_
-	#define COHORTKEY_H_
-  	enum VEGKEY{I_GTUNDRA,I_WTUNDRA,I_STUNDRA, I_HTUNDRA, I_DF, I_WSF, I_BSF};
-  	enum DRGKEY{I_DRY, I_WET};
-  
-#endif /*COHORTKEY_H_*/
