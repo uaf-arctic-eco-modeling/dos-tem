@@ -315,7 +315,7 @@ uicables: $(UICDECLS) $(UICIMPLS)
 $(MOC): 
 	( cd $(QTDIR)/src/moc && $(MAKE) )
 
-Makefile: DOSTEM.pro  /usr/lib64/qt-3.3/mkspecs/default/qmake.conf /usr/lib64/qt-3.3/lib/libqt-mt.prl
+Makefile: DOSTEM.pro  /usr/share/qt3/mkspecs/default/qmake.conf
 	$(QMAKE) -o Makefile DOSTEM.pro
 qmake: 
 	@$(QMAKE) -o Makefile DOSTEM.pro
