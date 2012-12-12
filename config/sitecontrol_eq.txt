@@ -1,0 +1,13 @@
+DATA/output/
+DATA/regiondata/
+DATA/griddata/
+DATA/cohort/eq/
+DATA/cohort/sp/
+DATA/cohort/tr/
+DATA/output/restart-eq.nc
+config/
+eq
+lookup
+normal
+initial
+Test-TEM-GUI
