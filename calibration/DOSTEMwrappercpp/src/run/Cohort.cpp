@@ -599,11 +599,11 @@ int Cohort::updateMonthly_Env(const int & yrcnt,const int &  calyr,
 	
 	//if(currmind>=5 && currmind<=9){  //for warm season
 		
-		if(cd->vegtype ==0){
+		if(cd->vegtype <=3){
 		   ed->d_soid.nfactor =1;      //tundra	
-		}else if(cd->vegtype==1){      //aspen
-		   ed->d_soid.nfactor = 0.94;  //derived from tower
-		}else{
+		}else if(cd->vegtype==4){      //deciduous
+		   ed->d_soid.nfactor = 0.94;  //
+		}else{                         // coniferous
 		    if(fd->ysf <ve.envpar.matureage){
 		        ed->d_soid.nfactor = 1.1 -(fd->ysf)/ve.envpar.matureage * (1.1 -0.66);	
 		     }else{
