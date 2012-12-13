@@ -1200,12 +1200,12 @@ void Soil_Env::retrieveDailyOutputs(Layer* fstsoill, Layer* fstminl, Layer* lstm
 
 	  	  //ed->d_soid.tcond[ind] = curr2->tcond;     //missing value is reported sometime!
 	  	  ed->d_soid.tcond[ind] = curr2->getThermalConductivity();
-	  	  if ((isnan(curr2->hcond)) || (curr2->frozen==1)) {
+/*	  	  if ((isnan(curr2->hcond)) || (curr2->frozen==1)) {
 	  		  ed->d_soid.hcond[ind] = 0.;
 	  	  } else {
 		  	  ed->d_soid.hcond[ind] = curr2->hcond;
 	  	  }
-
+*/
 	  	  ind++;
 	  	}
 	  	

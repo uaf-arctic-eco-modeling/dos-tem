@@ -50,7 +50,7 @@
     <mkdir dir="${BUILDDIR}/TEMJNI" />
   
     <exec dir="${BUILDDIR}" executable="swig" failonerror="true">
-      <arg line="-v -java -c++ -package TEMJNI -outdir TEMJNI ../DOSTEMwrappercpp/src/TEMrun.i"/>
+      <arg line="-v -java -c++ -package TEMJNI -outdir TEMJNI ../cpp-wrapper/TEMrun.i"/>
     </exec>
 
   </target>
@@ -69,58 +69,58 @@
       <arg line="${CFLAGS}
                 ${INCLUDES}
                 -o ../lib/${CORESHAREDLIBNAME}
-                ../DOSTEMwrappercpp/src/TEMrun_wrap.cxx 
-                ../DOSTEMwrappercpp/src/atmosphere/AtmosUtil.cpp
-                ../DOSTEMwrappercpp/src/atmosphere/Atmosphere.cpp
-                ../DOSTEMwrappercpp/src/data/BgcData.cpp
-                ../DOSTEMwrappercpp/src/data/CohortData.cpp
-                ../DOSTEMwrappercpp/src/data/EnvData.cpp
-                ../DOSTEMwrappercpp/src/data/FirData.cpp
-                ../DOSTEMwrappercpp/src/data/GridData.cpp
-                ../DOSTEMwrappercpp/src/data/RegionData.cpp
-                ../DOSTEMwrappercpp/src/data/RestartData.cpp
-                ../DOSTEMwrappercpp/src/disturb/WildFire.cpp
-                ../DOSTEMwrappercpp/src/ground/DoubleLinkedList.cpp
-                ../DOSTEMwrappercpp/src/ground/Ground.cpp
-                ../DOSTEMwrappercpp/src/ground/Mineral.cpp
-                ../DOSTEMwrappercpp/src/ground/Moss.cpp
-                ../DOSTEMwrappercpp/src/ground/Peat.cpp
-                ../DOSTEMwrappercpp/src/ground/Richard.cpp
-                ../DOSTEMwrappercpp/src/ground/Rock.cpp
-                ../DOSTEMwrappercpp/src/ground/Snow_Env.cpp
-                ../DOSTEMwrappercpp/src/ground/Soil_Bgc.cpp
-                ../DOSTEMwrappercpp/src/ground/Soil_Env.cpp
-                ../DOSTEMwrappercpp/src/ground/Stefan.cpp
-                ../DOSTEMwrappercpp/src/ground/layer/Front.cpp
-                ../DOSTEMwrappercpp/src/ground/layer/Layer.cpp
-                ../DOSTEMwrappercpp/src/ground/layer/MineralLayer.cpp
-                ../DOSTEMwrappercpp/src/ground/layer/MossLayer.cpp
-                ../DOSTEMwrappercpp/src/ground/layer/OutputDepth.cpp
-                ../DOSTEMwrappercpp/src/ground/layer/PeatLayer.cpp
-                ../DOSTEMwrappercpp/src/ground/layer/RockLayer.cpp
-                ../DOSTEMwrappercpp/src/ground/layer/SnowLayer.cpp
-                ../DOSTEMwrappercpp/src/ground/layer/SoilLayer.cpp
-                ../DOSTEMwrappercpp/src/lookup/CCohortLookup.cpp
-                ../DOSTEMwrappercpp/src/lookup/CohortLookup.cpp
-                ../DOSTEMwrappercpp/src/lookup/SoilLookup.cpp
-                ../DOSTEMwrappercpp/src/run/AtmOutData.cpp
-                ../DOSTEMwrappercpp/src/run/Cohort.cpp
-                ../DOSTEMwrappercpp/src/run/Controller.cpp
-                ../DOSTEMwrappercpp/src/run/Grid.cpp
-                ../DOSTEMwrappercpp/src/run/ModelData.cpp
-                ../DOSTEMwrappercpp/src/run/RegnOutData.cpp
-                ../DOSTEMwrappercpp/src/run/SiteIn.cpp
-                ../DOSTEMwrappercpp/src/run/SnowSoilOutData.cpp
-                ../DOSTEMwrappercpp/src/run/SoilClm.cpp
-                ../DOSTEMwrappercpp/src/run/Timer.cpp
-                ../DOSTEMwrappercpp/src/run/VegOutData.cpp
-                ../DOSTEMwrappercpp/src/util/CrankNicholson.cpp
-                ../DOSTEMwrappercpp/src/util/Exception.cpp
-                ../DOSTEMwrappercpp/src/util/FileChecking.cpp
-                ../DOSTEMwrappercpp/src/util/Integrator.cpp
-                ../DOSTEMwrappercpp/src/util/Interpolator.cpp
-                ../DOSTEMwrappercpp/src/vegetation/Vegetation_Bgc.cpp
-                ../DOSTEMwrappercpp/src/vegetation/Vegetation_Env.cpp" />
+                ../cpp-wrapper/TEMrun_wrap.cxx 
+                ../../src/atmosphere/AtmosUtil.cpp
+                ../../src/atmosphere/Atmosphere.cpp
+                ../../src/data/BgcData.cpp
+                ../../src/data/CohortData.cpp
+                ../../src/data/EnvData.cpp
+                ../../src/data/FirData.cpp
+                ../../src/data/GridData.cpp
+                ../../src/data/RegionData.cpp
+                ../../src/data/RestartData.cpp
+                ../../src/disturb/WildFire.cpp
+                ../../src/ground/DoubleLinkedList.cpp
+                ../../src/ground/Ground.cpp
+                ../../src/ground/Mineral.cpp
+                ../../src/ground/Moss.cpp
+                ../../src/ground/Peat.cpp
+                ../../src/ground/Richard.cpp
+                ../../src/ground/Rock.cpp
+                ../../src/ground/Snow_Env.cpp
+                ../../src/ground/Soil_Bgc.cpp
+                ../../src/ground/Soil_Env.cpp
+                ../../src/ground/Stefan.cpp
+                ../../src/ground/layer/Front.cpp
+                ../../src/ground/layer/Layer.cpp
+                ../../src/ground/layer/MineralLayer.cpp
+                ../../src/ground/layer/MossLayer.cpp
+                ../../src/ground/layer/OutputDepth.cpp
+                ../../src/ground/layer/PeatLayer.cpp
+                ../../src/ground/layer/RockLayer.cpp
+                ../../src/ground/layer/SnowLayer.cpp
+                ../../src/ground/layer/SoilLayer.cpp
+                ../../src/lookup/CCohortLookup.cpp
+                ../../src/lookup/CohortLookup.cpp
+                ../../src/lookup/SoilLookup.cpp
+                ../../src/run/AtmOutData.cpp
+                ../../src/run/Cohort.cpp
+                ../../src/run/Controller.cpp
+                ../../src/run/Grid.cpp
+                ../../src/run/ModelData.cpp
+                ../../src/run/RegnOutData.cpp
+                ../../src/run/SiteIn.cpp
+                ../../src/run/SnowSoilOutData.cpp
+                ../../src/run/SoilClm.cpp
+                ../../src/run/Timer.cpp
+                ../../src/run/VegOutData.cpp
+                ../../src/util/CrankNicholson.cpp
+                ../../src/util/Exception.cpp
+                ../../src/util/FileChecking.cpp
+                ../../src/util/Integrator.cpp
+                ../../src/util/Interpolator.cpp
+                ../../src/vegetation/Vegetation_Bgc.cpp
+                ../../src/vegetation/Vegetation_Env.cpp" />
     </exec>
   </target>
 
@@ -134,7 +134,7 @@
 
     <javac destdir="${BUILDDIR}">
     
-      <src path="DOSTEMrunjava" />
+      <src path="java-code" />
       <src path="${BUILDDIR}" />
       
       <classpath>
@@ -142,7 +142,7 @@
         <pathelement location="jars/jchart2d-3.2.2.jar"/>
         <pathelement location="jars/netcdfUI-2.2.22.jar"/>
         <pathelement location="jars/log4j-1.2.9.jar"/>
-        <pathelement location="DOSTEMrunjava/TEMJNI"/>
+        <pathelement location="java-code/TEMJNI"/>
       </classpath>
 
     </javac>
@@ -164,7 +164,9 @@
           <attribute name="Class-Path" value="jars/l2fprod-common-all.jar 
                                               jars/jchart2d-3.2.2.jar 
                                               jars/netcdfUI-2.2.22.jar 
-                                              jars/log4j-1.2.9.jar" />
+                                              jars/log4j-1.2.9.jar
+                                              jars/slf4j-api-1.5.6.jar
+                                              jars/slf4j-log4j12-1.5.6.jar" />
          </manifest>
       </jar>
       
