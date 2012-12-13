@@ -163,10 +163,9 @@ void Vegetation_Bgc::delta(){
    	del_vegs.unnormleaf = tempunnormleaf - tmp_vegs.unnormleaf;
   	bd->m_vegd.leaf = getLeaf(tempunnormleaf);
   
-  	if(bd->cd->vegtype<=0){
+  	if(bd->cd->vegtype<=3){
   		double alleaf =bgcpar.leafmxc/(1.0 +bgcpar.kleafc * exp( bgcpar.cov* tmp_vegs.c ));
      	bd->m_vegd.foliage = alleaf /bgcpar.leafmxc;
-//  		bd->m_vegd.lai = bgcpar.sla *alleaf * bd->m_vegd.leaf;
  	} else {
   	 	bd->m_vegd.foliage = getFoliage();
   	}

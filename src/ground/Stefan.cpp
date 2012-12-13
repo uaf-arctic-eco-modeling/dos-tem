@@ -662,7 +662,7 @@ void Stefan::updateTemps(const double & tdrv, Layer *frontl, Layer *backl ,Layer
   	 }
   	 
   	 //check wheter is nan
-  	 for(int il=0 ; il<MAX_GRN_LAY+2; il++){
+/*  	 for(int il=0 ; il<MAX_GRN_LAY+2; il++){
    	
   		 if(isnan(tld[il])){
 	 
@@ -672,8 +672,8 @@ void Stefan::updateTemps(const double & tdrv, Layer *frontl, Layer *backl ,Layer
   			 tld[il]=tid[il];       //Yuan: rather the initial values (this is a temperary settle!!!!)
   			 break;
   		 }
-  	 }
-  	
+	}
+*/
 };
 
 void Stefan::processWholeColumn(Layer* frontl, Layer *backl, Layer*fstfntl, Layer*lstfntl, const double & tdrv){
