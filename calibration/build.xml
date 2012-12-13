@@ -50,7 +50,7 @@
     <mkdir dir="${BUILDDIR}/TEMJNI" />
   
     <exec dir="${BUILDDIR}" executable="swig" failonerror="true">
-      <arg line="-v -java -c++ -package TEMJNI -outdir TEMJNI ../cpp/TEMrun.i"/>
+      <arg line="-v -java -c++ -package TEMJNI -outdir TEMJNI ../cpp-wrapper/TEMrun.i"/>
     </exec>
 
   </target>
@@ -69,7 +69,7 @@
       <arg line="${CFLAGS}
                 ${INCLUDES}
                 -o ../lib/${CORESHAREDLIBNAME}
-                ../cpp/TEMrun_wrap.cxx 
+                ../cpp-wrapper/TEMrun_wrap.cxx 
                 ../../src/atmosphere/AtmosUtil.cpp
                 ../../src/atmosphere/Atmosphere.cpp
                 ../../src/data/BgcData.cpp
@@ -134,7 +134,7 @@
 
     <javac destdir="${BUILDDIR}">
     
-      <src path="DOSTEMrunjava" />
+      <src path="java-code" />
       <src path="${BUILDDIR}" />
       
       <classpath>
@@ -142,7 +142,7 @@
         <pathelement location="jars/jchart2d-3.2.2.jar"/>
         <pathelement location="jars/netcdfUI-2.2.22.jar"/>
         <pathelement location="jars/log4j-1.2.9.jar"/>
-        <pathelement location="DOSTEMrunjava/TEMJNI"/>
+        <pathelement location="java-code/TEMJNI"/>
       </classpath>
 
     </javac>
