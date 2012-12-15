@@ -15,23 +15,50 @@ simulations. The Calibration interface provides a means for the user to
 interact graphically with the program and is used to perform curve fitting to 
 adjust parameters before running a future projecting simulation.
 
-The primary source code is located in the `src/` directory. This includes the
-C++ code needed to provide the Extrapolation interface. The Calibration 
-interface is stored in the `calibration/` directory. The Calibration interface 
-is provided via Java code that *wraps* the main C++ source codes. This is 
-accomplished using an interface compiler tool called SWIG. 
+The primary source codes (main algorithms) are located in the `src/` directory. 
+This includes the C++ code needed to provide the Extrapolation interface. The 
+Calibration interface is stored in the `calibration/` directory. The Calibration
+interface is provided via Java code that *wraps* the main C++ source codes. This
+is accomplished using an interface compiler tool called SWIG. 
 
 Downloading
--------------
+============
 See the 'sel-help' github repository for more information about using git and 
 github, and the best way to download a copy of the model for your specific 
 needs.
 
 Compiling / Building
 ====================
-Compiling this program
+
+Extrapolation Interface
+------------------------
+Change into the root directory for the project and type:
 
     $ make
+
+The process can take a little bit of time. You should see each file being
+compiled and finally linked at the end to create the DOSTEM extcutable.
+
+Calibration Interface
+----------------------
+Change into to the `calibration/` directory and type:
+
+    $ ant
+    
+You should see several steps, including:
+
+* a platform specific setup step, 
+* a step where SWIG, the interface generator, reads the C++ source files in
+preparation for the java compilation step, 
+* a step where the C++ code is compiled into a shared library that the java
+wrapper will call into, 
+* a step where the java code is compiled,
+* and a step where the entire mess is bundled into a jar file.
+
+The script `build.xml` is responsible for compiling the program. This script is
+set up such that it looks up a directory for the appropriate C++ files that are
+needed to run the Calibration Interface.
+
 
 Running
 ---------
