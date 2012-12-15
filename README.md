@@ -2,13 +2,22 @@ README dos-tem
 ============
 dos-tem is a process based bio-geo-chemical ecosystem model. 
 
+"dos" stands for dynamic-organic-soil.
+
+Dos-tem consists of a single set of source algorithms, with two distinct interfaces for using these algorithms, each with its own purpose: the Extrapolation interface and the Calibration interface.
+
+Both interfaces use generally the same source code on the back end, but the user interacts with the program differently. The Extrapolation interface exposes only the command line and is used for performing future projecting simulations. The Calibration interface provides a means for the user to interact graphically with the program.
+
 Downloading
 -------------
-how to download info...
+See the 'sel-help' github repository for more information about using git and github, and the best way to download a copy of the model for your specific needs.
+
+
+
 
 Compiling / Building
 --------------------
-This project requires a version of netcdf and boost's program options to be installed on your path. Assuming both of those exist, this should work:
+Compiling this pro
 
     $ make
 
