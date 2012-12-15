@@ -37,7 +37,7 @@ Change into the root directory for the project and type:
     $ make
 
 The process can take a little bit of time. You should see each file being
-compiled and finally linked at the end to create the DOSTEM extcutable.
+compiled and finally linked at the end to create the DOSTEM executable.
 
 Calibration Interface
 ----------------------
@@ -61,10 +61,12 @@ needed to run the Calibration Interface.
 
 
 Running
----------
+=========
+
+Extrapolation Interface
+------------------------
 The DATA/ directory of this project should have enough data for a single site 
 and also for a small handful of sites (grid cells or cohorts).
-
 
     $ ./DOSTEM config/controlfile_site.txt
 
@@ -72,12 +74,8 @@ and also for a small handful of sites (grid cells or cohorts).
 Calibration Version
 ------------------
 The Calibration Version lives in the calibration/ directory. See the README 
-there for help.
+there for more detailed help.
 
-Ideally we should make it so calibration version can dynamicaly grab the 
-appropriate C++ files from the extrapolation version during build time. But for 
-now in order to keep the calibration version up to date, you must manually copy
-some files from the `src/` directory into the `calibration/src/` directory
 
 Developing
 ============
