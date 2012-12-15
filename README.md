@@ -6,7 +6,9 @@ dos-tem is a process based bio-geo-chemical ecosystem model.
 
 Dos-tem consists of a single set of source algorithms, with two distinct interfaces for using these algorithms, each with its own purpose: the Extrapolation interface and the Calibration interface.
 
-Both interfaces use generally the same source code on the back end, but the user interacts with the program differently. The Extrapolation interface exposes only the command line and is used for performing future projecting simulations. The Calibration interface provides a means for the user to interact graphically with the program.
+Both interfaces use generally the same source code on the back end, but the user interacts with the program differently. The Extrapolation interface exposes only the command line and is used for performing *future projecting* simulations. The Calibration interface provides a means for the user to interact graphically with the program and is used to perform curve fitting to adjust parameters before running a future projecting simulation.
+
+The primary source code is located in the `src/` directory. This includes the C++ code needed to provide the Extrapolation interface. The Calibration interface is stored in the `calibration` directory. The Calibration interface is provided via Java code that *wraps* the main C++ source codes. 
 
 Downloading
 -------------
