@@ -26,8 +26,15 @@ void RegnOutputer::missingValues(const int & MAX_DRV_YR, const int & chtcount){
    		regnod->burnthick=-999;
   		regnod->burnvegc=-999;
   		regnod->burnsoic=-999;
+		regnod->burnsoiln=-999;
+		regnod->burnvegn=-999;
+		regnod->ndepo=-999;
+		regnod->ORL=-999;
+
   		regnod->growstart=-999;
   		regnod->growend=-999;
+  		regnod->snowstart=-999;
+  		regnod->snowend=-999;		
   		regnod->perm=-999;
   		regnod->mossdz=-999;
   		regnod->shlwdz=-999;
@@ -37,6 +44,10 @@ void RegnOutputer::missingValues(const int & MAX_DRV_YR, const int & chtcount){
   			regnod->lai[im]=-999;
   			regnod->vegc[im]=-999;
   			regnod->vegn[im]=-999;
+			regnod->dwd[im]=-999;
+			regnod->dwdrh[im]=-999;
+			regnod->deadc[im]=-999;
+			regnod->deadn[im]=-999;
 
   			regnod->gpp[im] =-999;
   			regnod->npp[im] =-999;
@@ -382,10 +393,58 @@ void RegnOutputer::init(string& outputdir, const int & myid, string & stage, int
 			taldCYV = rFile->add_var("TALD", ncFloat, chtD, yearD, monthD);
 		}
 
+		if (regnod->outvarlist[54]>=1){
+			snowstartCYV = rFile->add_var("SNOWSTART", ncFloat, chtD, yearD);
+		}
+
+		if (regnod->outvarlist[55]>=1){
+			snowendCYV   = rFile->add_var("SNOWEND", ncFloat, chtD, yearD);
+		}
+
+		if (regnod->outvarlist[56]>=1){
+			burnsoilnCYV   = rFile->add_var("BURNSOILN", ncFloat, chtD, yearD);
+		}
+
+		if (regnod->outvarlist[57]>=1){
+			burnvegnCYV   = rFile->add_var("BURNVEGN", ncFloat, chtD, yearD);
+		}
+
+		if (regnod->outvarlist[58]>=1){
+			ndepoCYV   = rFile->add_var("NDEPO", ncFloat, chtD, yearD);
+		}
+
+		if (regnod->outvarlist[59]==1){
+			deadcCYV = rFile->add_var("DEADC", ncFloat, chtD, yearD);
+		} else if (regnod->outvarlist[59]==2) {
+			deadcCYV = rFile->add_var("DEADC", ncFloat, chtD, yearD, monthD);
+		}
+
+		if (regnod->outvarlist[60]==1){
+			deadnCYV = rFile->add_var("DEADN", ncFloat, chtD, yearD);
+		} else if (regnod->outvarlist[60]==2) {
+			deadnCYV = rFile->add_var("DEADN", ncFloat, chtD, yearD, monthD);
+		}
+
+		if (regnod->outvarlist[61]==1){
+			dwdCYV = rFile->add_var("DWD", ncFloat, chtD, yearD);
+		} else if (regnod->outvarlist[61]==2) {
+			dwdCYV = rFile->add_var("DWD", ncFloat, chtD, yearD, monthD);
+		}
+
+		if (regnod->outvarlist[62]==1){
+			dwdrhCYV = rFile->add_var("DWDRH", ncFloat, chtD, yearD);
+		} else if (regnod->outvarlist[62]==2) {
+			dwdrhCYV = rFile->add_var("DWDRH", ncFloat, chtD, yearD, monthD);
+		}
+
+		if (regnod->outvarlist[63]>=1){
+			ORLCYV   = rFile->add_var("ORL", ncFloat, chtD, yearD);
+		}
+
 };
 
 void RegnOutputer::outputYearCohortVars(const int & yrind, const int & chtcount){
- 
+
    	chtidCYV->set_cur(chtcount);
    	chtidCYV->put(&regnod->chtid,1);
 
@@ -763,6 +822,68 @@ void RegnOutputer::outputYearCohortVars(const int & yrind, const int & chtcount)
 		taldCYV->set_cur(chtcount, yrind, 0);
 	   	taldCYV->put(&regnod->tald[0], 1, 1, 12);
 	}
+
+	if (regnod->outvarlist[54]>=1){
+		snowstartCYV->set_cur(chtcount, yrind);
+		snowstartCYV->put(&regnod->snowstart, 1, 1);
+	}
+	if (regnod->outvarlist[55]>=1){
+		snowendCYV->set_cur(chtcount, yrind);
+		snowendCYV->put(&regnod->snowend, 1, 1);
+	}
+
+	if (regnod->outvarlist[56]>=1){
+		burnsoilnCYV->set_cur(chtcount, yrind);
+		burnsoilnCYV->put(&regnod->burnsoiln, 1, 1);
+	}
+
+	if (regnod->outvarlist[57]>=1){
+		burnvegnCYV->set_cur(chtcount, yrind);
+		burnvegnCYV->put(&regnod->burnvegn, 1, 1);
+	}
+
+	if (regnod->outvarlist[58]>=1){
+		ndepoCYV->set_cur(chtcount, yrind);
+		ndepoCYV->put(&regnod->ndepo, 1, 1);
+	}
+
+	if (regnod->outvarlist[59]==1){
+		deadcCYV->set_cur(chtcount, yrind);
+	   	deadcCYV->put(&regnod->deadc[0], 1, 1);
+	} else if (regnod->outvarlist[59]==2) {
+		deadcCYV->set_cur(chtcount, yrind, 0);
+	   	deadcCYV->put(&regnod->deadc[0], 1, 1, 12);
+	}
+
+	if (regnod->outvarlist[60]==1){
+		deadnCYV->set_cur(chtcount, yrind);
+	   	deadnCYV->put(&regnod->deadn[0], 1, 1);
+	} else if (regnod->outvarlist[60]==2) {
+		deadnCYV->set_cur(chtcount, yrind, 0);
+	   	deadnCYV->put(&regnod->deadn[0], 1, 1, 12);
+	}
+
+	if (regnod->outvarlist[61]==1){
+		dwdCYV->set_cur(chtcount, yrind);
+	   	dwdCYV->put(&regnod->dwd[0], 1, 1);
+	} else if (regnod->outvarlist[61]==2) {
+		dwdCYV->set_cur(chtcount, yrind, 0);
+	   	dwdCYV->put(&regnod->dwd[0], 1, 1, 12);
+	}
+
+	if (regnod->outvarlist[62]==1){
+		dwdrhCYV->set_cur(chtcount, yrind);
+	   	dwdrhCYV->put(&regnod->dwdrh[0], 1, 1);
+	} else if (regnod->outvarlist[62]==2) {
+		dwdrhCYV->set_cur(chtcount, yrind, 0);
+	   	dwdrhCYV->put(&regnod->dwdrh[0], 1, 1, 12);
+	}
+
+	if (regnod->outvarlist[63]>=1){
+		ORLCYV->set_cur(chtcount, yrind);
+		ORLCYV->put(&regnod->ORL, 1, 1);
+	}
+
 
 };
 

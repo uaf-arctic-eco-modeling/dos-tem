@@ -15,19 +15,19 @@ void Vegetation_Env::initializeParameter(const int & drgtypep, const int &vegtyp
 	int vegtype = vegtypep;
 	
 	envpar.gl_bl =chtlu->gl_bl[vegtype];
-    envpar.gl_c =chtlu->gl_c[vegtype];
+    	envpar.gl_c =chtlu->gl_c[vegtype];
 	envpar.matureage = chtlu->matureage[vegtype];
 
-    envpar.albvisnir = chtlu->albvisnir[vegtype];
-    envpar.er =chtlu->er[vegtype];
-    envpar.ircoef =chtlu->ircoef[vegtype];
-    envpar.iscoef =chtlu->iscoef[vegtype];
+    	envpar.albvisnir = chtlu->albvisnir[vegtype];
+    	envpar.er =chtlu->er[vegtype];
+    	envpar.ircoef =chtlu->ircoef[vegtype];
+    	envpar.iscoef =chtlu->iscoef[vegtype];
     
-    envpar.vpd_close = chtlu->vpd_close[vegtype];
-    envpar.vpd_open = chtlu->vpd_open[vegtype];
-    envpar.glmax = chtlu->glmax[vegtype];
-    envpar.all2prj =chtlu->all2prj[vegtype];
-    envpar.ppfd50 = chtlu->ppfd50[vegtype];
+    	envpar.vpd_close = chtlu->vpd_close[vegtype];
+    	envpar.vpd_open = chtlu->vpd_open[vegtype];
+    	envpar.glmax = chtlu->glmax[vegtype];
+    	envpar.all2prj =chtlu->all2prj[vegtype];
+    	envpar.ppfd50 = chtlu->ppfd50[vegtype];
     
 	
 };
@@ -58,19 +58,23 @@ void Vegetation_Env::initializeState5restart(RestartData* resin){
 }
 
 void Vegetation_Env::updateEnvLai(const int & currmind, const double & lai){
-  //specify the value for one month
- int ysf = fd->ysf;
-  if(!updateLAI5Vegc){
-  	if(ysf<10){
-  	 	envlai =0.05;
+  	//specify the value for one month
+ 	int ysf = fd->ysf;
+  	if(!updateLAI5Vegc){
+  		if(ysf<10){
+  	 		envlai =0.05;
+  		}else{
+    			envlai = envlaiall[currmind];
+  		}
   	}else{
-    	envlai = envlaiall[currmind];
-  	}
-  }else{
-  	envlai =lai;
-  };
-  ed->d_vegd.envlai =envlai;
+  		envlai =lai;
+  	};
+
+ed->d_vegd.envlai =envlai;
+
 }
+
+
 
 void Vegetation_Env::beginOfMonth(const double & dayl){
 	//calculate some variables which will not change in one month
@@ -92,6 +96,7 @@ void Vegetation_Env::beginOfMonth(const double & dayl){
 	
 	ed->d_v2a.solrad =ed->m_a2l.nirr *envpar.albvisnir; // unit W/m2
 	double downsw = (ed->m_a2l.nirr -ed->d_v2a.solrad ) ;
+
 	ed->d_v2g.sw = getRadiationThrough(downsw, envlai);
 	ed->d_vegd.rac = downsw - ed->d_v2g.sw;
 	
@@ -117,6 +122,8 @@ void Vegetation_Env::updateDaily(   const double & dayl){
 	ed->d_v2a.solrad =ed->d_a2l.nirr *envpar.albvisnir; // unit W/m2
 	double downsw = ed->d_a2l.nirr -ed->d_v2a.solrad;
 	ed->d_v2g.sw = getRadiationThrough(downsw, envlai);
+
+
 	ed->d_vegd.rac = downsw - ed->d_v2g.sw;
 	
 	
@@ -282,8 +289,7 @@ void Vegetation_Env::updateDaily(   const double & dayl){
 }
 
 
-double Vegetation_Env::getPenMonET(const double & ta, const double& vpd, const double &irad,
-				const double &rv, const double & rh){
+double Vegetation_Env::getPenMonET(const double & ta, const double& vpd, const double &irad,const double &rv, const double & rh){
 		double et; // out , mmH2O/m2s
 		double CP =1004.64 ; // specific heat capacity of dry air [J/kgK)
 		double tk = ta+273.15;
@@ -310,6 +316,8 @@ double Vegetation_Env::getPenMonET(const double & ta, const double& vpd, const d
 		double slope = (pvs1-pvs2)/(t1-t2);	
 		/*evapotranspiration*/
 		et = (slope*irad+ rho*CP *vpd/rhr)/((pa * CP *rv)/(lhvap*EPS *rhr)+slope);
+
+
 		return et/lhvap;		
 }
 
@@ -319,7 +327,9 @@ double Vegetation_Env::getRadiationThrough(const double & rac, const double & la
           //if(vegtype >0){
 		  //radthr = rac * exp(-envpar.er * lai/envpar.all2prj);
 		  radthr = rac * exp(-envpar.er * lai);
-          //}else{
+ 
+//cout << "envpar.er: " << envpar.er << "\n";
+         //}else{
           //	radthr = rac;
           //}
 		  

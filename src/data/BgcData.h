@@ -76,19 +76,19 @@ class BgcData{
 	
 		void init();
     
-    	void beginOfMonth(const int & curmrind);
-    	void beginOfYear();
+    		void beginOfMonth(const int & curmrind);
+    		void beginOfYear();
     
    		void endOfMonth(const int & currmind); 
-    	void endOfYear(const double & cnsoil);
+    		void endOfYear(const double & cnsoil);
     
-    	void setEnvData(EnvData* edp);
+    		void setEnvData(EnvData* edp);
     
-     	int baseline; //=1 allowing ninput and nlost to be used for adjusting c/n of soil
-     	int nfeed;
+     		int baseline; //=1 allowing ninput and nlost to be used for adjusting c/n of soil
+     		int nfeed;
 		int avlnflg;
  
-        RegionData * rd;
+        	RegionData * rd;
 		GridData * gd;
 		CohortData * cd;
 

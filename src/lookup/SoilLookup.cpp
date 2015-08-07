@@ -38,22 +38,22 @@ void SoilLookup::deriveParam5Texture(){
      	double p = poro[it];
      	double k = Ksolids[it];
 
-     	tcunfsat[it] = pow(k , 1- p) * pow((double)TCLIQ, p);
+     		tcunfsat[it] = pow(k , 1- p) * pow((double)TCLIQ, p);
 	 	tcfrzsat[it] = pow(k , 1- p) * pow((double)TCICE, p);
 	 	tcdry[it] = getDryThermCond(bulkden[it]);//pow(k , 1- p) * pow(TCAIR, p);
 	
 		if(color[it] ==7){// for moss
-   	    	albsatvis[it] =0.06;
+   	    		albsatvis[it] =0.06;
 			albsatnir[it] =0.12;
 			albdryvis[it] =0.12;
-		 	albdrynir[it]=0.24;	
+			albdrynir[it]=0.24;	
    	 	}else if(color[it]==8){// for peat
-   	    	albsatvis[it] =0.05;
+   	    		albsatvis[it] =0.05;
 			albsatnir[it] =0.10;
 			albdryvis[it] =0.10;
 			albdrynir[it] =0.20;
    	 	}else if(color[it]==4){// for mineral
-   	    	albsatvis[it] =0.09;
+   	    		albsatvis[it] =0.09;
 			albsatnir[it] =0.18;
 			albdryvis[it] =0.18;
 			albdrynir[it] =0.36;
@@ -74,29 +74,24 @@ void SoilLookup::setLookupParam(){
 	int dumclay[] = {3 , 6 , 10, 18, 13, 27, 34, 34, 42, 47, 58, 3};
 	
 	
-	float dumksolids[] = {8.6143, 8.3991, 7.9353, 7.0649, 6.2520, 6.9323, 5.7709, 
-						4.2564, 6.1728, 3.5856, 4.5370, 8.6143};
+	float dumksolids[] = {8.6143, 8.3991, 7.9353, 7.0649, 6.2520, 6.9323, 5.7709, 4.2564, 6.1728, 3.5856, 4.5370, 8.6143};
 										
-	float dumcsolids[]= {2136116, 2145523, 2165794, 2203836, 2239367, 2209635, 2260394,
-					     2326591, 2242830, 2355906, 2314325, 2136116};
-	float dumksat[] = {0.023558, 0.016563, 0.007111, 0.004192, 0.001677, 0.007111, 0.002845,
-				       0.001311, 0.005756, 0.001139, 0.002, 0.023558     };				   
-	float dumpsisat[]={-47.29 , -63.94 , -131.88, -207.34, -454.25, -131.88, -288.93,
-					  -561.04, -158.05, -632.99, -390.66, -47.29};
+	float dumcsolids[]= {2136116, 2145523, 2165794, 2203836, 2239367, 2209635, 2260394,2326591, 2242830, 2355906, 2314325, 2136116};
+	float dumksat[] = {0.023558, 0.016563, 0.007111, 0.004192, 0.001677, 0.007111, 0.002845, 0.001311, 0.005756, 0.001139, 0.002, 0.023558     };				   
+	float dumpsisat[]={-47.29 , -63.94 , -131.88, -207.34, -454.25, -131.88, -288.93, -561.04, -158.05, -632.99, -390.66, -47.29};
 				  
-    float dumporo[]  ={ 0.3731, 0.3857, 0.4159, 0.4348, 0.4676, 0.4159, 0.4487,
-		                0.4764, 0.4235, 0.4814, 0.4613, 0.50};
+    	float dumporo[]  ={ 0.3731, 0.3857, 0.4159, 0.4348, 0.4676, 0.4159, 0.4487, 0.4764, 0.4235, 0.4814, 0.4613, 0.50};
 
-    float dumb[] = {3.39, 3.86, 4.50, 5.77, 4.98, 7.20, 8.32, 8.32, 9.59, 10.38, 12.13, 3.39}	;
+    	float dumb[] = {3.39, 3.86, 4.50, 5.77, 4.98, 7.20, 8.32, 8.32, 9.59, 10.38, 12.13, 3.39}	;
  
-    int  dumcolor[] = {4, 4, 4, 4,4,4,4,4,4,4,4, 4};	              				 
+    	int  dumcolor[] = {4, 4, 4, 4,4,4,4,4,4,4,4, 4};	              				 
     
 
        
     
     
     for(int it=0; it<MAX_SOIL_TXTR; it++){
-     sand[it] = dumsand[it];		
+     	sand[it] = dumsand[it];		
 	 silt[it] = dumsilt[it];		
 	 clay[it] = dumclay[it];		
 	 Ksolids[it] = dumksolids[it];

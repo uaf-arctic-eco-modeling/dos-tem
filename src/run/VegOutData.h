@@ -63,6 +63,7 @@ class VegOutData {
 	/*! fluxes from vegatation to atmosphere*/
 		float rm[MINY];
 		float rg[MINY];	
+
 	/*! fluxes from vegetation to soil*/
 		float ltrfalc[MINY];	
 		float ltrfaln[MINY];	

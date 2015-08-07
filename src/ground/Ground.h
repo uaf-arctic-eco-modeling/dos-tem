@@ -64,7 +64,7 @@ class Ground: public DoubleLinkedList {
     
 		double getSoilTransFactor();    
 
-		void  adjustLayerThickness(const double & mossthick );
+		void  adjustLayerThickness(const int & yrcnt, const double & mossthick );
 
 		 /*! first soil node */
  		Layer * fstsoill;
@@ -87,7 +87,7 @@ class Ground: public DoubleLinkedList {
 		Layer* fstdeepl;
 		Layer* lstdeepl;
 
-   		void burn(const bool & dslmodule);
+   		void burn(const int & yrcnt, const bool & dslmodule);
    		void updateLayer5FireGrowth();
    
 	private :
@@ -131,8 +131,9 @@ class Ground: public DoubleLinkedList {
 
 		void updateSWE();
 
-		void updateTypeLayers();
-
+		void updateClayLayers();
+		void updateSandLayers();
+		void updateSiltLayers();
 		void updateAllLayers(); 
 
 		void setFstLstMineLayers();
@@ -150,7 +151,7 @@ class Ground: public DoubleLinkedList {
 		 * \arg \c dt time step */
 		void updateDailyPrognostic( const double & dt, const int& year, const int& ihd, const double & tdrv, const int & mind);
 		
-		SoilLookup  soillu;
+//		SoilLookup  soillu;
 
 		void updateSoilDiagnostics();
 

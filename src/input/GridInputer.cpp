@@ -12,8 +12,8 @@ void GridInputer::init(){
   if(md!=NULL){
 
 	  initLatlon(md->grdinputdir);
-
 	  initSoil(md->grdinputdir);
+	  initTopo(md->grdinputdir);
 
 	  string clmfile ="";
 	  string firefile="";
@@ -26,7 +26,7 @@ void GridInputer::init(){
 			  clmfile  =md->grdinputdir+"climate_tr.nc";
 		  }
 
-	  }	else {
+	  } else {
 		  firefile =md->grdinputdir+"fire.nc";   //eq run uses aggregated (half degree resolution) driving data
 		  clmfile  =md->grdinputdir+"climate.nc";
 	  }
@@ -101,6 +101,27 @@ void GridInputer::initSoil(string& dir){
  	NcDim* grdD = soilFile.get_dim("GRDID");
  	if(!grdD->is_valid()){
  		string msg = "GRDID Dimension is not Valid in Soil data";
+ 		char* msgc = const_cast<char*> (msg.c_str());
+ 		throw Exception(msgc,  I_NCDIM_NOT_EXIST);
+ 	}
+
+}
+
+void GridInputer::initTopo(string& dir){
+	//netcdf error
+	NcError err(NcError::silent_nonfatal);
+
+	topofilename = dir +"topo.nc";
+	NcFile topoFile(topofilename.c_str(), NcFile::ReadOnly);
+ 	if(!topoFile.is_valid()){
+ 		string msg = topofilename+" is not valid";
+ 		char* msgc = const_cast< char* > ( msg.c_str());
+ 		throw Exception(msgc, I_NCFILE_NOT_EXIST);
+ 	}
+ 	
+ 	NcDim* grdD = topoFile.get_dim("GRDID");
+ 	if(!grdD->is_valid()){
+ 		string msg = "GRDID Dimension is not Valid in Topo data";
  		char* msgc = const_cast<char*> (msg.c_str());
  		throw Exception(msgc,  I_NCDIM_NOT_EXIST);
  	}
@@ -190,7 +211,9 @@ int GridInputer::getClmRecID(const int &clmid){
 	for (int i=0; i<(int)clmidV->num_vals(); i++){
 		clmidV->set_cur(i);
 		clmidV->get(&id,1);
-		if(id==clmid) return i;
+		if(id==clmid) {
+			return i;
+		}
 	}
 	return -1;
 }
@@ -200,15 +223,23 @@ void GridInputer::getGridData(GridData* gd, const int &grdrecid, const int&clmre
 
   	gd->lat = getLAT(grdrecid);
   	gd->lon = getLON(grdrecid);
-
-  	gd->topsoil = getTOPSOIL(grdrecid);
-  	gd->botsoil = getBOTSOIL(grdrecid);
+		//cout<<"lat :"<<gd->lat<<"\n";
+  	gd->topclay = getTOPCLAY(grdrecid);
+ 	gd->botclay = getBOTCLAY(grdrecid);
+  	gd->topsand = getTOPSAND(grdrecid);
+  	gd->botsand = getBOTSAND(grdrecid);
+  	gd->topsilt = getTOPSILT(grdrecid);
+  	gd->botsilt = getBOTSILT(grdrecid);
+  	gd->elevation = getELEVATION(grdrecid);
+  	gd->slope = getSLOPE(grdrecid);
+  	gd->aspect = getASPECT(grdrecid);
+  	gd->flowacc = getFLOWACC(grdrecid);
 
   	gd->act_atm_drv_yr = atm_drv_yr;
   	getClimate(gd->ta, gd->prec, gd->nirr, gd->vap, clmrecid);
-
-  	gd->fri = getFRI(grdrecid);
- 	getFireSize(gd->fireyear, gd->fireseason, gd->firesize, 0);  //currently ONLY one fire size dataset available
+ 	gd->fri = getFRI(grdrecid);
+		//cout<<"fri :"<<gd->fri<<"\n";
+  	getFireSize(gd->fireyear, gd->fireseason, gd->fireDOB, gd->firesize, gd->fireAOB, 0);  //currently ONLY one fire size dataset available
 
 };
 
@@ -251,41 +282,178 @@ float GridInputer::getLON(const int & recid ){
 	return lon;
 } 
 
-int GridInputer::getTOPSOIL(const int & recid ){
-	int topsoil = -1;
+int GridInputer::getTOPCLAY(const int & recid ){
+	int topclay = -1;
 	NcError err(NcError::silent_nonfatal);
 
 	NcFile soilFile(soilfilename.c_str(), NcFile::ReadOnly);
- 	NcVar* topsoilV = soilFile.get_var("TOPSOIL");
- 	if(topsoilV==NULL){
- 	   string msg = "Cannot get TOPSOIL in initSoil ";
+ 	NcVar* topclayV = soilFile.get_var("CLAYTOP");
+ 	if(topclayV==NULL){
+ 	   string msg = "Cannot get CLAYTOP in initSoil ";
 		char* msgc = const_cast<char*> (msg.c_str());
 		throw Exception(msgc,  I_NCVAR_NOT_EXIST);
 
  	}
 
- 	topsoilV->set_cur(recid);
-	topsoilV->get(&topsoil, 1);
-	return topsoil;
+ 	topclayV->set_cur(recid);
+	topclayV->get(&topclay, 1);
+	return topclay;
 } 
-
-int GridInputer::getBOTSOIL(const int & recid ){
-	int botsoil = -1;
+int GridInputer::getTOPSAND(const int & recid ){
+	int topsand = -1;
 	NcError err(NcError::silent_nonfatal);
 
 	NcFile soilFile(soilfilename.c_str(), NcFile::ReadOnly);
- 	NcVar* botsoilV = soilFile.get_var("BOTSOIL");
- 	if(botsoilV==NULL){
- 	   string msg = "Cannot get BOTSOIL in initSoil ";
+ 	NcVar* topsandV = soilFile.get_var("SANDTOP");
+ 	if(topsandV==NULL){
+ 	   string msg = "Cannot get SANDTOP in initSoil ";
+		char* msgc = const_cast<char*> (msg.c_str());
+		throw Exception(msgc,  I_NCVAR_NOT_EXIST);
+
+ 	}
+
+ 	topsandV->set_cur(recid);
+	topsandV->get(&topsand, 1);
+	return topsand;
+} 
+int GridInputer::getTOPSILT(const int & recid ){
+	int topsilt = -1;
+	NcError err(NcError::silent_nonfatal);
+
+	NcFile soilFile(soilfilename.c_str(), NcFile::ReadOnly);
+ 	NcVar* topsiltV = soilFile.get_var("SILTTOP");
+ 	if(topsiltV==NULL){
+ 	   string msg = "Cannot get SILTTOP in initSoil ";
+		char* msgc = const_cast<char*> (msg.c_str());
+		throw Exception(msgc,  I_NCVAR_NOT_EXIST);
+
+ 	}
+
+ 	topsiltV->set_cur(recid);
+	topsiltV->get(&topsilt, 1);
+	return topsilt;
+} 
+
+int GridInputer::getBOTCLAY(const int & recid ){
+	int botclay = -1;
+	NcError err(NcError::silent_nonfatal);
+
+	NcFile soilFile(soilfilename.c_str(), NcFile::ReadOnly);
+ 	NcVar* botclayV = soilFile.get_var("CLAYBOT");
+ 	if(botclayV==NULL){
+ 	   string msg = "Cannot get CLAYBOT in initSoil ";
 		char* msgc = const_cast<char*> (msg.c_str());
 		throw Exception(msgc,  I_NCVAR_NOT_EXIST);
 
   	}
 
- 	botsoilV->set_cur(recid);
-	botsoilV->get(&botsoil, 1);
-	return botsoil;
+ 	botclayV->set_cur(recid);
+	botclayV->get(&botclay, 1);
+	return botclay;
 } 
+int GridInputer::getBOTSAND(const int & recid ){
+	int botsand = -1;
+	NcError err(NcError::silent_nonfatal);
+
+	NcFile soilFile(soilfilename.c_str(), NcFile::ReadOnly);
+ 	NcVar* botsandV = soilFile.get_var("SANDBOT");
+ 	if(botsandV==NULL){
+ 	   string msg = "Cannot get SANDBOT in initSoil ";
+		char* msgc = const_cast<char*> (msg.c_str());
+		throw Exception(msgc,  I_NCVAR_NOT_EXIST);
+
+  	}
+
+ 	botsandV->set_cur(recid);
+	botsandV->get(&botsand, 1);
+	return botsand;
+} 
+int GridInputer::getBOTSILT(const int & recid ){
+	int botsilt = -1;
+	NcError err(NcError::silent_nonfatal);
+
+	NcFile soilFile(soilfilename.c_str(), NcFile::ReadOnly);
+ 	NcVar* botsiltV = soilFile.get_var("SILTBOT");
+ 	if(botsiltV==NULL){
+ 	   string msg = "Cannot get SILTBOT in initSoil ";
+		char* msgc = const_cast<char*> (msg.c_str());
+		throw Exception(msgc,  I_NCVAR_NOT_EXIST);
+
+  	}
+
+ 	botsiltV->set_cur(recid);
+	botsiltV->get(&botsilt, 1);
+	return botsilt;
+} 
+
+float GridInputer::getELEVATION(const int & recid ){
+	float elev = -1;
+	NcError err(NcError::silent_nonfatal);
+
+	NcFile topoFile(topofilename.c_str(), NcFile::ReadOnly);
+ 	NcVar* elevV = topoFile.get_var("ELEV");
+ 	if(elevV==NULL){
+ 	   string msg = "Cannot get ELEVATION (ELEV) in initTopo ";
+		char* msgc = const_cast<char*> (msg.c_str());
+		throw Exception(msgc,  I_NCVAR_NOT_EXIST);
+
+  	}
+ 	elevV->set_cur(recid);
+	elevV->get(&elev, 1);
+	return elev;
+} 
+
+float GridInputer::getSLOPE(const int & recid ){
+	float slope = -1;
+	NcError err(NcError::silent_nonfatal);
+
+	NcFile topoFile(topofilename.c_str(), NcFile::ReadOnly);
+ 	NcVar* slopeV = topoFile.get_var("SLOPE");
+ 	if(slopeV==NULL){
+ 	   string msg = "Cannot get SLOPE in initTopo ";
+		char* msgc = const_cast<char*> (msg.c_str());
+		throw Exception(msgc,  I_NCVAR_NOT_EXIST);
+
+  	}
+ 	slopeV->set_cur(recid);
+	slopeV->get(&slope, 1);
+	return slope;
+} 
+
+float GridInputer::getASPECT(const int & recid ){
+	float asp = -1;
+	NcError err(NcError::silent_nonfatal);
+
+	NcFile topoFile(topofilename.c_str(), NcFile::ReadOnly);
+ 	NcVar* aspV = topoFile.get_var("ASP");
+ 	if(aspV==NULL){
+ 	   string msg = "Cannot get ASPECT (ASP) in initTopo ";
+		char* msgc = const_cast<char*> (msg.c_str());
+		throw Exception(msgc,  I_NCVAR_NOT_EXIST);
+
+  	}
+ 	aspV->set_cur(recid);
+	aspV->get(&asp, 1);
+	return asp;
+} 
+
+float GridInputer::getFLOWACC(const int & recid ){
+	float flowacc = -1;
+	NcError err(NcError::silent_nonfatal);
+
+	NcFile topoFile(topofilename.c_str(), NcFile::ReadOnly);
+ 	NcVar* flowaccV = topoFile.get_var("FA");
+ 	if(flowaccV==NULL){
+ 	   string msg = "Cannot get FLOW ACCUMULATION (FA) in initTopo ";
+		char* msgc = const_cast<char*> (msg.c_str());
+		throw Exception(msgc,  I_NCVAR_NOT_EXIST);
+
+  	}
+ 	flowaccV->set_cur(recid);
+	flowaccV->get(&flowacc, 1);
+	return flowacc;
+} 
+
 
 void GridInputer::getClimate(float ta[][12], float prec[][12], float nirr[][12], float vap[][12] ,
 		const int & recid){
@@ -357,7 +525,6 @@ void GridInputer::getClimate(float ta[][12], float prec[][12], float nirr[][12],
  		char* msgc = const_cast<char*> (msg.c_str());
  		throw Exception(msgc,  I_NCVAR_GET_ERROR);
 	}
-	
 } 
 
 int GridInputer::getFRI(const int & recid ){
@@ -380,7 +547,7 @@ int GridInputer::getFRI(const int & recid ){
 	return fri;
 }
 
-void GridInputer::getFireSize(int fyear[], int fseason[], int fsize[], const int & recid){
+void GridInputer::getFireSize(int fyear[], int fseason[], int fDOB[], int fsize[], int fAOB[], const int & recid){
 	int numyr = fsize_drv_yr;
 
 	//netcdf error
@@ -390,8 +557,11 @@ void GridInputer::getFireSize(int fyear[], int fseason[], int fsize[], const int
 
  	NcVar* fsyrV = fireFile.get_var("YEAR");
  	NcVar* fsizeV = fireFile.get_var("SIZE");
+ 	NcVar* fAOBV = fireFile.get_var("AOB");
  	NcVar* fseasonV = fireFile.get_var("SEASON");
- 	if(fsyrV==NULL || fsizeV==NULL || fseasonV==NULL){
+ 	NcVar* fDOBV = fireFile.get_var("DOB");
+
+ 	if(fsyrV==NULL || fsizeV==NULL || fAOBV==NULL || fseasonV==NULL || fDOBV==NULL){ 
  	   string msg = "Cannot get Fire size data in GridInputer::getFireSize";
 		char* msgc = const_cast<char*> (msg.c_str());
 		throw Exception(msgc,  I_NCVAR_NOT_EXIST);
@@ -408,17 +578,31 @@ void GridInputer::getFireSize(int fyear[], int fseason[], int fsize[], const int
 	}
 
 	fsizeV->set_cur(recid);
-	NcBool nb2 = fsizeV->get(&fsize[0],1, numyr);
+	NcBool nb2 = fsizeV->get(&fsize[0], numyr);
 	if(!nb2){
 	 	string msg = "problem in reading fire size in  GridInputer::getFireSize";
  		char* msgc = const_cast<char*> (msg.c_str());
  		throw Exception(msgc,   I_NCVAR_GET_ERROR);
 	}
+	fAOBV->set_cur(recid);
+	NcBool nb3 = fAOBV->get(&fAOB[0], numyr);
+	if(!nb3){
+	 	string msg = "problem in reading area of burn (AOB) in  GridInputer::getFireSize";
+ 		char* msgc = const_cast<char*> (msg.c_str());
+ 		throw Exception(msgc,   I_NCVAR_GET_ERROR);
+	}
 
 	fseasonV->set_cur(recid);
-	NcBool nb3 = fseasonV->get(&fseason[0],1, numyr);
-	if(!nb3){
+	NcBool nb4 = fseasonV->get(&fseason[0],1, numyr);
+	if(!nb4){
 	 	string msg = "problem in reading fire season in  GridInputer::getFireSize";
+ 		char* msgc = const_cast<char*> (msg.c_str());
+ 		throw Exception(msgc,  I_NCVAR_GET_ERROR);
+	}
+	fDOBV->set_cur(recid);
+	NcBool nb5 = fDOBV->get(&fDOB[0],1, numyr);
+	if(!nb5){
+	 	string msg = "problem in reading date of burn (DOB) in  GridInputer::getFireSize";
  		char* msgc = const_cast<char*> (msg.c_str());
  		throw Exception(msgc,  I_NCVAR_GET_ERROR);
 	}

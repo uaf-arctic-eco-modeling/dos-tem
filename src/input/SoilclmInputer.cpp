@@ -73,7 +73,9 @@ void SoilclmInputer::init(string & outdir){
 
  	dzV = sclmFile->get_var("DZ");
  	typeV = sclmFile->get_var("TYPE");
-	mintypeV = sclmFile->get_var("MINTYPE");
+	minclayV = sclmFile->get_var("MINCLAY");
+	minsandV = sclmFile->get_var("MINSAND");
+	minsiltV = sclmFile->get_var("MINSILT");
  	poroV = sclmFile->get_var("PORO");
  	rootfracV = sclmFile->get_var("ROOTFRAC");
 

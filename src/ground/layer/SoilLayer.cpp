@@ -241,6 +241,7 @@ double SoilLayer::getMatricPotential(){
 };
 	  
 double SoilLayer::getHydraulicCond1(){//not used
+/*
 	  	double hk;
 	  //	double voliq = getVolLiq()/(poro-getVolIce());
 	  	double voliq = getVolLiq()/(poro);
@@ -252,6 +253,7 @@ double SoilLayer::getHydraulicCond1(){//not used
 	  	
         if(fws ==cws) {
         	hk = soillu->hk[stkey][fws];
+
         }else{
         	double fac = (ws *1000.-fws)/(cws -fws);
         	hk = soillu->hk[stkey][fws] *(1-fac)    + soillu->hk[stkey][cws]*fac;        	
@@ -260,8 +262,8 @@ double SoilLayer::getHydraulicCond1(){//not used
 	  	}else{
 	  		hk =0.;
 	  	}
-
 	  	return hk;
+*/
 };
 
 // get albedo of visible radition

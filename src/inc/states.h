@@ -4,11 +4,12 @@
  */
 #ifndef STATES_H_
 #define STATES_H_
-
+#include <iostream>
 #include "layerconst.h"
 
 struct atmstate_env{
 	double ta;
+//cout << ta <<"\n";
 	double clds;
 	double co2; //ppmv
 	int dsr; // day since rain
@@ -26,6 +27,7 @@ struct vegstate_bgc{
 	double ston;
 	double strn;
 	double unnormleaf;
+
 };
 
 struct snwstate_env{
@@ -36,7 +38,10 @@ struct snwstate_env{
 struct soistate_env{
 	int numsl; // number of soil layers
 	int numal; // number of active soil layers
+	int snowstart;
+	int snowend;
 
+	double tshlw;
 	double tsave;
 	double ts[MAX_SOI_LAY];
 	double liq[MAX_SOI_LAY]; // soil liquid water content kg/m2

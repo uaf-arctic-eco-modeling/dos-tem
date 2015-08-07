@@ -152,7 +152,7 @@ class SoilLayer:public Layer{
     double getFrozenFraction();
     
      	
-    SoilLookup* soillu;
+//    SoilLookup* soillu;
     
     int checkFronts();
     

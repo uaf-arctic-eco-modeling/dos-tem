@@ -69,12 +69,12 @@
 			void deriveParam5TextureEnv();
 		         
 	    	float getDryThermCond(const float & bulkden);
-			float getSolidThermalCond(const float & clay ,const float & sand ); 	
+		float getSolidThermalCond(const float & clay ,const float & sand ); 	
 	    	float getSolidVolHeatCapa(const float & clay ,const float & sand );
 	    	float getSatuHydraulCond(const float & sand);
 	    	float getSatuMatrPotential(const float & sand);
-	   	 	float getPorosity(const float & sand);
-			float getBSW(const float & clay);
-			float getBulkden(const float & poro);
+	   	float getPorosity(const float & sand);
+		float getBSW(const float & clay);
+		float getBulkden(const float & poro);
 };
 #endif /*SOILLOOKUP_H_*/

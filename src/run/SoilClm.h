@@ -16,7 +16,9 @@ class SoilClm {
 
  		float dz[MAX_SOI_LAY];
  		int   type[MAX_SOI_LAY];
- 		int   mintype[MAX_MIN_LAY];
+ 		int   minclay[MAX_MIN_LAY];
+ 		int   minsand[MAX_MIN_LAY];
+ 		int   minsilt[MAX_MIN_LAY];
  		float poro[MAX_SOI_LAY];
  		float rootfrac[MAX_SOI_LAY];
 

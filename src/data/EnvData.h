@@ -12,6 +12,7 @@
 #include "CohortData.h"
 
 #include <algorithm>
+#include <iostream>
 #include <deque>
 using namespace std;
 
@@ -159,7 +160,7 @@ class EnvData{
 	void atm_endOfDay(const int & dinm);
 	void veg_endOfDay(const int & dinm);
 	void soi_endOfDay(const int & dinm, const int & doy);
-	void snw_endOfDay(const int & dinm);
+	void snw_endOfDay(const int & dinm, const int & doy);
 	   
 };
 

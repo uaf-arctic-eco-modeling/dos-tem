@@ -45,10 +45,10 @@ void SnowLayer::updateDensity(){
 	double adjust=0.24; // corresponding to e-folding time of 4 days
 	//from  http://www.ecmwf.int/research/ifsdocs/CY25r1/Physics/Physics-08-05.html
 	//rho = (rho-denmax)* exp(-0.01 *age*365  * adjust) + denmax;
-    double tao1 = 86400.; //s
-    double tao = 86400.; // one day time step
+    	double tao1 = 86400.; //s
+    	double tao = 86400.; // one day time step
 	rho = (rho-denmax)* exp(- tao/tao1* adjust) + denmax;
-	if(rho>denmax)rho= denmax;
+	if(rho>denmax) rho= denmax;
 };
 
 void SnowLayer::updateThick(){

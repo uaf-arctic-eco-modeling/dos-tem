@@ -33,7 +33,7 @@ class RegnOutputer{
 		NcDim * yearD;
 		NcDim * monthD;
  
-    	NcVar* chtidCYV;
+    		NcVar* chtidCYV;
    		NcVar* statusCYV;
    		NcVar* ysfCYV;
 
@@ -41,8 +41,19 @@ class RegnOutputer{
    		NcVar* burnsoicCYV;
    		NcVar* burnvegcCYV;
 
+		NcVar* dwdCYV;
+		NcVar* dwdrhCYV;
+		NcVar* deadcCYV;
+		NcVar* deadnCYV;
+		NcVar* burnsoilnCYV;
+		NcVar* burnvegnCYV;
+		NcVar* ndepoCYV;
+		NcVar* ORLCYV;
+
    		NcVar* growstartCYV;
    		NcVar* growendCYV;
+  		NcVar* snowstartCYV;
+   		NcVar* snowendCYV;
 
    		NcVar* permCYV;
 
@@ -50,15 +61,15 @@ class RegnOutputer{
    		NcVar* shlwdzCYV;
    		NcVar* deepdzCYV;
 
-      	NcVar* laiCYV;
+      		NcVar* laiCYV;
    		NcVar* vegcCYV;
    		NcVar* vegnCYV;
 
    		NcVar* gppCYV;
    		NcVar* nppCYV;
    		NcVar* rhCYV;
-        NcVar* ltrfalcCYV;
-        NcVar* ltrfalnCYV;
+        	NcVar* ltrfalcCYV;
+        	NcVar* ltrfalnCYV;
 
    		NcVar* shlwcCYV;
    		NcVar* deepcCYV;

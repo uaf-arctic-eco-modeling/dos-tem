@@ -107,6 +107,8 @@ void Snow_Env::initializeParameter(const int &vegtypep){
 	envpar.albmin = chtlu->snwalbmin[vegtypep];
 	envpar.newden = chtlu->snwdennew[vegtypep];
 
+//cout << "denmax, albmax, albmin, newdens :"<< envpar.denmax<<", "<<envpar.albmax<<", "<<envpar.albmin<<", "<<envpar.newden<<"\n";
+
 	fcmelt =5. ;  //
 	extramass =0.; 
 

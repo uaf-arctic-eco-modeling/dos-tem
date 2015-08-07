@@ -16,7 +16,6 @@ using namespace std;
 #include "../inc/parameters.h"
 #include "../util/Exception.h"
 #include "../lookup/CohortLookup.h"
-
 class WildFire{
 	public:
 		WildFire();
@@ -39,20 +38,30 @@ class WildFire{
     	void initializeParameter(const int & drgtypep,const int & vegtypep);
     	void initializeState(); 
     	void initializeState5restart(RestartData *resin);
-    	void prepareDrivingData(const bool runsp, const bool runtr, const bool runsc);  //Yuan: modified
+    	void prepareDrivingData(const bool runeq, const bool runsp, const bool runtr, const bool runsc);  //Yuan: modified
     	
-		int getOccur(const int & yrind, const int & mind, const bool & fridrived);  	//Yuan: modified;
-		void burn(const int & yrind, const bool & fridrived);  	//Yuan: modified
+	int getOccur(const int & yrind, const int & mind, const bool & fridrived);  	//Yuan: modified;
+	void burn(const int & yrind, const bool & fridrived);  	//Yuan: modified
 
 	private:
      	int drgtype;
      	int vegtype;
      
     	//Yuan: the following 4 variables
-     	int onesize;
-     	int oneseason;
-     	int oneseverity;  //Yuan: fire severity category by ALFRESCO
-     
+//     	int onesize;
+//     	int oneseason;
+//     	int oneseverity;  //Yuan: fire severity category by ALFRESCO
+     	int onefiredate;
+     	int onefirearea;
+		int onefiremonth;
+		int onefiresize;
+		int onefireseason;
+
+	int onerunsc;
+	int oneruntr;
+	int onerunsp;
+	int oneruneq;
+
      	fire_par firpar;
      
      /////////////////ratios////////////////////////
@@ -70,19 +79,27 @@ class WildFire{
      	double r_dead2bg_cn;
          
 //Yuan: the following if using years will result in huge memory needs, if spin-up is long
-		int occur[MAX_FIR_OCR_NUM];
+/*		int occur[MAX_FIR_OCR_NUM];
 		int season[MAX_FIR_OCR_NUM];
 		int month[MAX_FIR_OCR_NUM];
 		int size[MAX_FIR_OCR_NUM];
 		int severity[MAX_FIR_OCR_NUM];
+*/
+
+		int occur[MAX_YR];
+		int firedate[MAX_YR];
+		int firemonth[MAX_YR];
+		int firearea[MAX_YR];
+		int fireseason[MAX_YR];
+		int firesize[MAX_YR];
 
      	CohortLookup * chtlu;
-   	 	EnvData* ed;
+   	EnvData* ed;
     	FirData * fd;
     	BgcData * bd;
 
-    	void updateBurnThickness();
-    	double getBurnThick();
+    	void updateBurnThickness(const int & yrind, const bool & friderived);
+    	double getBurnThick(const int & yrind, const bool & friderived);
     	void getBurnVegetation();
 
 };

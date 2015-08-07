@@ -39,6 +39,7 @@
   			string initialfile;      //either the restart.nc, or sitein.nc file, upon initmodes
   			string eqchtinputdir;
   			string spchtinputdir;
+  			string scchtinputdir;
   			string trchtinputdir;
   
   			string calibrationdir;
@@ -58,7 +59,8 @@
   			char* jeqchtinputdir;
   			char* jspchtinputdir;
   			char* jtrchtinputdir;
-  			char* jcalibrationdir;
+ 			char* jscchtinputdir;
+   			char* jcalibrationdir;
 
 			void stringtochar();
 

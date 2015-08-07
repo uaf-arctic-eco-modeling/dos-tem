@@ -46,7 +46,9 @@ void SiteOutputer::init(){
      	stage ="-sp";	
     }else if(md->runtr){
      	stage ="-tr";	
-        if (md->runstages=="sc") stage ="-sc";
+//        if (md->runstages=="sc") stage ="-sc";
+    }else if(md->runsc){
+     	stage ="-sc";	
     }else if (md->runeq){
      	stage="-eq";	
     }

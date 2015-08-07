@@ -27,6 +27,10 @@ class CohortInputer{
 	public:
 		CohortInputer();
 		~CohortInputer();
+		
+		int firesp_drv_yr;
+		int firetr_drv_yr;
+		int firesc_drv_yr;
 
 		void init( );
 
@@ -41,16 +45,22 @@ class CohortInputer{
 		int  getTrRecID(const int &chtid);
 		void getSpchtid5TrFile( int & spchtid,  const int &recid);
 
+		int  getScRecID(const int &chtid);
+		void getTrchtid5ScFile( int & trchtid,  const int &recid);
+
 		void getChtID(int &chtid, const int &recid);   //Yuan: this is used for all run stages
 		void getClmID(int &clmid, const int &recid);   //Yuan: this is used for all run stages
-
+/*
 		void getSpinupFireOccur(int year[MAX_SP_FIR_OCR_NUM], const int &spcid);
 		void getSpinupFireSeason(int season[MAX_SP_FIR_OCR_NUM], const int &spcid);
 		void getSpinupSeverity(int severity[MAX_SP_FIR_OCR_NUM], const int &spcid);  //Yuan:
-
 		void getTransientFireOccur(int year[MAX_TR_FIR_OCR_NUM], const int &trcid);
 		void getTransientFireSeason(int season[MAX_TR_FIR_OCR_NUM], const int &trcid);
 		void getTransientSeverity(int severity[MAX_TR_FIR_OCR_NUM], const int &trcid);  //Yuan:
+*/
+		void getSpinupFire(int firedate[MAX_SP_YR], int firemonth[MAX_SP_YR],int fireyear[MAX_SP_YR],int firearea[MAX_SP_YR], const int &recid);
+		void getTransientFire(int firedate[MAX_TR_YR], int firemonth[MAX_TR_YR],int fireyear[MAX_TR_YR],int firearea[MAX_TR_YR], const int &recid);
+		void getScenarioFire(int firedate[MAX_SC_YR], int firemonth[MAX_SC_YR],int fireyear[MAX_SC_YR],int firearea[MAX_SC_YR], const int &recid);
 
 		void setModelData(ModelData* mdp);
 
@@ -64,6 +74,8 @@ class CohortInputer{
 		 string spffname;
 		 string tridfname;
 		 string trffname;
+		 string scidfname;
+		 string scffname;
 
 		 void initEqChtidFile(string& dir);
 		 void initVegetation(string& dir);
@@ -71,8 +83,11 @@ class CohortInputer{
 
 		 void initSpChtidFile(string& dir);
 		 void initTrChtidFile(string& dir);
+		 void initScChtidFile(string& dir);
+
 		 void initSpinupFire(string& dir);
 		 void initTransientFire(string& dir);
+		 void initScenarioFire(string& dir);
 
 		 ModelData* md;
 	

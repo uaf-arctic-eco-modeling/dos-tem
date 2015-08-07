@@ -19,7 +19,7 @@ void RestartInputer::init(string & dirfile){
  	
 //	string filename =outputdir+ "restart.nc";
 	string filename =dirfile;    //Yuan: input file name with dir 
-
+cout <<"dirfile: " << filename << "\n";
 	restartFile = new NcFile(filename.c_str(), NcFile::ReadOnly);
 	if(!restartFile->is_valid()){
  		string msg = filename+" is not valid";
@@ -181,9 +181,21 @@ void RestartInputer::init(string & dirfile){
 		throw Exception(msgc, I_NCVAR_NOT_EXIST);
  	}
  	
- 	TYPEminV = restartFile->get_var("TYPEmin");
- 	if(TYPEminV==NULL){
- 	   string msg = "Cannot get TYPEmin in restartinputer::init ";
+ 	CLAYminV = restartFile->get_var("CLAYmin");
+ 	if(CLAYminV==NULL){
+ 	   string msg = "Cannot get CLAYmin in restartinputer::init ";
+		char* msgc = const_cast<char*> (msg.c_str());
+		throw Exception(msgc,  I_NCVAR_NOT_EXIST);
+ 	}
+ 	SANDminV = restartFile->get_var("SANDmin");
+ 	if(SANDminV==NULL){
+ 	   string msg = "Cannot get SANDmin in restartinputer::init ";
+		char* msgc = const_cast<char*> (msg.c_str());
+		throw Exception(msgc,  I_NCVAR_NOT_EXIST);
+ 	}
+ 	SILTminV = restartFile->get_var("SILTmin");
+ 	if(SILTminV==NULL){
+ 	   string msg = "Cannot get SILTmin in restartinputer::init ";
 		char* msgc = const_cast<char*> (msg.c_str());
 		throw Exception(msgc,  I_NCVAR_NOT_EXIST);
  	}
@@ -425,8 +437,8 @@ int RestartInputer::getRecordId(const int &chtid){
 	for (int i=0; i<chtno; i++){
 		getChtId(id, i);
 		if (id==chtid) return i;
-		
 	}
+
 	cout << "cohort "<< chtid<<" NOT exists in RestartInputer\n";	
 	return -1;
 }
@@ -435,22 +447,21 @@ int RestartInputer::getRecordId(const int &chtid){
 //Yuan: the cid in the following is actually the record id
 
 void RestartInputer::getChtId(int &chtid, const int &cid){       
-	
 	chtidV->set_cur(cid);
 	NcBool nb1 = chtidV->get(&chtid,1);
 	if(!nb1){	 
-	 string msg = "problem in reading chtid in  RestartInputer";
+	 	string msg = "problem in reading chtid in  RestartInputer";
 		char* msgc = const_cast<char*> (msg.c_str());
 		throw Exception(msgc,  I_NCVAR_GET_ERROR);
 	}
 }
 
-void RestartInputer::getERRCODE(int & errcode, const int &cid){       
-	
+void RestartInputer::getERRCODE(int & errcode, const int &cid){       	
+		
 	errcodeV->set_cur(cid);
 	NcBool nb1 = errcodeV->get(&errcode,1);
 	if(!nb1){	 
-	 string msg = "problem in reading errcode in  RestartInputer";
+	 	string msg = "problem in reading errcode in  RestartInputer";
 		char* msgc = const_cast<char*> (msg.c_str());
 		throw Exception(msgc,  I_NCVAR_GET_ERROR);
 	}
@@ -461,7 +472,7 @@ void RestartInputer::getPERMAFROST(int & perma, const int &cid){
 	permaV->set_cur(cid);
 	NcBool nb1 = permaV->get(&perma,1);
 	if(!nb1){
-	 string msg = "problem in reading permafrost in  RestartInputer";
+	 	string msg = "problem in reading permafrost in  RestartInputer";
 		char* msgc = const_cast<char*> (msg.c_str());
 		throw Exception(msgc,  I_NCVAR_GET_ERROR);
 	}
@@ -472,7 +483,7 @@ void RestartInputer::getYSF(int & ysf, const int &cid){
 	ysfV->set_cur(cid);
 	NcBool nb1 = ysfV->get(&ysf,1);
 	if(!nb1){	 
-	 string msg = "problem in reading ysf in  RestartInputer";
+	 	string msg = "problem in reading ysf in  RestartInputer";
 		char* msgc = const_cast<char*> (msg.c_str());
 		throw Exception(msgc,  I_NCVAR_GET_ERROR);
 	}
@@ -908,13 +919,35 @@ void RestartInputer::getTYPEsoil(int  TYPEsoil[], const int &cid){
 	}
 }
 
-void RestartInputer::getTYPEmin(int  TYPEmin[], const int &cid){
+void RestartInputer::getCLAYmin(int  CLAYmin[], const int &cid){
 	
-	TYPEminV->set_cur(cid);
-	NcBool nb1 = TYPEminV->get(&TYPEmin[0],1, MAX_MIN_LAY);
+	CLAYminV->set_cur(cid);
+	NcBool nb1 = CLAYminV->get(&CLAYmin[0],1, MAX_MIN_LAY);
 	if(!nb1){
 	 
-	 string msg = "problem in reading TYPEmin in  RestartInputer";
+	 string msg = "problem in reading CLAYmin in  RestartInputer";
+		char* msgc = const_cast<char*> (msg.c_str());
+		throw Exception(msgc,   I_NCVAR_GET_ERROR);
+	}
+}
+void RestartInputer::getSANDmin(int  SANDmin[], const int &cid){
+	
+	SANDminV->set_cur(cid);
+	NcBool nb1 = SANDminV->get(&SANDmin[0],1, MAX_MIN_LAY);
+	if(!nb1){
+	 
+	 string msg = "problem in reading SANDmin in  RestartInputer";
+		char* msgc = const_cast<char*> (msg.c_str());
+		throw Exception(msgc,   I_NCVAR_GET_ERROR);
+	}
+}
+void RestartInputer::getSILTmin(int  SILTmin[], const int &cid){
+	
+	SILTminV->set_cur(cid);
+	NcBool nb1 = SILTminV->get(&SILTmin[0],1, MAX_MIN_LAY);
+	if(!nb1){
+	 
+	 string msg = "problem in reading SILTmin in  RestartInputer";
 		char* msgc = const_cast<char*> (msg.c_str());
 		throw Exception(msgc,   I_NCVAR_GET_ERROR);
 	}

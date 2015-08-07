@@ -41,6 +41,7 @@ class GridInputer{
     	void initClimate(string& dir);
     	void initFire(string& dir);
     	void initSoil(string& dir);
+    	void initTopo(string& dir);
      
     /// grid data
     	int getGridRecID(const int & gid);
@@ -55,18 +56,26 @@ class GridInputer{
 		float getLAT(const int & recid );
 		float getLON(const int & recid );
 
+		int getFRI(const int & recid);
+
+    		int getBOTCLAY(const int & recid );
+		int getTOPCLAY(const int & recid );
+    		int getBOTSAND(const int & recid );
+		int getTOPSAND(const int & recid );
+    		int getBOTSILT(const int & recid );
+		int getTOPSILT(const int & recid );
+		float getELEVATION(const int & recid );
+		float getSLOPE(const int & recid );
+		float getFLOWACC(const int & recid );
+		float getASPECT(const int & recid );
 		void getClimate(float ta[][12], float prec[][12], float nirr[][12], float vap[][12] ,
 				const int & recid);
-
-    	int getBOTSOIL(const int & recid );
-		int getTOPSOIL(const int & recid );
-
-		int getFRI(const int & recid);
-		void getFireSize(int fyear[], int fseason[], int fsize[], const int & recid);  //Yuan: moved from RegionInputer
+		void getFireSize(int fyear[], int fseason[], int fDOB[], int fsize[], int fAOB[], const int & recid);  //Yuan: moved from RegionInputer
 
 		string grdfilename;
 		string clmfilename;
 		string soilfilename;
+		string topofilename;
 		string firefilename;
 /*
 	 	NcFile* friFile;

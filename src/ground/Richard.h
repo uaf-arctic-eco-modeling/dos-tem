@@ -81,7 +81,7 @@ class Richard{
 		bool tschanged;   // whether the time step has been changed for last factional time step
 		double tstep;     
 		double  TSTEPMAX; /*! the original time step*/
-    
+    		double LIQTOLE;
 		double TSTEPORG;
     
 		EnvData * ed;

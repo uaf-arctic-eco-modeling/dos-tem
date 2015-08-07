@@ -35,7 +35,7 @@ int REJECT =0;
 int ACCEPT=1;
 
 Integrator::Integrator(){
-	inittol = 0.01;
+	inittol = 0.001;
    	maxit = 20;
     maxitmon = 100;
     syint = 1;
@@ -104,19 +104,18 @@ void Integrator::updateMonthly(){
 	//before integration , initialize the state and flux
 	// from ssl, veg;
 	 // first reset all the fluxes variables to zero
-	 nfeed = bd->nfeed;
-     NUMSL = ed->m_soid.actual_num_soil;
-     for (int iv = 0; iv < NUMEQ; iv++ ){ 
-     	y[iv] = 0.0; 
-     }
+	nfeed = bd->nfeed;
+     	NUMSL = ed->m_soid.actual_num_soil;
+     	for (int iv = 0; iv < NUMEQ; iv++ ){ 
+     		y[iv] = 0.0; 
+     	}
      
-     c2ystate(y);
-	
-	 adapt(y);
+     	c2ystate(y);
+	adapt(y);
 
-    // after integration , save results back to veg and ssl;	
-	 y2cstate(y);
-     y2cflux(y);
+   	// after integration , save results back to veg and ssl;	
+	y2cstate(y);
+     	y2cflux(y);
      
      /*ssl->soil.sn2sl = ssl->snow.sn2sl;*/
 	

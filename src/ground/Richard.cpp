@@ -39,89 +39,89 @@ void Richard::updateSoilStructure(Layer* fstsoill){
 void Richard::update(Layer * frontl, Layer *backl, Layer *fstsoill, Layer* drainl,  double & drain,
  	       const double & trans, const double & evap,const double & infil, const double & zwt){
  	// prepare arrays for variables which will not change during one day
-    // root fraction, temperature, ice
-    // it is assumed that all layers in Richard will be unfrozen       	
+    	// root fraction, temperature, ice
+    	// it is assumed that all layers in Richard will be unfrozen       	
 	//get number of unfrozen layers
 	Layer* currl= fstsoill;
 	int ind = 0;
 	numal = 0;
 	double roottot =0.;
         while(currl!=NULL){
-    	if(currl->isSoil()){
-    		if(currl->frozen==-1){
-    			ind++;
-    			numal++;
-    			roottot += rootr[ind];
-    			currl->liq +=currl->ice;
-    			currl->ice =0.;
-    			if(currl->liq>currl->maxliq){
-    				currl->liq=currl->maxliq;	
-    			}
-    			liq[ind] =currl->liq;
-    			drainratio[ind] = 0.;
-    			lstunfl = currl;
-    		}else{
-    			break;
-    		}
-    	}else{
-    		break;	
+    		if(currl->isSoil()){
+    			if(currl->frozen==-1){
+	    			ind++;
+	    			numal++;
+	    			roottot += rootr[ind];
+	    			currl->liq +=currl->ice;
+	    			currl->ice =0.;
+	    			if(currl->liq>currl->maxliq){
+	    				currl->liq=currl->maxliq;	
+	    			}
+	    			liq[ind] =currl->liq;
+	    			drainratio[ind] = 0.;
+	    			lstunfl = currl;
+	    		}else{
+	    			break;
+	    		}
+	    	}else{
+		    		break;	
+	    	}
+	    	currl = currl->nextl;	
+	}
+    
+    	if(lstunfl==NULL){
+    		return;	
     	}
-    	currl = currl->nextl;	
-    }
-    
-    if(lstunfl==NULL){
-    	return;	
-    }
 
-    double maxrootfr =-1;
-    maxrootfr =rootr[0];
-    for(int il=0; il<numal;il++){
-      if(roottot>0){	
-    	  rootfr[il] = rootr[il]/roottot;
-      }else{
-    	  rootfr[il] =0.;
-      }	
-    }
+    	double maxrootfr =-1;
+    	maxrootfr =rootr[0];
+    	for(int il=0; il<numal;il++){
+     	 	if(roottot>0){	
+    	  		rootfr[il] = rootr[il]/roottot;
+      		}else{
+    	  		rootfr[il] =0.;
+      		}	
+    	}
     
-    //Yuan: calculation
-    iterate(fstsoill, trans, evap, infil);   
+    	//Yuan: calculation
+    	iterate(fstsoill, trans, evap, infil);   
    
-    //Yuan: post-iteration 
-    currl = fstsoill;
-    ind =0;
-    while(currl!=NULL){
-    	ind++;
-    	if(ind >numal){ 
-    		break;
-    		liqld[ind] = currl->liq;
-    	}
+    	//Yuan: post-iteration 
+    	currl = fstsoill;
+    	ind =0;
+    	while(currl!=NULL){
+    		ind++;
+    		if(ind >numal){ 
+    			break;
+    			liqld[ind] = currl->liq;
+    		}
     	
-    	currl->liq = liqld[ind];
+    		currl->liq = liqld[ind];
 
-    	if(currl->liq<0){ //currl->minliq){
-    		string msg = "water is negative in richard";
-//    		char* msgc = const_cast< char* > ( msg.c_str());
-//    		throw Exception(msgc, I_NEG_WATER);
-    		cout<<msg<<"\n";  //Yuan: don't break the model
-    		currl->liq=currl->minliq;   //Yuan: set to the min. value
-    	}
+    		if(currl->liq<0){ //currl->minliq){
+    			string msg = "water is negative in richard";
+//    			char* msgc = const_cast< char* > ( msg.c_str());
+//    			throw Exception(msgc, I_NEG_WATER);
+    			cout<<msg<<"\n";  //Yuan: don't break the model
+    			currl->liq=currl->minliq;   //Yuan: set to the min. value
+    		}
     	
-    	if(currl->liq>currl->maxliq){
-    		currl->liq=currl->maxliq;
-    	}
-    	currl->wat =currl->liq;
+    		if(currl->liq>currl->maxliq){
+    			currl->liq=currl->maxliq;
+    		}
+    		currl->wat =currl->liq;
     	
-        // Yuan: for output of hydraulic conductivity
-    	SoilLayer* cursl=dynamic_cast<SoilLayer*>(currl);
-    	double ss = cursl->getEffVolWater()/cursl->poro;
+        	// Yuan: for output of hydraulic conductivity
+    		SoilLayer* cursl=dynamic_cast<SoilLayer*>(currl);
+    		double ss = cursl->getEffVolWater()/cursl->poro;
  		double hcond = cursl->hksat * pow((double)ss, (double)2*cursl->bsw +2); //Yuan:
   		currl->hcond = hcond*86400.; //unit: mm/day (hksat: mm/sec)
 
-     	currl=currl->nextl;
-//    	if(currl!=NULL){
-//   		if(currl->indl>lstunfl->indl) break;   //Yuan: need to refresh the soil profile water status for all layers
-//   	}
-    };
+     		currl=currl->nextl;
+//    		if(currl!=NULL){
+//   			if(currl->indl>lstunfl->indl) break;   //Yuan: need to refresh the soil profile water status for all layers
+//   		}
+    	};
    	
 };
 
@@ -183,8 +183,7 @@ void Richard::iterate(Layer *fstsoill,const double & trans, const double & evap,
 			tstep = min(tleft, tstep);	
 			if(tstep==0) tmld=1;
 		}
-	} // end of while
-  	
+	} // end of while	
 };
     
 int Richard::updateOneTimeStep(Layer *fstsoill,const double & trans, const double & evap,
@@ -196,37 +195,37 @@ int Richard::updateOneTimeStep(Layer *fstsoill,const double & trans, const doubl
 	 	liqii[i] = liqis[i];	
 	}
 		 
-    for (int i=0; i<ITMAX; i++){
+    	for (int i=0; i<ITMAX; i++){
     	
-    	is = updateOneIteration(fstsoill, trans, evap, infil);
+    		is = updateOneIteration(fstsoill, trans, evap, infil);
     	
-    	if(is==0){// success
-    		status = is;
-    		for(int i=1; i<=numal; i++){
-    			liqld[i] = liqit[i];	
-    			if(liqld[i]>maxliq[i]){
-    				liqld[i]=maxliq[i];	
-    			}
-                        if(liqld[i]<minliq[i]){
-                                liqld[i]=minliq[i];
-                        }
-    		}
-    		
-    	} else {	  	
-    		for(int i=1; i<=numal; i++){
-    		//	if(liqld[i]<0){  		   
-    		//		string msg = "liqit is less than zero ";
-    		//		char* msgc = const_cast< char* > ( msg.c_str());
-    		//		throw Exception(msgc, I_NEG_WATER);
-    		//	}
-    			liqii[i] = liqld[i];
-    		}
-    		status = is;
-    	}
+	    	if(is==0){// success
+	    		status = is;
+	    		for(int i=1; i<=numal; i++){
+	    			liqld[i] = liqit[i];	
+	    			if(liqld[i]>maxliq[i]){
+	    				liqld[i]=maxliq[i];	
+	    			}
+		                if(liqld[i]<minliq[i]){
+		                        liqld[i]=minliq[i];
+		                }
+	    		}
+	    		
+	    	} else {	  	
+	    		for(int i=1; i<=numal; i++){
+	    		//	if(liqld[i]<0){  		   
+	    		//		string msg = "liqit is less than zero ";
+	    		//		char* msgc = const_cast< char* > ( msg.c_str());
+	    		//		throw Exception(msgc, I_NEG_WATER);
+	    		//	}
+	    			liqii[i] = liqld[i];
+	    		}
+	    		status = is;
+	    	}
 	  		  	
-    }
+    	}
 	
-    return status;
+    	return status;
 	  
 }; 
   
@@ -237,11 +236,11 @@ int Richard::updateOneIteration(Layer *fstsoill, const double & trans, const dou
 	double poro1, effporo1, volliq1,s1;
 	double poro2, effporo2, volliq2,s2;
 	double hksat, bsw,s_node,psisat;
-    double wimp = 0.001;// mimumum pore for water to exchange between two layers
-    double smpmin = -1.e8;
-    double dt =tstep*86400;
+    	double wimp = 0.001;// mimumum pore for water to exchange between two layers
+    	double smpmin = -1.e8;
+    	double dt =tstep*86400;
 	
-    SoilLayer* nexts, *thsl;
+    	SoilLayer* nexts, *thsl;
 	int ind=0;
 	itsum++;
 	for(int il =0; il<MAX_SOI_LAY; il++){
@@ -303,21 +302,20 @@ int Richard::updateOneIteration(Layer *fstsoill, const double & trans, const dou
 		curr= dynamic_cast<SoilLayer*>(curr->nextl);
 		if(curr!=NULL){
 			if(curr->indl>lstunfl->indl) break;
-		}
-		
-    }
+		}		
+    	}
 	
 	//Yuan: 
 	double den1, num1;
 	for(int il=numal ; il>=2; il--){
 		if(liqii[il]/dzmm[il]>poro[il]-0.01){
 			den1 = zmm[il] - zmm[il-1];
-		    num1 = smp[il] - smp[il-1] - den1;    //hydraulic potential difference
+		    	num1 = smp[il] - smp[il-1] - den1;    //hydraulic potential difference
 		   		       
-		   if(num1<0) {
-		   	    smp[il] = smp[il-1]+den1;    
+		   	if(num1<0) {
+		   	    	smp[il] = smp[il-1]+den1;    
 		   		hk[il-1]= 0.;              //Yuan: so will be no upward water moving
-		   }	  
+		   	}	  
 		}      
 	}	
 
@@ -384,34 +382,33 @@ int Richard::updateOneIteration(Layer *fstsoill, const double & trans, const dou
 	cn.tridiagonal(ind, numal, amx, bmx,cmx,rmx, dwat);  //solution
 	
 	// soil water for each layer after one iteration
-    for(int il =1; il<=numal; il++){
-    	liqit[il] = liqii[il] + dzmm[il] * dwat[il];
- /*   	if(isnan(liqit[il])){
-    		string msg = "water is nan in richard";
- //   		char* msgc = const_cast< char* > ( msg.c_str());
-    		//throw Exception(msgc, I_NAN_WATER);
-
-    		break;   //Yuan:
-    	}
-*/
-    }	
-        
-    //check the change of liquid water
-    
-    if (liqit[0] <0) liqit[0]=0.01;
-    if (liqit[1] <0) liqit[1]=0.01;
-    for(int il =2; il<=numal; il++){
-    	if(ed->m_sois.type[il]>=1){//moss 0; shlw 1; deep 2; mine 3
-    		if(liqit[il]<0 ){
-    			liqit[il]=0.01;  //Yuan:  bug here??
-    			return -1;           //yuan:  should adjust Evaportation here, BUT ...
-    		}else if(liqit[il]>maxliq[il]*1.1){  //if more than 10% of maxliq
-    			return -1;  	 	
-    		}else if(fabs((liqit[il]-liqii[il])/maxliq[il])>0.50){ //if change more than 50% of maxliq
-    			return -1;	
+    	for(int il =1; il<=numal; il++){
+    		liqit[il] = liqii[il] + dzmm[il] * dwat[il];
+ /*   		if(isnan(liqit[il])){
+    			string msg = "water is nan in richard";
+ //   			char* msgc = const_cast< char* > ( msg.c_str());
+    			//throw Exception(msgc, I_NAN_WATER);
+    			break;   //Yuan:
     		}
-    	}
-   }
+*/
+	}	
+        
+    	//check the change of liquid water
+    
+    	if (liqit[0] <0) liqit[0]=0.01;
+    	if (liqit[1] <0) liqit[1]=0.01;
+    	for(int il =2; il<=numal; il++){
+    		if(ed->m_sois.type[il]>=1){//moss 0; shlw 1; deep 2; mine 3
+    			if(liqit[il]<0 ){
+    				liqit[il]=0.01;  //Yuan:  bug here??
+    				return -1;           //yuan:  should adjust Evaportation here, BUT ...
+    			}else if(liqit[il]>maxliq[il]*1.1){  //if more than 10% of maxliq
+    				return -1;  	 	
+    			}else if(fabs((liqit[il]-liqii[il])/maxliq[il])>0.050){ //if change more than 50% of maxliq
+    				return -1;	
+    			}
+    		}
+   	}
      
    return 0;
 	

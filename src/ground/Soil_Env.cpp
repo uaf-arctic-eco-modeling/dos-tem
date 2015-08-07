@@ -169,13 +169,12 @@ void Soil_Env::initializeParameter(const int &drgtypep,const int &vegtypep){
     
 }
 
-void Soil_Env::initializeState( Layer* fstsoill){
+void Soil_Env::initializeState(Layer* fstsoill){
 	
+	int yrcnt = 0;
 	initTempMois(fstsoill);
-
-    resetFineRootFrac(fstsoill);
-   
-    layer2structmonthly(fstsoill);
+    	resetFineRootFrac(yrcnt, fstsoill);
+    	layer2structmonthly(fstsoill);
 	
 }
 
@@ -261,8 +260,8 @@ void Soil_Env::initializeState5restart( Layer* fstsoill, RestartData* resin){
    FINISHFRONT:
    
    //end of update front
-   
-	resetFineRootFrac(fstsoill);
+	int yrcnt = 0;   
+	resetFineRootFrac(yrcnt, fstsoill);
     
     layer2structmonthly(fstsoill);
 
@@ -502,6 +501,13 @@ double Soil_Env::getWaterTable(Layer* fstsoill){
 		thetal = liq/(dz * 1000.);
 		thetal = min(por, thetal);
 		
+//cout << "thetai: " << thetai << "\n";
+//cout << "thetal: " << thetal << "\n";
+//cout << "dz: " << dz << "\n";
+//cout << "por: " << por << "\n";
+//cout << "liq: " << liq << "\n";
+//cout << "ice: " << ice << "\n";
+
 
 		s= (thetai + thetal)/por  ;
 		s = min(s , 1.0);
@@ -813,7 +819,7 @@ double Soil_Env::update5Drainage(Layer* drainl, const double & fracsat, const do
 }
  
 
-void Soil_Env::resetFineRootFrac(Layer* fstsoill){
+void Soil_Env::resetFineRootFrac(const int & yrcnt, Layer* fstsoill){
 	Layer* currl = fstsoill;
 	SoilLayer* sl;
 	
@@ -844,20 +850,20 @@ void Soil_Env::resetFineRootFrac(Layer* fstsoill){
 	
 	while(currl!=NULL){
 		if(currl->isSoil()){
-		  sl= dynamic_cast<SoilLayer*>(currl);
-		  layertop = layerbot;
-		  layerbot +=currl->dz;
-		  if(layerbot>1) layerbot=1;
-		  if(layertop>=1)break;
-		  if(!sl->isMoss()){
-		   sl->rootfrac = getFineRootFrac(layertop,layerbot, mossthick)/100.;
-		  }else{
-		   sl->rootfrac=0;
-		  
-		  }
-		  ed->m_sois.rootfrac[sl->solind-1] = sl->rootfrac;
+		  	sl= dynamic_cast<SoilLayer*>(currl);
+		  	layertop = layerbot;
+		  	layerbot +=currl->dz;
+		  	if(layerbot>1) layerbot=1;
+		  	if(layertop>=1)break;
+		  	if(!sl->isMoss()){
+		   		sl->rootfrac = getFineRootFrac(yrcnt,layertop,layerbot, mossthick)/100.;
+		  	}else{
+		   		sl->rootfrac=0;
+		  	}
+		  	ed->m_sois.rootfrac[sl->solind-1] = sl->rootfrac;
+//			cout<<"sl->rootfrac: "<<sl->rootfrac<<" for layer: "<<currl<<"\n";
 		}else{
-		  break;	
+		  	break;	
 		}
 		
 		currl = currl->nextl;
@@ -877,16 +883,19 @@ void Soil_Env::resetFineRootFrac(Layer* fstsoill){
 	
 };
 
-double Soil_Env::getFineRootFrac(const double & layertop, const double & layerbot, const double & mossthick){
+double Soil_Env::getFineRootFrac(const int & yrcnt, const double & layertop, const double & layerbot, const double & mossthick){
 	double totfrfrac ;
 	double topcm = (layertop-mossthick) * 100.;   //Yuan: mossthick removed here
 	double botcm = (layerbot-mossthick) * 100.;   //Yuan: mossthick removed here
-
+//	cout<<"ysf: "<<fd->ysf<<"\n";
 	// dynamically changing root interval (10 intervals of max. 100 cm depth)
 	double deltartdep = 10.0; // max. 10 cm x 10 root-layers, which is defined in 'CohortLookup.cpp'::assignRootParams()
-    if (fd->ysf<=20) {
-    	deltartdep = 2.0+8.0*0.05*fd->ysf;   // a very simple linearly increasing max. root-layer depth at 0.05 cm per year, at least 2 cm
-    }
+    	if (fd->ysf<=20) {
+		//not for the first 20 years of the run: to prevent underestimation of 
+		if (yrcnt > 20 ){
+    		deltartdep = 2.0+8.0*0.05*fd->ysf;   // a very simple linearly increasing max. root-layer depth at 0.05 cm per year, at least 2 cm
+   		}
+	}
 
 	//determine the root-layer index of layertop and layerbot
 	int indtop = (int) floor(topcm/deltartdep);   //Yuan: the uppermost layer
@@ -949,7 +958,14 @@ double Soil_Env::getFineRootFrac(const double & layertop, const double & layerbo
 	totfrfrac = sumfracbot - sumfractop;
 	if (totfrfrac<0.0) totfrfrac = 0.0;
 	if (totfrfrac>100.0) totfrfrac = 100.0;
-	
+//	cout<<"fd->ysf: "<<fd->ysf<<"\n";	
+//	cout<<"indtop: "<<indtop<<"\n";
+//	cout<<"indbot: "<<indbot<<"\n";
+//	cout<<"topcm: "<<topcm<<"\n";
+//	cout<<"botcm: "<<botcm<<"\n";
+//	cout<<"envpar.frprod_frac[indtop]: "<<envpar.frprod_frac[indtop]<<"\n";
+//	cout<<"envpar.frprod_frac[indbot]: "<<envpar.frprod_frac[indbot]<<"\n";
+
 	return totfrfrac; 
 	
 }

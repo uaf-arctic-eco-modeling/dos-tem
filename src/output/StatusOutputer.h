@@ -30,6 +30,7 @@
     		bool runeq;
     		bool runsp;
     		bool runtr;
+   			bool runsc;
     
     		int chtid;
     		int errorid;

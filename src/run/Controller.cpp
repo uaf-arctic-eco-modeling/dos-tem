@@ -54,6 +54,7 @@ void Controller::ctrl4siterun(ModelData *md){
   	fctr >> md->eqchtinputdir;
   	fctr >> md->spchtinputdir;
   	fctr >> md->trchtinputdir;
+  	fctr >> md->scchtinputdir;
   	fctr >> md->initialfile;
   	fctr >> md->calibrationdir;
   
@@ -104,7 +105,8 @@ void Controller::ctrl4regnrun(ModelData *md){
   		fctr >> md->eqchtinputdir;
   		fctr >> md->spchtinputdir;
   		fctr >> md->trchtinputdir;
-  		fctr >> md->runchtfile;
+    		fctr >> md->scchtinputdir;
+		fctr >> md->runchtfile;
   		fctr >> md->initialfile;
   		fctr >> md->runstages;
   		fctr >> md->initmodes;

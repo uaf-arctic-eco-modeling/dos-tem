@@ -174,6 +174,11 @@ class SnowSoilOutputer{
      		NcVar* shlwcsumCYV;
      		NcVar* deepcsumCYV;
      		NcVar* minecsumCYV;
+
+      		NcVar* kdfibCYV;
+     		NcVar* kdhumCYV;
+     		NcVar* kdminCYV;
+     		NcVar* kdslowCYV;
      
      		NcVar* orgnCYV;
      		NcVar* avlnCYV;

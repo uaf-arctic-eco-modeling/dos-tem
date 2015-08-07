@@ -39,7 +39,7 @@
 	#include "Grid.h"
 
 	#include "SiteIn.h"
-    #include "SoilClm.h"
+	#include "SoilClm.h"
 
 	#include "AtmOutData.h"
 	#include "VegOutData.h"
@@ -104,7 +104,7 @@
 		
 		bool testEquilibrium();
 		
-		void fireDrivingData(bool runsp, bool runtr, bool runsc);
+		void fireDrivingData(bool runeq, bool runsp, bool runtr, bool runsc);
 		int  timerOutputYearIndex(bool equiled, bool spined, bool outputSpinup);
 		
  	 	int updateMonthly(const int & yrcnt,const int &  curryr, const int & currmind,
@@ -116,7 +116,7 @@
      			const int & currmind, const int & dinmcurr, const bool & useeq );
      	void updateMonthly_Fir(const int & yrcnt, const int & currmind  );
      
-     	void updateMonthly_Dsl(const int & currmind);
+     	void updateMonthly_Dsl(const int & yrcnt, const int & currmind);
      	
      	void getLitterFallRatio(double & deepvsshlw, double & minevsshlw);		
 		
@@ -134,7 +134,7 @@
 		void updateSclmOutputBuffer(const int &im);
 
 //  	protected:
- 		EnvData * ed;
+ 	EnvData * ed;
     	BgcData * bd;
     	FirData * fd;   
     
@@ -166,7 +166,7 @@
 		void setSiteStates(SiteIn * initstate);
 		void getSiteStates(SiteIn * currstate);
 
-		void updateSoilLayerType(int TYPEsoil[], int TYPEmin[]);
+		void updateSoilLayerType(int TYPEsoil[], int CLAYmin[], int SANDmin[], int SILTmin[]);
     	
 	private:
    	 	double ctol;

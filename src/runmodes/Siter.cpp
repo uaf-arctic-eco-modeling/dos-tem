@@ -18,7 +18,7 @@ void Siter::init(const string &controlfile){
 		//Input and processing for reading parameters and passing them to controller
  		configin.controlfile=controlfile;
  		configin.ctrl4siterun(&md);   //read in model configure info from "/config/sitecontrol.txt"
- 		
+
  		md.myid =0;
  		md.numprocs =1;
 
@@ -39,21 +39,22 @@ void Siter::init(const string &controlfile){
  		//cohort-level input : cin is for netcdf format file inputting
  		//           while, scht is for after-inputting data processing and model running
  		cin.setModelData(&md);
+
  		cin.init();
 
  		if(md.initmode==2){
 	 		sitein.initSiteinFile(md.initialfile);
 	 		runcht.setSiteinInputer(&sitein);
  		} else if(md.initmode==3){
- 		 	if(md.runeq){
- 		 		cout <<"cannot set initmode as restart for equlibrium run  \n";
- 		 		cout <<"reset to 'lookup'\n";
- 		 		md.initmode=1;
- 		 	} else {
- 		 		resin.init(md.initialfile);
+//		 	if(md.runeq){
+//		 		cout <<"cannot set initmode as restart for equlibrium run  \n";
+//		 		cout <<"reset to 'lookup'\n";
+//		 		md.initmode=1;
+//		 	} else {
+		 		resin.init(md.initialfile);
  		 		runcht.setRestartInputer(&resin);
- 		 	}
- 		} else {
+//		 	}
+		} else {
  			md.initmode = 1;
  		}
  		 
@@ -79,14 +80,18 @@ void Siter::init(const string &controlfile){
  			}			
  			if(md.runtr){
  	 			stage = "-tr";
- 	 			if (md.runsc) stage = "-sc";
+// 	 			if (md.runsc) stage = "-sc";
  			}
+
+			if (md.runsc){
+				stage = "-sc";
+			}
  		}
 		resout.setRestartOutData(&resod);
 		resout.init(md.outputdir, stage, md.numprocs, md.myid); //define netcdf file for restart output
  		runcht.cht.setRestartOutData(&resod);   //restart output data sets connenction
  		runcht.setRestartOutputer(&resout);
- 		
+		
  		  // 3) for soilclm.nc outputs, if needed
 
 		//set up data connection (initialization)
@@ -100,22 +105,22 @@ void Siter::init(const string &controlfile){
  		runcht.cht.setModelData(&md);
  		runcht.cht.setInputData(&rd, &gd, &cd);
  		runcht.cht.setAtmData(&sgrid);
- 		
+		
 		//initializing ONE common cohort 		 		 		
  		runcht.cht.init(); 
- 
+
 	}catch (Exception &exception){
   		cout <<"problem in initialize in Siter::init\n";
   		exception.mesg();
   		exit(-1);
 	}
-    
+   
 };
 
 void Siter::run(){
 	
 	// cohort id consistency in different run modes
-	int chtid = 310595;
+	int chtid = 1;
 	int error = 0;
 
 	int eqcid = 0; //the record order in the input files, NOT the cohort ID (chtid)
@@ -125,6 +130,7 @@ void Siter::run(){
 	if(md.runeq){
 		if (chtid>0) {   // if input a real chtid
 			cd.eqchtid = chtid;
+
 			eqcid = cin.getEqRecID(cd.eqchtid);
 		}else {         // otherwise, using the first one in the data
 			eqcid = 0;
@@ -132,8 +138,28 @@ void Siter::run(){
 			chtid = cd.eqchtid;
 		}
 		cid  = eqcid;
+
 	} else {   
-		if(md.runtr){
+		if(md.runsp){
+
+			if (chtid>0) {   // if input a real chtid
+				cd.spchtid = chtid;
+				cid=cin.getSpRecID(cd.spchtid);
+			}else {         // otherwise, using the first one in the data
+				cid = 0;
+				cin.getChtID(cd.spchtid, cid);
+				chtid = cd.spchtid;
+			}
+
+			cin.getEqchtid5SpFile(cd.eqchtid, cid);
+			eqcid=cin.getEqRecID(cd.eqchtid);
+
+			cd.reschtid = cd.eqchtid;     //restart id is of eq-run's eqchtid
+
+			if (md.initmode==3) rescid = resin.getRecordId(cd.reschtid);
+
+		} else if (md.runtr){
+
 			if (chtid>0) {   // if input a real chtid
 				cd.trchtid = chtid;
 				cid=cin.getTrRecID(cd.trchtid);
@@ -149,32 +175,45 @@ void Siter::run(){
 			cin.getEqchtid5SpFile(cd.eqchtid, spcid);
 			eqcid=cin.getEqRecID(cd.eqchtid);
 
-			if (!md.runsc) {
+			cd.reschtid = cd.trchtid;  
+
+/*			if (!md.runsc) {
 				cd.reschtid = cd.spchtid;
 			} else {
 				cd.reschtid = cd.trchtid;  //restart id is of transient-run's, because sc-run is continuouity of tr-run
 			}
+*/
 			if (md.initmode==3) rescid = resin.getRecordId(cd.reschtid);
 
-		}else if(md.runsp){
-			if (chtid>0) {   // if input a real chtid
-				cd.spchtid = chtid;
-				cid=cin.getSpRecID(cd.spchtid);
-			}else {         // otherwise, using the first one in the data
+		}else if(md.runsc){
+ 
+			if (chtid>0) {   
+				cd.scchtid = chtid;
+				cid=cin.getScRecID(cd.scchtid);
+			}else {         
 				cid = 0;
-				cin.getChtID(cd.spchtid, cid);
-				chtid = cd.spchtid;
+				cin.getChtID(cd.scchtid, cid);
+				chtid = cd.scchtid;
 			}
+  
+			cin.getTrchtid5ScFile(cd.trchtid, cid);
+ 
+			int trcid=cin.getTrRecID(cd.trchtid);			
+			cin.getSpchtid5TrFile(cd.spchtid, trcid);
+//			spcid=cin.getSpRecID(cd.spchtid);
 
-			cin.getEqchtid5SpFile(cd.eqchtid, cid);
-			eqcid=cin.getEqRecID(cd.eqchtid);
+//			int spcid=cin.getSpRecID(cd.spchtid);
+//			cin.getEqchtid5SpFile(cd.eqchtid, spcid);
 
-			cd.reschtid = cd.eqchtid;     //restart id is of eq-run's eqchtid
+
+			cd.reschtid = cd.trchtid;  
+
 			if (md.initmode==3) rescid = resin.getRecordId(cd.reschtid);
 		}
 	}
 
-	cin.getGrdID(cd.grdid, eqcid);  //Yuan: now, GRDID is only the id for soil/grid-fire data id
+//	cin.getGrdID(cd.grdid, eqcid);  //Yuan: now, GRDID is only the id for soil/grid-fire data id
+	cin.getGrdID(cd.grdid, cid);  //Yuan: now, GRDID is only the id for soil/grid-fire data id
 
 	cin.getClmID(cd.clmid, cid);  //Yuan: from cid to get its clmid, SO no more using CRUID as its climate data id
 
@@ -188,8 +227,20 @@ void Siter::run(){
 			exit(-1);
 		}
 		gin.getGridData(&gd, grdrecid, clmrecid);  //reading the grid-data for gid
+//	cout << "topclay "<< gd.topclay<<"\n";
+//	cout << "botclay "<< gd.botclay<<"\n";
+//	cout << "topsand "<< gd.topsand<<"\n";
+//	cout << "botsand "<< gd.botsand<<"\n";
+//	cout << "topsilt "<< gd.topsilt<<"\n";
+//	cout << "botsilt "<< gd.botsilt<<"\n";
+//	cout << "elevation "<< gd.elevation<<"\n";
+//	cout << "aspect "<< gd.aspect<<"\n";
+//	cout << "flowacc "<< gd.flowacc<<"\n";
+//	cout << "slope "<< gd.slope<<"\n";
+//	cout << "fri "<< gd.fri<<"\n";
 
 		error = sgrid.reinit(grdrecid);          //reinit for a new grid
+
 		if (error<0) {
 			cout <<"problem in reinitialize grid in Siter::run\n";
 			exit(-1);
@@ -204,8 +255,7 @@ void Siter::run(){
 	//loop through cohorts
 	try {
 		runcht.jcalifilein=true;  //switch for reading input Jcalinput.txt, the default is true (must be done before re-initiation)
-		runcht.ccdriverout=false;  //switch for update cali. driver file, the default is false
-			
+		runcht.ccdriverout=false;  //switch for update cali. driver file, the default is false			
 		error = runcht.reinit(cid, eqcid, rescid); //reinit for a new cohort
 	}catch (Exception &exception){
   		cout <<"problem in reinitialize cohort in Siter::run\n";

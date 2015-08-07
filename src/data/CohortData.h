@@ -22,18 +22,32 @@ class CohortData{
   		int drgtype;
   		int vegtype;
   	
-		int trfireyear[MAX_TR_FIR_OCR_NUM];
-		int trseason[MAX_TR_FIR_OCR_NUM];
-		int trseverity[MAX_TR_FIR_OCR_NUM];   //Yuan: severity in ALFRESCO: 0 - none; //
+//		int trfireyear[MAX_TR_FIR_OCR_NUM];
+//		int trseason[MAX_TR_FIR_OCR_NUM];
+//		int trseverity[MAX_TR_FIR_OCR_NUM];   //Yuan: severity in ALFRESCO: 0 - none; //
 		         //1- Low severity;
 		         //2 - Moderate Severity;
 		         //3 - High severity + Low Surface Severity;
                  //4 - High severity + High Surface Severity;
 
-		int spfireyear[MAX_SP_FIR_OCR_NUM];
-		int spseason[MAX_SP_FIR_OCR_NUM];
+//		int spfireyear[MAX_SP_FIR_OCR_NUM];
+//		int spseason[MAX_SP_FIR_OCR_NUM];
+//		int spseverity[MAX_SP_FIR_OCR_NUM];   //Yuan: modified
 
-		int spseverity[MAX_SP_FIR_OCR_NUM];   //Yuan: modified
+		int spfireyear[MAX_SP_YR];
+		int spfiremonth[MAX_SP_YR];
+		int spfiredate[MAX_SP_YR];
+		int spfirearea[MAX_SP_YR];
+
+		int trfireyear[MAX_TR_YR];
+		int trfiremonth[MAX_TR_YR];
+		int trfiredate[MAX_TR_YR];
+		int trfirearea[MAX_TR_YR];
+
+		int scfireyear[MAX_SC_YR];
+		int scfiremonth[MAX_SC_YR];
+		int scfiredate[MAX_SC_YR];
+		int scfirearea[MAX_SC_YR];
 	
 };
 

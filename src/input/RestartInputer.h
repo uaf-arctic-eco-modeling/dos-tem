@@ -81,13 +81,15 @@ class RestartInputer {
 		void getTSrock(double  DZrock[], const int &cid);
 
 		void getTYPEsoil(int TYPEsoil[], const int &cid);
-		void getTYPEmin(int TYPEmin[], const int &cid);
+		void getCLAYmin(int CLAYmin[], const int &cid);
+		void getSANDmin(int SANDmin[], const int &cid);
+		void getSILTmin(int SILTmin[], const int &cid);
 
-		void getTOPTA(double TYPEmin[], const int &cid);
+		void getTOPTA(double SILTmin[], const int &cid);
 		
-		void getEETMXA(double TYPEmin[], const int &cid);
-		void getPETMXA(double TYPEmin[], const int &cid);
-		void getUNNORMLEAFMXA(double TYPEmin[], const int &cid);
+		void getEETMXA(double SILTmin[], const int &cid);
+		void getPETMXA(double SILTmin[], const int &cid);
+		void getUNNORMLEAFMXA(double SILTmin[], const int &cid);
 
     private:
 		NcFile* restartFile;
@@ -118,7 +120,9 @@ class RestartInputer {
 		NcVar* NONCsoilV;
 		NcVar* REACsoilV;
 		NcVar* TYPEsoilV;
-		NcVar* TYPEminV;
+		NcVar* CLAYminV;
+		NcVar* SANDminV;
+		NcVar* SILTminV;
 	
 		NcVar* TSrockV;
 		NcVar* DZrockV;

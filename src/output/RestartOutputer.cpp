@@ -38,52 +38,54 @@ void RestartOutputer::init(string& outputdir,string& stage, const int & numprocs
 	meanyearD  = restartFile->add_dim("MEANYEAR", 10);
 	
 	//variable definition
-    chtidV   =restartFile->add_var("CHTID", ncInt,chtD);
-    errcodeV =restartFile->add_var("ERRCODE", ncInt,chtD);
-    
-    permaV   =restartFile->add_var("PERMAFROST", ncInt,chtD);
-    TSsnowV  =restartFile->add_var("TSsnow", ncDouble,chtD, snowlayerD);
-    DZsnowV  =restartFile->add_var("DZsnow", ncDouble,chtD, snowlayerD);
-    LIQsnowV =restartFile->add_var("LIQsnow", ncDouble,chtD, snowlayerD);
-    ICEsnowV =restartFile->add_var("ICEsnow", ncDouble,chtD, snowlayerD);
+    	chtidV   =restartFile->add_var("CHTID", ncInt,chtD);
+    	errcodeV =restartFile->add_var("ERRCODE", ncInt,chtD);
+   	permaV   =restartFile->add_var("PERMAFROST", ncInt,chtD);
+    	TSsnowV  =restartFile->add_var("TSsnow", ncDouble,chtD, snowlayerD);
+    	DZsnowV  =restartFile->add_var("DZsnow", ncDouble,chtD, snowlayerD);
+    	LIQsnowV =restartFile->add_var("LIQsnow", ncDouble,chtD, snowlayerD);
+    	ICEsnowV =restartFile->add_var("ICEsnow", ncDouble,chtD, snowlayerD);
  	AGEsnowV =restartFile->add_var("AGEsnow", ncDouble,chtD, snowlayerD);
-    RHOsnowV =restartFile->add_var("RHOsnow", ncDouble,chtD, snowlayerD);
- 
+    	RHOsnowV =restartFile->add_var("RHOsnow", ncDouble,chtD, snowlayerD);
+
 	TSsoilV  =restartFile->add_var("TSsoil", ncDouble,chtD, soillayerD);
-    DZsoilV  =restartFile->add_var("DZsoil", ncDouble,chtD, soillayerD);
-    LIQsoilV =restartFile->add_var("LIQsoil", ncDouble,chtD, soillayerD);
-    
-    ICEsoilV  =restartFile->add_var("ICEsoil", ncDouble,chtD, soillayerD);
-    FROZENsoilV =restartFile->add_var("FROZENsoil", ncInt,chtD, soillayerD);
-    NONCsoilV =restartFile->add_var("NONCsoil", ncDouble,chtD, soillayerD);
-    REACsoilV =restartFile->add_var("REACsoil", ncDouble,chtD, soillayerD);
-    TYPEsoilV =restartFile->add_var("TYPEsoil", ncInt,chtD, soillayerD);
-    TYPEminV  =restartFile->add_var("TYPEmin", ncInt,chtD, minlayerD);
+    	DZsoilV  =restartFile->add_var("DZsoil", ncDouble,chtD, soillayerD);
+    	LIQsoilV =restartFile->add_var("LIQsoil", ncDouble,chtD, soillayerD);
+    	ICEsoilV  =restartFile->add_var("ICEsoil", ncDouble,chtD, soillayerD);
+    	FROZENsoilV =restartFile->add_var("FROZENsoil", ncInt,chtD, soillayerD);
+    	NONCsoilV =restartFile->add_var("NONCsoil", ncDouble,chtD, soillayerD);
+    	REACsoilV =restartFile->add_var("REACsoil", ncDouble,chtD, soillayerD);
+    	TYPEsoilV =restartFile->add_var("TYPEsoil", ncInt,chtD, soillayerD);
+    	CLAYminV  =restartFile->add_var("CLAYmin", ncInt,chtD, minlayerD);
+    	SANDminV  =restartFile->add_var("SANDmin", ncInt,chtD, minlayerD);
+    	SILTminV  =restartFile->add_var("SILTmin", ncInt,chtD, minlayerD);
         
-    TSrockV =restartFile->add_var("TSrock", ncDouble,chtD, rocklayerD);
-    DZrockV =restartFile->add_var("DZrock", ncDouble,chtD, rocklayerD);
+    	TSrockV =restartFile->add_var("TSrock", ncDouble,chtD, rocklayerD);
+    	DZrockV =restartFile->add_var("DZrock", ncDouble,chtD, rocklayerD);
    
 	frontZV =restartFile->add_var("frontZ", ncDouble,chtD, frontD);
-    frontFTV=restartFile->add_var("frontFT", ncInt,chtD, frontD);
+    	frontFTV=restartFile->add_var("frontFT", ncInt,chtD, frontD);
     
-    solnV   =restartFile->add_var("SOLN", ncDouble,chtD);
-    avlnV   =restartFile->add_var("AVLN", ncDouble,chtD);
-    wdebrisV=restartFile->add_var("WDEBRIS", ncDouble,chtD);
+    	solnV   =restartFile->add_var("SOLN", ncDouble,chtD);
+    	avlnV   =restartFile->add_var("AVLN", ncDouble,chtD);
+    	wdebrisV=restartFile->add_var("WDEBRIS", ncDouble,chtD);
     
-    strnV   =restartFile->add_var("STRN", ncDouble,chtD);
-    stonV   =restartFile->add_var("STON", ncDouble,chtD);
-    vegcV   =restartFile->add_var("VEGC", ncDouble,chtD);
-    deadcV  =restartFile->add_var("DEADC", ncDouble,chtD);
-    deadnV  =restartFile->add_var("DEADN", ncDouble,chtD);
-    prveetmxV =restartFile->add_var("PRVEETMX", ncDouble,chtD);
+    	strnV   =restartFile->add_var("STRN", ncDouble,chtD);
+    	stonV   =restartFile->add_var("STON", ncDouble,chtD);
+    	vegcV   =restartFile->add_var("VEGC", ncDouble,chtD);
+    	deadcV  =restartFile->add_var("DEADC", ncDouble,chtD);
+    	deadnV  =restartFile->add_var("DEADN", ncDouble,chtD);
+
+    	prveetmxV =restartFile->add_var("PRVEETMX", ncDouble,chtD);
    	prvpetmxV =restartFile->add_var("PRVPETMX", ncDouble,chtD);
-   	foliagemxV=restartFile->add_var("FOLIAGEMX", ncDouble,chtD);
-   	   	
+
+   	foliagemxV=restartFile->add_var("FOLIAGEMX", ncDouble,chtD); 	
 	laiV =restartFile->add_var("LAI", ncDouble,chtD);
    	
    	unnormleafV      =restartFile->add_var("UNNORMLEAF", ncDouble,chtD);
 	prvunnormleafmxV =restartFile->add_var("PRVUNNORMLEAFMX", ncDouble,chtD);
 	prvtoptV         =restartFile->add_var("PRVTOPT", ncDouble,chtD);
+
 	c2nV             =restartFile->add_var("C2N", ncDouble,chtD);
 	kdfibV           =restartFile->add_var("KDFIB", ncDouble,chtD);
 	kdhumV           =restartFile->add_var("KDHUM", ncDouble,chtD);
@@ -92,6 +94,7 @@ void RestartOutputer::init(string& outputdir,string& stage, const int & numprocs
 	
 	ysfV     =restartFile->add_var("YSF", ncInt,chtD);
 	burnednV =restartFile->add_var("BURNEDN", ncDouble,chtD);
+
  	toptAV   =restartFile->add_var("TOPTA", ncDouble,  chtD,meanyearD);
 	eetmxAV  =restartFile->add_var("EETMXA", ncDouble, chtD,meanyearD);
 	petmxAV  =restartFile->add_var("PETMXA", ncDouble, chtD,meanyearD);
@@ -103,9 +106,9 @@ void RestartOutputer::outputVariables(const int & chtcount){
  	NcError err(NcError::verbose_nonfatal);
 
 	int errcode=errorChecking();
-	errcodeV->put_rec(&errcode, chtcount);
 
 	chtidV->put_rec(&resod->chtid, chtcount);
+	errcodeV->put_rec(&errcode, chtcount);
 	permaV->put_rec(&resod->perma, chtcount);
 	TSsnowV->put_rec(&resod->TSsnow[0], chtcount);
 	DZsnowV->put_rec(&resod->DZsnow[0], chtcount);
@@ -116,14 +119,17 @@ void RestartOutputer::outputVariables(const int & chtcount){
 	
 	TSsoilV->put_rec(&resod->TSsoil[0], chtcount);
 	DZsoilV->put_rec(&resod->DZsoil[0], chtcount);
-	LIQsoilV->put_rec(&resod->LIQsoil[0], chtcount);
-		
+	LIQsoilV->put_rec(&resod->LIQsoil[0], chtcount);	
 	ICEsoilV->put_rec(&resod->ICEsoil[0], chtcount);
 	FROZENsoilV->put_rec(&resod->FROZENsoil[0], chtcount);
+
 	NONCsoilV->put_rec(&resod->NONCsoil[0], chtcount);
 	REACsoilV->put_rec(&resod->REACsoil[0], chtcount);
+
 	TYPEsoilV->put_rec(&resod->TYPEsoil[0], chtcount);
-	TYPEminV->put_rec(&resod->TYPEmin[0], chtcount);
+	CLAYminV->put_rec(&resod->CLAYmin[0], chtcount);
+	SANDminV->put_rec(&resod->SANDmin[0], chtcount);
+	SILTminV->put_rec(&resod->SILTmin[0], chtcount);
 
 	TSrockV->put_rec(&resod->TSrock[0], chtcount);
 	DZrockV->put_rec(&resod->DZrock[0], chtcount);
@@ -134,24 +140,24 @@ void RestartOutputer::outputVariables(const int & chtcount){
 	solnV->put_rec(&resod->soln, chtcount);
 	avlnV->put_rec(&resod->avln, chtcount);
 	wdebrisV->put_rec(&resod->wdebris, chtcount);
-		
 	strnV->put_rec(&resod->strn, chtcount);
-	
 	stonV->put_rec(&resod->ston, chtcount);
+	vegcV->put_rec(&resod->vegc, chtcount);
 	deadcV->put_rec(&resod->deadc, chtcount);
 	deadnV->put_rec(&resod->deadn, chtcount);
-	vegcV->put_rec(&resod->vegc, chtcount);
+
 	prveetmxV->put_rec(&resod->prveetmx, chtcount);
 	prvpetmxV->put_rec(&resod->prvpetmx, chtcount);
+
 	foliagemxV->put_rec(&resod->foliagemx, chtcount);
-		
 	laiV->put_rec(&resod->lai, chtcount);
-	
 	unnormleafV->put_rec(&resod->unnormleaf, chtcount);
 	prvunnormleafmxV->put_rec(&resod->prvunnormleafmx, chtcount);
+
 	prvtoptV->put_rec(&resod->prvtopt, chtcount);
 	
 	c2nV->put_rec(&resod->c2n, chtcount);
+
 	kdfibV->put_rec(&resod->kdfib, chtcount);
 	kdhumV->put_rec(&resod->kdhum, chtcount);
 	kdminV->put_rec(&resod->kdmin, chtcount);
@@ -160,7 +166,7 @@ void RestartOutputer::outputVariables(const int & chtcount){
 	ysfV->put_rec(&resod->ysf, chtcount);
 	burnednV->put_rec(&resod->burnedn, chtcount);
     
-    toptAV->put_rec(&resod->toptA[0], chtcount);
+    	toptAV->put_rec(&resod->toptA[0], chtcount);
 	eetmxAV->put_rec(&resod->eetmxA[0], chtcount);
 	petmxAV->put_rec(&resod->petmxA[0], chtcount);
 	unnormleafmxAV->put_rec(&resod->unnormleafmxA[0], chtcount);
@@ -191,7 +197,9 @@ int RestartOutputer::errorChecking(){
 	}
 	
 	for(int il =0;il<MAX_MIN_LAY; il++){
-		if (isnan(resod->TYPEmin[il]) || isinf(resod->TYPEmin[il])) errcode = -1;	
+		if (isnan(resod->CLAYmin[il]) || isinf(resod->CLAYmin[il])) errcode = -1;	
+		if (isnan(resod->SANDmin[il]) || isinf(resod->SANDmin[il])) errcode = -1;	
+		if (isnan(resod->SILTmin[il]) || isinf(resod->SILTmin[il])) errcode = -1;	
 	}
    
 	for(int il =0;il<MAX_ROC_LAY; il++){
@@ -204,7 +212,7 @@ int RestartOutputer::errorChecking(){
 		if (isnan(resod->frontFT[il]) || isinf(resod->frontFT[il])) errcode = -1;	
 	}
      
-    for(int i=0; i<10; i++){
+    	for(int i=0; i<10; i++){
 		if (isnan(resod->toptA[i]) || isinf(resod->toptA[i])) errcode = -1;	
 		if (isnan(resod->eetmxA[i]) || isinf(resod->eetmxA[i])) errcode = -1;	
 		if (isnan(resod->petmxA[i]) || isinf(resod->petmxA[i])) errcode = -1;	

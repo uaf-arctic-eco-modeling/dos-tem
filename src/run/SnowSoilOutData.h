@@ -126,17 +126,17 @@ class SnowSoilOutData{
        		float yrtmine;
 
        		float yrald;
-			float yrperm;
+		float yrperm;
 
-			float yrmossdz;
-			float yrshlwdz;
-			float yrdeepdz;
+		float yrmossdz;
+		float yrshlwdz;
+		float yrdeepdz;
 
-			float yrwatertab;
+		float yrwatertab;
 
-			float yrmossnum;
-			float yrshlwnum;
-			float yrdeepnum;
+		float yrmossnum;
+		float yrshlwnum;
+		float yrdeepnum;
 
        		//soil - Bgc
     		float yrnetnmin;
@@ -146,15 +146,20 @@ class SnowSoilOutData{
     		float yrreacsum;
     		float yrnoncsum;
 
-			float yrshlwcsum;
+		float yrshlwcsum;
     		float yrdeepcsum;
     		float yrminecsum;
 
+		float yrkdfib;
+		float yrkdhum;
+		float yrkdmin;
+		float yrkdslow;
+
     		float yrorgn;
-   		 	float yravln;
-   		 	float yrsnuptake;
-   		 	float yrwdebris;
-			float yrwdrh;
+   		float yravln;
+   		float yrsnuptake;
+   		float yrwdebris;
+		float yrwdrh;
 						  
     		float yrninput;   //Yuan: for checking
     		float yrnlost;    //Yuan: for checking
@@ -164,6 +169,8 @@ class SnowSoilOutData{
     		float yrburnsoilc;
     		float yrburnsoiln;
     		float yrorgnreturn;
+
+
     		
 //2D to 1D for easy Java reading (mainly soil variables)
 			float ts1D[MINY*MAX_OUT_SOI]; //monthly variables	

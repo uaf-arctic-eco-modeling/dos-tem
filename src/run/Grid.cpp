@@ -18,19 +18,20 @@ int Grid::reinit(const int &grdid){
   	gid =grdid;
   	gd->gid = gid;
    
-    double ampl;
+    	double ampl;
 	for (int id=0; id<365; id++){
-       	ampl = exp(7.42 +0.045 *gd->lat)/3600.;
-       	gd->alldaylengths[id] = ampl * (sin ((id -79) *0.01721)) +12.0;
+       		ampl = exp(7.42 +0.045 *gd->lat)/3600.;
+       		gd->alldaylengths[id] = ampl * (sin ((id -79) *0.01721)) +12.0;
 	}
 
- 
   //check for the validity of grid level data
-  	if(gd->fri<0|| gd->fri>2000){
-  	 	gd->fri =2000;
-  	}
-  
-  	if(gd->topsoil <0 || gd->botsoil <0){
+	if(gd->fri<0|| gd->fri>5000){
+	 	gd->fri =5000;
+	}
+// cout <<  "FRI: "<<gd->fri<<"\n";
+	gd->fri =2000;
+
+  	if(gd->topclay <0 || gd->botclay <0 || gd->topsand <0 || gd->botsand <0 || gd->topsilt <0 || gd->botsilt <0){
   	    string msg = "soil type  should be greater than 0";
  //		char* msgc = const_cast< char* > ( msg.c_str());
  //		throw Exception(msgc, I_INPUT_INVALID);
@@ -45,7 +46,6 @@ int Grid::reinit(const int &grdid){
         		string msg = "climate data error";
 // 				char* msgc = const_cast< char* > ( msg.c_str());
 // 				throw Exception(msgc, I_INPUT_INVALID);
-
         		return -3;
         	}
        	}	

@@ -1,5 +1,5 @@
 #include "GridData.h"
-
+#include <iostream>
 
 GridData::GridData(){
 	
@@ -17,6 +17,7 @@ void GridData::d1tod2() {
 			prec[i][j] = prec1d[i*12+j];
 			nirr[i][j] = nirr1d[i*12+j];
 			vap[i][j]  = vap1d[i*12+j];
+//		if (j==6) cout<<"Air temperature" << ta[i][j]<<"\n";
 		}
 	}
 	
