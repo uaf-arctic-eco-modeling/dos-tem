@@ -30,7 +30,9 @@ void SoilclmOutputer::initSoilClimate(string & outdir){
 
 	dzV = sclmFile->add_var("DZ", ncFloat, chtD, layD);
 	typeV = sclmFile->add_var("TYPE", ncFloat, chtD, layD);
-	mintypeV = sclmFile->add_var("MINTYPE", ncFloat, chtD, mlayD);
+	minclayV = sclmFile->add_var("MINCLAY", ncFloat, chtD, mlayD);
+	minsandV = sclmFile->add_var("MINSAND", ncFloat, chtD, mlayD);
+	minclayV = sclmFile->add_var("MINSILT", ncFloat, chtD, mlayD);
 	poroV = sclmFile->add_var("PORO", ncFloat, chtD, layD);
 	rootfracV = sclmFile->add_var("ROOTFRAC", ncFloat, chtD, layD);
 

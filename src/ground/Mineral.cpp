@@ -28,9 +28,22 @@ void Mineral::initThicknesses(const double & thickness){
 };
 
 
-void Mineral::updateType(int types[], const int & numtype){
+void Mineral::updateClay(int clays[], const int & numtype){
 	for(int i=0; i<numtype;i++){
-		 type[i] = types[i];
+		 clay[i] = clays[i];
+cout << "clay[i]: " << clay[i]<< "\n";
+	};
+
+};
+void Mineral::updateSand(int sands[], const int & numtype){
+	for(int i=0; i<numtype;i++){
+		 sand[i] = sands[i];
+	};
+
+};
+void Mineral::updateSilt(int silts[], const int & numtype){
+	for(int i=0; i<numtype;i++){
+		 silt[i] = silts[i];
 	};
 
 };

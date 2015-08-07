@@ -160,15 +160,20 @@ SnowSoilOutData::SnowSoilOutData(){
     		yrreacsum=-999;
     		yrnoncsum=-999;
 
-			yrshlwcsum=-999;
+		yrshlwcsum=-999;
     		yrdeepcsum=-999;
     		yrminecsum=-999;
 
+		yrkdfib=-999;
+		yrkdhum=-999;
+		yrkdmin=-999;
+		yrkdslow=-999;
+
     		yrorgn=-999;
-   		 	yravln=-999;
-   		 	yrsnuptake=-999;
-   		 	yrwdebris=-999;
-			yrwdrh=-999;
+   		yravln=-999;
+   		yrsnuptake=-999;
+   		yrwdebris=-999;
+		yrwdrh=-999;
 						  
     		yrninput=-999;   //Yuan: for checking
     		yrnlost=-999;    //Yuan: for checking

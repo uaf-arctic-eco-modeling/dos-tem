@@ -24,33 +24,30 @@ void Regioner::init(string& controlfile){
  
  		fd.useseverity = md.useseverity;
  		
- 		md.consoledebug = false;
-
+ 		md.consoledebug = true;
  		//create a list of cohort id, each process should run through all cohorts in the list
  		createCohorList4Run();
-
  		//region-level input
  		rin.setModelData(&md);
  		rin.getCO2(&rd);
 
  		//grid-level input
  		gin.setModelData(&md);
- 		gin.init();
+		gin.init();
 
  		//cohort-level input
  		cin.setModelData(&md);
 		cin.init();	
-		
  		//inputers
  		if(md.initmode==2){
 	 		sitein.initSiteinFile(md.initialfile);
 	 		runcht.setSiteinInputer(&sitein);
  		} else if(md.initmode==3){
- 		 	if(md.runeq){
- 		 		cout <<"cannot set initmode as restart for equlibrium run  \n";
- 		 		cout <<"reset to 'lookup'\n";
- 		 		md.initmode=1;
- 		 	} else {
+		 	if(md.runeq){
+		 		cout <<"cannot set initmode as restart for equlibrium run  \n";
+		 		cout <<"reset to 'lookup'\n";
+		 		md.initmode=1;
+		 	} else {
  		 		resin.init(md.initialfile);
  		 		runcht.setRestartInputer(&resin);
  		 	}
@@ -60,7 +57,7 @@ void Regioner::init(string& controlfile){
 
  		runcht.setGridInputer(&gin);
  		runcht.setCohortInputer(&cin);
- 		 
+		 
  		//output variables, outputers and initialization
  		   //1) multiple-cohort/yearly output
  		string stage("?");
@@ -73,7 +70,7 @@ void Regioner::init(string& controlfile){
  				MAX_OREGN_YR = MAX_SP_YR;
  			}
 
- 			if(md.runtr){
+/* 			if(md.runtr){
  				if (!md.runsc) {
  					stage="-tr";
  					MAX_OREGN_YR = MAX_TR_YR;
@@ -81,6 +78,16 @@ void Regioner::init(string& controlfile){
  					stage="-sc";
  					MAX_OREGN_YR = MAX_SC_YR;
  				}
+ 			}
+*/
+			if(md.runtr){
+ 				stage="-tr";
+ 				MAX_OREGN_YR = MAX_TR_YR;
+ 			}
+
+			if(md.runsc){
+ 				stage="-sc";
+ 				MAX_OREGN_YR = MAX_SC_YR;
  			}
 
  			string outlistfile = "config/outvarlist.txt";   //The outvarlist.txt MUST be in config/
@@ -114,7 +121,7 @@ void Regioner::init(string& controlfile){
 
  		//ONE cohort initialization
   		runcht.cht.init(); //after set everying
- 
+
 	}catch (Exception &exception){
   		cout <<"problem in initialize in Regioner::init\n";
   		exception.mesg();
@@ -129,7 +136,6 @@ void Regioner::run(){
 	//error initialization
 	int errcount = 0;
 	errout.errorid = 0;
-
 	list<int>::iterator jj ; 
 	for ( jj=runchtlist.begin() ; jj!=runchtlist.end(); jj++){
 		int chtid = *jj;
@@ -173,41 +179,79 @@ void Regioner::run(){
 			//for regional run, only one of the following can be true;
 			if(md.runeq){
 				cd.eqchtid = chtid;
+
 				eqcid=cin.getEqRecID(cd.eqchtid);  //needed for cruid searching
 				cid=eqcid;                         //
 			}
 
 			if(md.runsp){
 				cd.spchtid = chtid;
-				cid=cin.getSpRecID(cd.spchtid);
 
+				cid=cin.getSpRecID(cd.spchtid);
 				cin.getEqchtid5SpFile(cd.eqchtid, cid);   
+
 				eqcid=cin.getEqRecID(cd.eqchtid);
-			
+
 				cd.reschtid = cd.eqchtid;
+
 				if (md.initmode==3) rescid = resin.getRecordId(cd.reschtid);
 			}
 		
 			if(md.runtr){
-				cd.trchtid = chtid;			
+
+				cd.trchtid = chtid;
+			
 				cid=cin.getTrRecID(cd.trchtid);
 				cin.getSpchtid5TrFile(cd.spchtid, cid); 
 
 				int spcid=cin.getSpRecID(cd.spchtid);
 				cin.getEqchtid5SpFile(cd.eqchtid, spcid);
+
 				eqcid=cin.getEqRecID(cd.eqchtid);
-			
-				if (!md.runsc) {  //Yuan: when md.runsc is true, md.runtr is also true
+
+				cd.reschtid = cd.spchtid;
+
+				if (md.initmode==3) rescid = resin.getRecordId(cd.reschtid);
+		
+/*				if (!md.runsc) {  //Yuan: when md.runsc is true, md.runtr is also true
 					cd.reschtid = cd.spchtid;
 				} else {
 					cd.reschtid = cd.trchtid;  //restart id is of transient-run's, because sc-run is continuouity of tr-run
 				}
 				if (md.initmode==3) rescid = resin.getRecordId(cd.reschtid);
+*/			
 			}
-			
-			cin.getGrdID(cd.grdid, eqcid); //(eq/sp/tr)grid-id (for soil): starting from ZERO
 
+			if(md.runsc){
+				cd.scchtid = chtid;	
+		
+				cid=cin.getScRecID(cd.scchtid);
+				cin.getTrchtid5ScFile(cd.trchtid, cid);
+ 
+				int trcid=cin.getTrRecID(cd.trchtid);
+				cin.getSpchtid5TrFile(cd.spchtid, trcid);
+
+				int spcid=cin.getSpRecID(cd.spchtid);
+				cin.getEqchtid5SpFile(cd.eqchtid, spcid);
+
+				eqcid=cin.getEqRecID(cd.eqchtid);
+
+//				spcid=cin.getSpRecID(cd.spchtid);
+
+//				int spcid=cin.getSpRecID(cd.spchtid);
+//				cin.getEqchtid5SpFile(cd.eqchtid, spcid);
+//				eqcid=cin.getEqRecID(cd.eqchtid);
+
+				cd.reschtid = cd.trchtid;  
+
+				if (md.initmode==3) rescid = resin.getRecordId(cd.reschtid);
+			}
+
+			
+//			cin.getGrdID(cd.grdid, eqcid); //(eq/sp/tr)grid-id (for soil): starting from ZERO
+			cin.getGrdID(cd.grdid, cid); //(eq/sp/tr)grid-id (for soil): starting from ZERO
 			cin.getClmID(cd.clmid, cid);  //Yuan: from cid to get its clmid, SO no more using CRUID as its climate data id
+
 
 		} catch (Exception &exception){
 			errout.errorid = -1;
@@ -222,8 +266,8 @@ void Regioner::run(){
 		}
 
 		if(cd.grdid>=0 && cid>=0 && eqcid>=0 && rescid>=0){
-   			int error = 0;
 
+   			int error = 0;
    			//grid-level data for a cohort
 			try {
 				int grdrecid = gin.getGridRecID(cd.grdid);
@@ -232,39 +276,42 @@ void Regioner::run(){
 				gd.gid=grdrecid;
 
 				gin.getGridData(&gd, grdrecid, clmrecid);
+   				error = rgrid.reinit(grdrecid); //reinit for a new grid
+   				
+				if (error!=0) {
 
-    			error = rgrid.reinit(grdrecid); //reinit for a new grid
-    			if (error!=0) {
-
-    				if(md.consoledebug){
+    					if(md.consoledebug){
     						cout <<"problem in grid data in Regioner::run\n";
+    						cout <<"error = "<<error<<"\n";
+    					}
+
+    		    			errout.errorid = -3;
+    					errout.outputVariables(errcount);
+    					errcount+=1;
+
+    					continue;     //jump over to next cohort, due to grid-data error
     				}
 
-    		    	errout.errorid = -3;
-    				errout.outputVariables(errcount);
-    				errcount+=1;
-
-    				continue;     //jump over to next cohort, due to grid-data error
-    			}
-	    	} catch (Exception &exception){
+	    		} catch (Exception &exception){
 				exception.mesg();
 				if(md.consoledebug){
 					cout <<"problem in reinitializing grid in Regioner::run\n";
 				}
 
-	    		errout.errorid = -3;
+	    			errout.errorid = -3;
 				errout.outputVariables(errcount);
 				errcount+=1;
 
 				continue;     //jump over to next cohort, due to grid-data error
 
- 	    	}
+ 	    		}
  
-	    	//cohort-level data for a cohort
+	    		//cohort-level data for a cohort
 			runcht.jcalifilein=true;  // for reading Jcalinput.txt, the default is true (must be done before re-initiation)
 			runcht.jcalparfile="";
 			runcht.ccdriverout=false;  //don't change to true for regioner
-				
+
+
 			error = runcht.reinit(cid, eqcid, rescid); //reinit for a new cohort
 
 			//run a cohort
@@ -273,46 +320,44 @@ void Regioner::run(){
    					cout<<"Error for reinitializing cohort: "<<chtid<<" - SKIPPED! \n";
 
    					errout.errorid = -5;
-    				errout.outputVariables(errcount);
-    				errcount+=1;
+    					errout.outputVariables(errcount);
+    					errcount+=1;
 
 					continue;     //jump over to next cohort, due to cohort reinit error
 
   				} else {
-    				if (md.consoledebug)
-    					cout<<"cohort: "<<chtid<<" @ "<<md.runstages
-							<<" - running! \n";
-    				error = runcht.run();
-      				if (error!=0) {
-      	    			if(md.consoledebug){
-      	    				cout<<"problem in running cohort in Regioner::run \n";
-      	    			}
+    					if (md.consoledebug) cout<<"cohort: "<<chtid<<" @ "<<md.runstages<<" - running! \n";
+    					error = runcht.run();
+      					if (error!=0) {
+      	    					if(md.consoledebug){
+      	    						cout<<"problem in running cohort in Regioner::run \n";
+      	    					}
 
-       					rout.missingValues(MAX_OREGN_YR, runcht.cohortcount);
+       						rout.missingValues(MAX_OREGN_YR, runcht.cohortcount);
 
-       					errout.errorid = -4;
-        				errout.outputVariables(errcount);
-        				errcount+=1;
+       						errout.errorid = -4;
+        					errout.outputVariables(errcount);
+        					errcount+=1;
 
-    					continue;     //jump over to next cohort, due to run cohort error
-      				}
-    			}
+    						continue;     //jump over to next cohort, due to run cohort error
+      					}
+    				}
 
-    		} catch (Exception &exception){
+    			} catch (Exception &exception){
 				exception.mesg();
-    			if(md.consoledebug){
+    				if(md.consoledebug){
     					cout <<"problem in running cohort in Regioner::run\n";
-    			}
+    				}
 
-    			rout.missingValues(MAX_OREGN_YR, runcht.cohortcount);
+    				rout.missingValues(MAX_OREGN_YR, runcht.cohortcount);
 
-    			errout.errorid = -4;
-    			errout.outputVariables(errcount);
-    			errcount+=1;
+    				errout.errorid = -4;
+    				errout.outputVariables(errcount);
+    				errcount+=1;
 
 				continue;     //jump over to next cohort, due to run cohort error
 
-    		}
+    			}
 
 		} else { // end of cruid >=0 && other IDs>=0
 			cout<<"No grid exists for cohort: "<<chtid<<" - SKIPPED! \n";
@@ -395,7 +440,7 @@ void Regioner::createOutvarList(string & txtfile){
 	getline(fctr, comments);
 	getline(fctr, comments);
 
-	for (int ivar=0; ivar<54; ivar++) {
+	for (int ivar=0; ivar<64; ivar++) {
 		fctr >> regnod.outvarlist[ivar];
 		getline(fctr, comments);
 	}

@@ -12,19 +12,35 @@ void CohortInputer::init(){
   	if(md!=NULL){
                 useseverity = md->useseverity;
   		if(md->runsp){
-  			initSpChtidFile(md->spchtinputdir);
-    		initSpinupFire(md->spchtinputdir);
+cout << "lala4 \n";		
+   			initEqChtidFile(md->eqchtinputdir);
+cout << "lala5 \n";		
+ 			initSpChtidFile(md->spchtinputdir);
+cout << "lala6 \n";		
+   			initSpinupFire(md->spchtinputdir);
+cout << "lala7 \n";		
 	  	}
   
   		if(md->runtr){
   			initSpChtidFile(md->spchtinputdir);
-    		initTransientFire(md->trchtinputdir);
-    		initTrChtidFile(md->trchtinputdir);
+    			initTransientFire(md->trchtinputdir);
+    			initTrChtidFile(md->trchtinputdir);
   		}
-  
+
+  		if(md->runsc){
+   			initSpChtidFile(md->spchtinputdir);
+ 			initTrChtidFile(md->trchtinputdir);
+    			initScenarioFire(md->scchtinputdir);
+   			initScChtidFile(md->scchtinputdir);
+  		}
+
+cout << "lala8 \n";		
   		initEqChtidFile(md->eqchtinputdir);
-  		initVegetation(md->eqchtinputdir);
+cout << "lala9 \n";		
+ 		initVegetation(md->eqchtinputdir);
+cout << "lala10 \n";		
   		initDrainage(md->eqchtinputdir);
+cout << "lala11 \n";		
   
   	}else{
   		string msg = "inputer in CohortInputer::init is null";
@@ -114,32 +130,6 @@ void CohortInputer::initSpChtidFile(string& dir){
  	
 }
 
-void CohortInputer::initSpinupFire(string& dir){
-	spffname = dir +"fire.nc";
-
-	NcError err(NcError::silent_nonfatal);
-	NcFile spfireFile(spffname.c_str(), NcFile::ReadOnly);
- 	if(!spfireFile.is_valid()){
- 		string msg = spffname+" is not valid";
- 		char* msgc = const_cast< char* > ( msg.c_str());
- 		throw Exception(msgc, I_NCFILE_NOT_EXIST);
- 	}
-
- 	NcDim* chtD = spfireFile.get_dim("SPCHTID");
- 	if(!chtD->is_valid()){
- 		string msg = "CHTD Dimension is not Valid in spFIRE";
- 		char* msgc = const_cast<char*> (msg.c_str());
- 		throw Exception(msgc, I_NCDIM_NOT_EXIST);
- 	}
-
- 	NcDim* numfireD = spfireFile.get_dim("NUMFIRE");
- 	if(!numfireD->is_valid()){
- 		string msg = "NUMFIRE Dimension is not Valid in spFIRE";
- 		char* msgc = const_cast<char*> (msg.c_str());
- 		throw Exception(msgc, I_NCDIM_NOT_EXIST);
- 	}
-
-}
 
 void CohortInputer::initTrChtidFile(string& dir){
 	tridfname = dir +"cohortid.nc";
@@ -159,6 +149,57 @@ void CohortInputer::initTrChtidFile(string& dir){
  		throw Exception(msgc,  I_NCDIM_NOT_EXIST);
  	}
 
+ 
+}
+
+void CohortInputer::initScChtidFile(string& dir){
+	scidfname = dir +"cohortid.nc";
+
+	NcError err(NcError::silent_nonfatal);
+	NcFile scchtidFile(scidfname.c_str(), NcFile::ReadOnly);
+ 	if(!scchtidFile.is_valid()){
+ 		string msg = scidfname+" is not valid";
+ 		char* msgc = const_cast< char* > ( msg.c_str());
+ 		throw Exception( msgc, I_NCFILE_NOT_EXIST);
+ 	}
+
+ 	NcDim* scchtD=scchtidFile.get_dim("SCCHTID");
+ 	if(!scchtD->is_valid()){
+ 		string msg = "CHTD Dimension is not Valid in ScChtidFile";
+ 		char* msgc = const_cast<char*> (msg.c_str());
+ 		throw Exception(msgc,  I_NCDIM_NOT_EXIST);
+ 	}
+
+}
+
+void CohortInputer::initSpinupFire(string& dir){
+	spffname = dir +"fire.nc";
+
+	NcError err(NcError::silent_nonfatal);
+	NcFile spfireFile(spffname.c_str(), NcFile::ReadOnly);
+ 	
+	if(!spfireFile.is_valid()){
+ 		string msg = spffname+" is not valid";
+ 		char* msgc = const_cast< char* > ( msg.c_str());
+ 		throw Exception(msgc, I_NCFILE_NOT_EXIST);
+ 	}
+
+ 	NcDim* chtD = spfireFile.get_dim("SPCHTID");
+ 	if(!chtD->is_valid()){
+ 		string msg = "CHTD Dimension is not Valid in spFIRE";
+ 		char* msgc = const_cast<char*> (msg.c_str());
+ 		throw Exception(msgc, I_NCDIM_NOT_EXIST);
+ 	}
+
+ 	NcDim* yrD = spfireFile.get_dim("YEAR");
+ 	if(!yrD->is_valid()){
+ 		string msg = "YEAR Dimension is not Valid in spFIRE";
+ 		char* msgc = const_cast<char*> (msg.c_str());
+ 		throw Exception(msgc, I_NCDIM_NOT_EXIST);
+ 	}
+
+ 	firesp_drv_yr=yrD->size();  //Yuan: actual atm data years
+
 }
 
 void CohortInputer::initTransientFire(string& dir){
@@ -174,19 +215,59 @@ void CohortInputer::initTransientFire(string& dir){
 
  	NcDim* chtD = trfireFile.get_dim("TRCHTID");
  	if(!chtD->is_valid()){
- 		string msg = "CHTD Dimension is no Valid in initFIRE";
+ 		string msg = "CHTD Dimension is not Valid in trFIRE";
  		char* msgc = const_cast<char*> (msg.c_str());
  		throw Exception(msgc,  I_NCDIM_NOT_EXIST);
  	}
-
+/*
  	NcDim* numfireD = trfireFile.get_dim("NUMFIRE");
  	if(!numfireD->is_valid()){
   		string msg = "NUMFIRE Dimension is no Valid in initFIRE";
  		char* msgc = const_cast<char*> (msg.c_str());
  		throw Exception(msgc,  I_NCDIM_NOT_EXIST);
  	}
+*/
+
+ 	NcDim* yrD = trfireFile.get_dim("YEAR");
+ 	if(!yrD->is_valid()){
+ 		string msg = "YEAR Dimension is not Valid in trFIRE";
+ 		char* msgc = const_cast<char*> (msg.c_str());
+ 		throw Exception(msgc, I_NCDIM_NOT_EXIST);
+ 	}
+
+ 	firetr_drv_yr=yrD->size();  //Yuan: actual atm data years
 
 }
+
+void CohortInputer::initScenarioFire(string& dir){
+	scffname = dir +"fire.nc";
+
+	NcError err(NcError::silent_nonfatal);
+	NcFile scfireFile(scffname.c_str(), NcFile::ReadOnly);
+ 	if(!scfireFile.is_valid()){
+ 		string msg = scffname+" is not valid";
+ 		char* msgc = const_cast< char* > ( msg.c_str());
+ 		throw Exception(msgc, I_NCFILE_NOT_EXIST);
+ 	}
+
+ 	NcDim* chtD = scfireFile.get_dim("SCCHTID");
+ 	if(!chtD->is_valid()){
+ 		string msg = "CHTD Dimension is not valid in scFIRE";
+ 		char* msgc = const_cast<char*> (msg.c_str());
+ 		throw Exception(msgc,  I_NCDIM_NOT_EXIST);
+ 	}
+
+  	NcDim* yrD = scfireFile.get_dim("YEAR");
+ 	if(!yrD->is_valid()){
+ 		string msg = "YEAR Dimension is not Valid in scFIRE";
+ 		char* msgc = const_cast<char*> (msg.c_str());
+ 		throw Exception(msgc, I_NCDIM_NOT_EXIST);
+ 	}
+
+ 	firesc_drv_yr=yrD->size();  //Yuan: actual atm data years
+
+}
+
 
 ///////////////////////////////////////////////////////////////////////
 //YUAN: recid - the order (from ZERO) in the .nc file, chtid - the cohort id
@@ -261,6 +342,7 @@ void CohortInputer::getDrainage(int & dtype, const int & recid){
 int CohortInputer::getSpRecID(const int &chtid){
 	NcError err(NcError::silent_nonfatal);
 
+
 	NcFile spchtidFile(spidfname.c_str(), NcFile::ReadOnly);
  	NcVar* spchtidV = spchtidFile.get_var("SPCHTID");
  	if(spchtidV==NULL){
@@ -300,6 +382,27 @@ int CohortInputer::getTrRecID(const int &chtid){
 	return -1;
 }
 
+int CohortInputer::getScRecID(const int &chtid){
+	NcError err(NcError::silent_nonfatal);
+
+	NcFile scchtidFile(scidfname.c_str(), NcFile::ReadOnly);
+ 	NcVar* scchtidV = scchtidFile.get_var("SCCHTID");
+ 	if(scchtidV==NULL){
+ 	   string msg = "Cannot get scchtid  in ScChtidFile ";
+		char* msgc = const_cast<char*> (msg.c_str());
+		throw Exception(msgc,  I_NCVAR_NOT_EXIST);
+ 	}
+
+	int id=-1;
+	for (int i=0; i<(int)scchtidV->num_vals(); i++){
+		scchtidV->set_cur(i);
+		scchtidV->get(&id, 1);
+		if(id==chtid) return i;
+	}
+
+	return -1;
+}
+
 void CohortInputer::getEqchtid5SpFile(int & eqchtid,  const int &recid){
 	NcError err(NcError::silent_nonfatal);
 
@@ -332,7 +435,181 @@ void CohortInputer::getSpchtid5TrFile(int & spchtid,  const int &recid){
 
 }
 
+
+void CohortInputer::getTrchtid5ScFile(int & trchtid,  const int &recid){
+	NcError err(NcError::silent_nonfatal);
+
+	NcFile scchtidFile(scidfname.c_str(), NcFile::ReadOnly);
+ 	NcVar* trchtid5scV = scchtidFile.get_var("TRCHTID");
+ 	if(trchtid5scV==NULL){
+ 	   string msg = "Cannot get trchtid  in ScChtidFile ";
+		char* msgc = const_cast<char*> (msg.c_str());
+		throw Exception(msgc,  I_NCVAR_NOT_EXIST);
+ 	}
+
+    trchtid5scV->set_cur(recid);
+    trchtid5scV->get(&trchtid, 1);
+
+}
+
 //////////////////////////////////Fire Occur////////////////////////////
+
+
+void CohortInputer::getSpinupFire(int firedate[MAX_SP_YR], int firemonth[MAX_SP_YR],int fireyear[MAX_SP_YR],int firearea[MAX_SP_YR], const int &recid){
+
+
+	int numyr = firesp_drv_yr;
+	NcError err(NcError::silent_nonfatal);
+	NcFile spfireFile(spffname.c_str(), NcFile::ReadOnly);
+
+
+  	NcVar* firedateV = spfireFile.get_var("DOB");
+ 	NcVar* firemonthV = spfireFile.get_var("MOB");
+ 	NcVar* fireyearV = spfireFile.get_var("YOB");
+ 	NcVar* fireareaV = spfireFile.get_var("AOB");
+
+	if(firedateV==NULL || firemonthV==NULL || fireyearV==NULL || fireareaV==NULL){ 
+ 	   string msg = "Cannot get Fire in getSpinupFire";
+		char* msgc = const_cast<char*> (msg.c_str());
+		throw Exception(msgc,  I_NCVAR_NOT_EXIST);
+ 	}
+
+//cout <<"numyr"<<numyr<<"\n";
+	firedateV->set_cur(recid);
+	NcBool nb1 = firedateV->get(&firedate[0],1, numyr);
+	if(!nb1){
+	 	string msg = "problem in reading fire date in getSpinupFire";
+ 		char* msgc = const_cast<char*> (msg.c_str());
+ 		throw Exception(msgc,  I_NCVAR_GET_ERROR);
+	}
+	firemonthV->set_cur(recid);
+	NcBool nb2 = firemonthV->get(&firemonth[0],1, numyr);
+	if(!nb2){
+	 	string msg = "problem in reading fire month in getSpinupFire";
+ 		char* msgc = const_cast<char*> (msg.c_str());
+ 		throw Exception(msgc,  I_NCVAR_GET_ERROR);
+	}
+	fireyearV->set_cur(recid);
+	NcBool nb3 = fireyearV->get(&fireyear[0],1, numyr);
+	if(!nb3){
+	 	string msg = "problem in reading fire year in getSpinupFire";
+ 		char* msgc = const_cast<char*> (msg.c_str());
+ 		throw Exception(msgc,  I_NCVAR_GET_ERROR);
+	}
+	fireareaV->set_cur(recid);
+	NcBool nb4 = fireareaV->get(&firearea[0],1, numyr);
+	if(!nb4){
+	 	string msg = "problem in reading fire area in getSpinupFire";
+ 		char* msgc = const_cast<char*> (msg.c_str());
+ 		throw Exception(msgc,  I_NCVAR_GET_ERROR);
+	}
+	
+}
+
+void CohortInputer::getTransientFire(int firedate[MAX_TR_YR], int firemonth[MAX_TR_YR],int fireyear[MAX_TR_YR],int firearea[MAX_TR_YR], const int &recid){
+
+
+	int numyr = firetr_drv_yr;
+	NcError err(NcError::silent_nonfatal);
+	NcFile trfireFile(trffname.c_str(), NcFile::ReadOnly);
+
+  	NcVar* firedateV = trfireFile.get_var("DOB");
+ 	NcVar* firemonthV = trfireFile.get_var("MOB");
+ 	NcVar* fireyearV = trfireFile.get_var("YOB");
+ 	NcVar* fireareaV = trfireFile.get_var("AOB");
+
+	if(firedateV==NULL || firemonthV==NULL || fireyearV==NULL || fireareaV==NULL){ 
+ 	   string msg = "Cannot get Fire in getTransientFire";
+		char* msgc = const_cast<char*> (msg.c_str());
+		throw Exception(msgc,  I_NCVAR_NOT_EXIST);
+ 	}
+
+	firedateV->set_cur(recid);
+	NcBool nb1 = firedateV->get(&firedate[0],1, numyr);
+	if(!nb1){
+	 	string msg = "problem in reading fire date in  getTransientFire";
+ 		char* msgc = const_cast<char*> (msg.c_str());
+ 		throw Exception(msgc,  I_NCVAR_GET_ERROR);
+	}
+
+	firemonthV->set_cur(recid);
+	NcBool nb2 = firemonthV->get(&firemonth[0],1, numyr);
+	if(!nb2){
+	 	string msg = "problem in reading fire month in getTransientFire";
+ 		char* msgc = const_cast<char*> (msg.c_str());
+ 		throw Exception(msgc,  I_NCVAR_GET_ERROR);
+	}
+
+	fireyearV->set_cur(recid);
+	NcBool nb3 = fireyearV->get(&fireyear[0],1, numyr);
+	if(!nb3){
+	 	string msg = "problem in reading fire year in getTransientFire";
+ 		char* msgc = const_cast<char*> (msg.c_str());
+ 		throw Exception(msgc,  I_NCVAR_GET_ERROR);
+	}
+
+	fireareaV->set_cur(recid);
+	NcBool nb4 = fireareaV->get(&firearea[0],1, numyr);
+	if(!nb4){
+	 	string msg = "problem in reading fire area in getTransientFire";
+ 		char* msgc = const_cast<char*> (msg.c_str());
+ 		throw Exception(msgc,  I_NCVAR_GET_ERROR);
+	}
+	
+}
+
+void CohortInputer::getScenarioFire(int firedate[MAX_SC_YR], int firemonth[MAX_SC_YR],int fireyear[MAX_SC_YR],int firearea[MAX_SC_YR], const int &recid){
+
+
+	int numyr = firesc_drv_yr;
+	NcError err(NcError::silent_nonfatal);
+	NcFile scfireFile(scffname.c_str(), NcFile::ReadOnly);
+
+
+  	NcVar* firedateV = scfireFile.get_var("DOB");
+ 	NcVar* firemonthV = scfireFile.get_var("MOB");
+ 	NcVar* fireyearV = scfireFile.get_var("YOB");
+ 	NcVar* fireareaV = scfireFile.get_var("AOB");
+
+	if(firedateV==NULL || firemonthV==NULL || fireyearV==NULL || fireareaV==NULL){ 
+ 	   string msg = "Cannot get Fire in getScenarioFire";
+		char* msgc = const_cast<char*> (msg.c_str());
+		throw Exception(msgc,  I_NCVAR_NOT_EXIST);
+ 	}
+
+	firedateV->set_cur(recid);
+	NcBool nb1 = firedateV->get(&firedate[0],1, numyr);
+	if(!nb1){
+	 	string msg = "problem in reading fire date in  getScenarioFire";
+ 		char* msgc = const_cast<char*> (msg.c_str());
+ 		throw Exception(msgc,  I_NCVAR_GET_ERROR);
+	}
+	firemonthV->set_cur(recid);
+	NcBool nb2 = firemonthV->get(&firemonth[0],1, numyr);
+	if(!nb2){
+	 	string msg = "problem in reading fire month in  getScenarioFire";
+ 		char* msgc = const_cast<char*> (msg.c_str());
+ 		throw Exception(msgc,  I_NCVAR_GET_ERROR);
+	}
+	fireyearV->set_cur(recid);
+	NcBool nb3 = fireyearV->get(&fireyear[0],1, numyr);
+	if(!nb3){
+	 	string msg = "problem in reading fire year in  getScenarioFire";
+ 		char* msgc = const_cast<char*> (msg.c_str());
+ 		throw Exception(msgc,  I_NCVAR_GET_ERROR);
+	}
+	fireareaV->set_cur(recid);
+	NcBool nb4 = fireareaV->get(&firearea[0],1, numyr);
+	if(!nb4){
+	 	string msg = "problem in reading fire area in  getScenarioFire";
+ 		char* msgc = const_cast<char*> (msg.c_str());
+ 		throw Exception(msgc,  I_NCVAR_GET_ERROR);
+	}
+	
+}
+
+
+/*
 void CohortInputer::getSpinupFireOccur(int spoccur[MAX_SP_FIR_OCR_NUM], const int &recid){
 	NcError err(NcError::silent_nonfatal);
 
@@ -372,7 +649,6 @@ void CohortInputer::getSpinupFireSeason(int spseason[MAX_SP_FIR_OCR_NUM], const 
  		char* msgc = const_cast<char*> (msg.c_str());
  		throw Exception(msgc, I_NCVAR_NOT_EXIST);
 	}
-
 }
 
 void CohortInputer::getSpinupSeverity(int spsev[MAX_SP_FIR_OCR_NUM], const int &recid){
@@ -396,7 +672,7 @@ void CohortInputer::getSpinupSeverity(int spsev[MAX_SP_FIR_OCR_NUM], const int &
 	
 }
 
-//////////////////////////////////Fire Occur////////////////////////////
+
 void CohortInputer::getTransientFireOccur(int troccur[MAX_TR_FIR_OCR_NUM], const int &recid){
 	NcError err(NcError::silent_nonfatal);
 
@@ -459,6 +735,13 @@ void CohortInputer::getTransientSeverity(int trsev[MAX_TR_FIR_OCR_NUM], const in
 	}
 	
 }
+*/
+
+
+
+
+
+
 
 void CohortInputer::getChtID(int & chtid,  const int & recid){
 	NcError err(NcError::silent_nonfatal);
@@ -473,6 +756,9 @@ void CohortInputer::getChtID(int & chtid,  const int & recid){
 	} else if (md->runtr) {
 		idFilename=tridfname;
 		idVarname="TRCHTID";
+	} else if (md->runsc) {
+		idFilename=scidfname;
+		idVarname="SCCHTID";
 	}
 
 	NcFile cohortidFile(idFilename.c_str(), NcFile::ReadOnly);
@@ -498,6 +784,8 @@ void CohortInputer::getClmID(int & clmid,  const int & recid){
 		idFilename=spidfname;
 	} else if (md->runtr) {
 		idFilename=tridfname;
+	} else if (md->runsc) {
+		idFilename=scidfname;
 	}
 
 	NcFile cohortidFile(idFilename.c_str(), NcFile::ReadOnly);

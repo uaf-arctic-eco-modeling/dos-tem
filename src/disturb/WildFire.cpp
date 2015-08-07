@@ -1,7 +1,7 @@
 #include "WildFire.h"
 
 WildFire::WildFire(){
-	VSMburn =0.70; // a threshold value of VWC for burn organic layers
+	VSMburn =0.90; // a threshold value of VWC for burn organic layers
 	
 	r_ag2tot_cn = 0.8; //above-ground C to total
 	r_bg2tot_cn = (1-r_ag2tot_cn); //below-ground C to total
@@ -33,116 +33,218 @@ void WildFire::initializeParameter(const int & drgtypep,const int & vegtypep){
 };
 
 void WildFire::initializeState(){
-	fd->ysf =0;
-	fd->y_a2soi.orgn=0;
+	fd->ysf =0.;
+	fd->y_a2soi.orgn=0.;
 };
 
 void WildFire::initializeState5restart(RestartData *resin){
 	
 	fd->ysf = resin->ysf; //resin->getYSF(fd->ysf, fd->cd->reschtid);
+cout <<"ysf : " << fd->ysf << "\n";
 	fd->y_a2soi.orgn=resin->burnedn; //resin->getBURNEDN(fd->y_a2soi.orgn, fd->cd->reschtid);
-	
+cout <<"In - resin->burnedn : " << resin->burnedn << "\n";
 };
 
 //Yuan: modifying the following method, return the first fire year, if any
-void WildFire::prepareDrivingData(const bool runsp, const bool runtr, const bool runsc){
+void WildFire::prepareDrivingData(const bool runeq, const bool runsp, const bool runtr, const bool runsc){
     //initialize with -1
-	for(int in =0; in<MAX_FIR_OCR_NUM; in++){
+/*	for(int in =0; in<MAX_FIR_OCR_NUM; in++){
 		occur[in]       = -1;
-		season[in]      = -1;
 		month[in]       = -1;
 		severity[in] = -1;
-	    size[in]        = -1;
+		season[in]      = -1;
+	    	size[in]        = -1;
 	}
+*/
+	oneruntr=runtr;
+	onerunsp=runsp;
+	onerunsc=runsc;
+	oneruneq=runeq;
 
 	//Yuan: season's month index order (0~11):
 	//int morder[12] = {1,2,3, 4,5,6, 7,8,9, 10,11,0};  //Yuan: season: 1, 2(early fire), 3(late fire), and 4 with 3 months in the order
 
-    int calyr =0;
+	int calyr =0;
+	firstfireyr = -1;  //Yuan: first fire year specified in sp/tr: fire.nc
+/*
+	if (runsp || runtr) {
+		firstfireyr = END_TR_YR; // the latest possible year to have a fire
+		//from sp-fire.nc
+		for(int in =0; in<MAX_SP_FIR_OCR_NUM; in++){
+			calyr = fd->cd->spfireyear[in];
+			if(calyr != -1){     //Yuan: fire year may be BC, But -1 reserved for none
+    				if (firstfireyr>=calyr) firstfireyr=calyr;
+    				occur[in] = calyr-BEG_SP_YR;        //Yuan: 1001 -> spin-up begining year
+    				season[in] = fd->cd->spseason[in];
+   					severity[in] = fd->cd->spseverity[in];
+    				int fsindx=season[in]-1;  //note: season index starting from 1
+    				month[in]=fsindx*3+2;   // middle of the season
 
-    firstfireyr = -1;  //Yuan: first fire year specified in sp/tr: fire.nc
+    		    		//Yuan: the following modified based on the change of grid-level input:
+		    		if (calyr < fd->gd->fireyear[0]) {
+    					size[in]  = fd->gd->firesize[0];   //Yuan: need further modif.
+		    		} else {
+		    			for (int ifs=0; ifs<MAX_FSIZE_DRV_YR; ifs++) {
+		    				if (calyr < fd->gd->fireyear[ifs]) {
+		    					size[in]  = fd->gd->firesize[ifs];
+		    					break;
+						}
+					}
+				}
+			}
+		}
+	}
+*/
 
-    if (runsp || runtr) {
-    	firstfireyr = END_TR_YR; // the latest possible year to have a fire
-
-    	//from sp-fire.nc
-    	for(int in =0; in<MAX_SP_FIR_OCR_NUM; in++){
-    		calyr = fd->cd->spfireyear[in];
-    		if(calyr != -1){   			          //Yuan: fire year may be BC, But -1 reserved for none
-
+	if (runsp){
+		firstfireyr = END_SP_YR; 
+		for(int in =0; in<END_SP_YR; in++){
+			calyr = fd->cd->spfireyear[in];
+			if(calyr != -1){     
     			if (firstfireyr>=calyr) firstfireyr=calyr;
+    			occur[in] = calyr-BEG_SP_YR;        
+				firedate[in] = fd->cd->spfiredate[in];
+				firemonth[in] = fd->cd->spfiremonth[in];
+				firearea[in] = fd->cd->spfirearea[in];
+ 	    		if (fd->gd->fireyear[0] > calyr) {
+   					firesize[in]  = fd->gd->firesize[0]; 
+	    		} else {
+	    			for (int ifs=0; ifs<MAX_FSIZE_DRV_YR; ifs++) {
+	    				if (fd->gd->fireyear[ifs] < calyr) {
+	    					firesize[in]  = fd->gd->firesize[ifs];
+	    					break;
+						}
+					}					
+				}
+			}
+		}
+	}
 
-    			occur[in]       = calyr-BEG_SP_YR;        //Yuan: 1001 -> spin-up begining year
-    			season[in]      = fd->cd->spseason[in];
-    			severity[in] = fd->cd->spseverity[in];
-
-    			int fsindx=season[in]-1;  //note: season index starting from 1
-    			month[in]=fsindx*3+2;   // middle of the season
-
-    		    //Yuan: the following modified based on the change of grid-level input:
-		    	if (calyr < fd->gd->fireyear[0]) {
-    				size[in]  = fd->gd->firesize[0];   //Yuan: need further modification here??
-		    	} else {
-		    		for (int ifs=0; ifs<MAX_FSIZE_DRV_YR; ifs++) {
-		    			if (calyr < fd->gd->fireyear[ifs]) {
-		    				size[in]  = fd->gd->firesize[ifs];
-		    				break;
-		    			}
-		    		}
-		    	}
-
-    		}
-    	}
-    }
-
-   	if (runtr) {
-    	int beg_fire_yr = BEG_TR_YR;
-   		if (runsc) beg_fire_yr = BEG_SC_YR; //Yuan: when runsc, runtr is true as well
-
-    	//from tr-fire.nc
-   		for(int in =0; in<MAX_TR_FIR_OCR_NUM; in++){
-    		calyr = fd->cd->trfireyear[in];
-    		if(calyr != -1){   			          //Yuan: fire year may be BC, But -1 reserved for none   			
-
-    			if (firstfireyr>=calyr) firstfireyr=calyr;
-
-    			occur[in+MAX_SP_FIR_OCR_NUM]    = calyr-beg_fire_yr;        //Yuan: 1001 -> spin-up begining year
-    			season[in+MAX_SP_FIR_OCR_NUM]   = fd->cd->trseason[in];
-    			severity[in+MAX_SP_FIR_OCR_NUM] = fd->cd->trseverity[in];
-
-    			int fsindx=season[in+MAX_SP_FIR_OCR_NUM]-1;   //note: season index starting from 1
-    			month[in+MAX_SP_FIR_OCR_NUM]=fsindx*3+2;   // middle of the season
-
-		    	if (calyr < fd->gd->fireyear[0]) {
-    				size[in+MAX_SP_FIR_OCR_NUM]  = fd->gd->firesize[0];   //Yuan: need further modification here??
-		    	} else {
-		    		for (int ifs=0; ifs<MAX_FSIZE_DRV_YR; ifs++) {
-		    			if (calyr < fd->gd->fireyear[ifs]) {
-		    				size[in+MAX_SP_FIR_OCR_NUM]  = fd->gd->firesize[ifs];
-		    				break;
-		    			}
-		    		}
-		    	}
-
-    		}
+	if (runtr) {
+		firstfireyr = END_TR_YR; 
+		for(int in =0; in<MAX_TR_YR; in++){
+			calyr = fd->cd->trfireyear[in];
+  			if(calyr != -1){ 
+    				if (firstfireyr>=calyr) firstfireyr=calyr;
+				occur[in] = fd->cd->trfireyear[in]-BEG_TR_YR;
+				firedate[in] = fd->cd->trfiredate[in];
+				firemonth[in] = fd->cd->trfiremonth[in];
+				firearea[in] = fd->cd->trfirearea[in];
+  	    			if (fd->gd->fireyear[0] > calyr) {
+   					firesize[in]  = fd->gd->firesize[0]; 
+	    			} else {
+	    				for (int ifs=0; ifs<MAX_FSIZE_DRV_YR; ifs++) {
+	    					if (fd->gd->fireyear[ifs] < calyr) {
+	    						firesize[in]  = fd->gd->firesize[ifs];
+	    						break;
+						}
+					}					
+				}
+	  		}
    		}
    	}
 
+	if (runsc) {
+		firstfireyr = END_SC_YR; 
+		for(int in =0; in<MAX_SC_YR; in++){
+			calyr = fd->cd->scfireyear[in];
+   			if(calyr != -1){ 
+    				if (firstfireyr>=calyr) firstfireyr=calyr;
+				occur[in] = fd->cd->scfireyear[in]-BEG_SC_YR;
+				firedate[in] = fd->cd->scfiredate[in];
+				firemonth[in] = fd->cd->scfiremonth[in];
+				firearea[in] = fd->cd->scfirearea[in];
+  	    			if (fd->gd->fireyear[0] > calyr) {
+   					firesize[in]  = fd->gd->firesize[0]; 
+	    			} else {
+	    				for (int ifs=0; ifs<MAX_FSIZE_DRV_YR; ifs++) {
+	    					if (fd->gd->fireyear[ifs] < calyr) {
+	    						firesize[in]  = fd->gd->firesize[ifs];
+	    						break;
+						}
+					}					
+				}
+	  		}
+   		}
+   	}
+
+/*
+	if (runtr) {
+		int beg_fire_yr = BEG_TR_YR;
+		if (runsc) beg_fire_yr = BEG_SC_YR; //Yuan: when runsc, runtr is true as well
+		//from tr-fire.nc
+		for(int in =0; in<MAX_TR_FIR_OCR_NUM; in++){
+			calyr = fd->cd->trfireyear[in];
+    			if(calyr != -1){ //Yuan: fire year may be BC, But -1 reserved for none   			
+    				if (firstfireyr>=calyr) firstfireyr=calyr;
+    				occur[in+MAX_SP_FIR_OCR_NUM]    = calyr-beg_fire_yr; //Yuan: 1001 -> spin-up begining year
+    				season[in+MAX_SP_FIR_OCR_NUM]   = fd->cd->trseason[in];
+    				severity[in+MAX_SP_FIR_OCR_NUM] = fd->cd->trseverity[in];
+    				int fsindx=season[in+MAX_SP_FIR_OCR_NUM]-1;   //note: season index starting from 1
+    				month[in+MAX_SP_FIR_OCR_NUM]=fsindx*3+2;   // middle of the season
+		    		if (calyr < fd->gd->fireyear[0]) {
+    					size[in+MAX_SP_FIR_OCR_NUM]  = fd->gd->firesize[0];   //Yuan: need further modif.
+		    		} else {
+		    			for (int ifs=0; ifs<MAX_FSIZE_DRV_YR; ifs++) {
+		    				if (calyr < fd->gd->fireyear[ifs]) {
+		    					size[in+MAX_SP_FIR_OCR_NUM]  = fd->gd->firesize[0];
+		    					break;
+		    				}
+		    			}
+		    		}
+    			}
+   		}
+   	}
+*/
+
+
+
 };
 
-//Yuan: the fire occurrence (and data) is input (cohort-level info),or FRI derived (grid-level info)
-//Yuan: almost rewriting the code
 int WildFire::getOccur(const int &yrind, const int & mind, const bool & friderived){
 	int occ =0;
-
+//cout <<"ysf : " << fd->ysf << "\n";
 	if(friderived){
+
 		if(yrind%fd->gd->fri==0 && yrind>0){
-			if (mind == (fd->gd->fireseason[0])*3+2){   //Yuan: the middle month in gd->fireseason
+//			if (mind == (fd->gd->fireseason[0])*3+2){   //Yuan: the middle month in gd->fireseason
+			if (mind == 6){   //Yuan: the middle month in gd->fireseason
 				occ=1;
-				return occ;
 			}
 		}
 
+	}else if (onerunsp) {
+		for (int i=0; i<MAX_SP_YR; i++){
+			if(occur[i]==yrind){
+				if (firemonth[i] == mind){
+					occ=1;
+					return occ;
+				}
+			}
+		}
+	}else if (oneruntr) {
+		for (int i=0; i<MAX_TR_YR; i++){
+			if(occur[i]==yrind){
+				if (firemonth[i] == mind){
+					occ=1;
+					return occ;
+				}
+			}
+		}
+	}else if (onerunsc) {
+		for (int i=0; i<MAX_SC_YR; i++){
+//cout << "occur["<<i<<"]: "<< occur[i] <<"\n";
+//cout << "yrind: "<<yrind<<" \n";
+			if(occur[i]==yrind){
+				if (firemonth[i] == mind){
+					occ=1;
+					return occ;
+				}
+			}
+		}
+	}
+
+/*
 	}else {
 		for (int i=0; i<MAX_FIR_OCR_NUM; i++){
 			if(occur[i]==yrind){
@@ -153,16 +255,15 @@ int WildFire::getOccur(const int &yrind, const int & mind, const bool & frideriv
 			}
 		}
 	}
-
+*/
 	return occ;
-
 };
     
-//Yuan: the fire occurrence (and data) is input or FRI derived
 void WildFire::burn(const int & yrind, const bool & friderived){
+
  	fd->burn();
 
- 	if(!friderived){
+/* 	if(!friderived){
  		//Yuan: the following modified for less memory consumption
 		for (int i=0; i<MAX_FIR_OCR_NUM; i++){      // Yuan: Fire data reads from 4 arrays (cohort-level info)
 			if(occur[i]==yrind){
@@ -175,19 +276,98 @@ void WildFire::burn(const int & yrind, const bool & friderived){
 			}
 
 		}
+*/
+
+
+
+ 	if(!friderived){
+		if (onerunsp) {
+			for(int in =0; in<MAX_SP_YR; in++){
+				if(occur[in]==yrind){
+					onefiredate = fd->cd->spfiredate[in];
+					onefiremonth = fd->cd->spfiremonth[in];
+					onefirearea = fd->cd->spfirearea[in];
+					onefiresize = fd->gd->firesize[yrind];
+					if (onefiremonth==1 || onefiremonth==2 || onefiremonth==3) {
+						onefireseason=1;
+					} else if (onefiremonth==4 || onefiremonth==5 || onefiremonth==6) {
+						onefireseason=2;
+					} else if (onefiremonth==7 || onefiremonth==8 || onefiremonth==9) {
+						onefireseason=3;
+					} else if (onefiremonth==10 || onefiremonth==11 || onefiremonth==0) {
+						onefireseason=4;
+			    		break;
+					}
+				}
+			}
+		} else if (oneruntr) {
+			for(int in =0; in<MAX_TR_YR; in++){
+				if(occur[in]==yrind){
+					onefiredate = fd->cd->trfiredate[in];
+					onefiremonth = fd->cd->trfiremonth[in];
+					onefirearea = fd->cd->trfirearea[in];
+					onefiresize = fd->gd->firesize[yrind];
+					if (onefiremonth==1 || onefiremonth==2 || onefiremonth==3) {
+						onefireseason=1;
+					} else if (onefiremonth==4 || onefiremonth==5 || onefiremonth==6) {
+						onefireseason=2;
+					} else if (onefiremonth==7 || onefiremonth==8 || onefiremonth==9) {
+						onefireseason=3;
+					} else if (onefiremonth==10 || onefiremonth==11 || onefiremonth==0) {
+						onefireseason=4;
+			    		break;
+					}
+				}
+			}
+		} else if (onerunsc) {
+			for(int in =0; in<MAX_SC_YR; in++){
+				if(occur[in]==yrind){
+					onefiredate = fd->cd->scfiredate[in];
+					onefiremonth = fd->cd->scfiremonth[in];
+					onefirearea = fd->cd->scfirearea[in];
+					onefiresize = fd->gd->firesize[yrind];
+					if (onefiremonth==1 || onefiremonth==2 || onefiremonth==3) {
+						onefireseason=1;
+					} else if (onefiremonth==4 || onefiremonth==5 || onefiremonth==6) {
+						onefireseason=2;
+					} else if (onefiremonth==7 || onefiremonth==8 || onefiremonth==9) {
+						onefireseason=3;
+					} else if (onefiremonth==10 || onefiremonth==11 || onefiremonth==0) {
+						onefireseason=4;
+			    		break;
+					}
+				}
+			}
+		}
 
  	} else {
 		if(yrind%fd->gd->fri==0){              //Yuan: occurrence based on FRI (grid-level info)
-			onesize = fd->gd->firesize[0];    //temporarily set
-		  	oneseason = fd->gd->fireseason[0];
-		  	oneseverity = -1;
+//			onesize = fd->gd->firesize[0];    //temporarily set
+//		  	oneseason = fd->gd->fireseason[0];
+//		  	oneseverity = -1;
+			int n = yrind/fd->gd->fri;
+		    	onefiredate  = fd->gd->fireDOB[n];   
+		    	onefirearea  = fd->gd->fireAOB[n];  
+//		    	onefiremonth  = ((fd->gd->fireseason[n])*3+2);   
+//			onefireseason = fd->gd->fireseason[n];
+		    	onefiremonth  = 6;   
+			onefireseason = 2;
+			onefiresize = fd->gd->firesize[n];
+
+cout <<"onefiredate " << onefiredate<< "\n";
+cout <<"onefirearea " << onefirearea << "\n";
+cout <<"onefiremonth " << onefiremonth<< "\n";
+cout <<"onefireseason " << onefireseason<< "\n";
+cout <<"onefiresize " <<onefiresize << "\n";
+
 		}
-
 	}
-
 	// for soil part and root burning
- 	updateBurnThickness();		
- 	double burndepth = fd->y_soid.burnthick;
+ 	updateBurnThickness(yrind, friderived);	
+
+cout <<"fd->y_soid.OLR: "<<fd->y_soid.OLR<<"\n";
+	
+	double burndepth = fd->y_soid.burnthick;
  	double totbotdepth =0.;
  	double burnedsolc=0.;
  	r_burn2bg_cn =0.; //initialize
@@ -301,6 +481,7 @@ void WildFire::burn(const int & yrind, const bool & friderived){
 	
 	bd->m_vegs.deadc = dead_ag_vegc;
 	bd->m_vegs.deadn = dead_bg_strn +dead_ag_ston +dead_ag_strn +dead_bg_ston;
+
 	bd->m_vegs.c = live_bg_vegc + live_ag_vegc;
 	if(bd->m_vegs.c<1) bd->m_vegs.c=1;
 	bd->m_vegs.strn =live_bg_strn +live_ag_strn;
@@ -328,7 +509,7 @@ void WildFire::burn(const int & yrind, const bool & friderived){
 	
 };
 
-void WildFire::updateBurnThickness(){
+void WildFire::updateBurnThickness(const int & yrind, const bool & friderived){
 	//for initial test, assume only 10 cm will be left
   	double bdepth =0.;
   	//get the total orgnic depth
@@ -338,8 +519,9 @@ void WildFire::updateBurnThickness(){
   	///Rule 3: should be less than the water table depth
 
   	double totorg = 0.;
-  	for (int i =0; i<ed->m_soid.actual_num_soil; i++){
-  		if(ed->m_sois.type[i]<=2 && ed->m_soid.allvwc[i]<=(VSMburn*ed->m_sois.por[i])){ //Yuan: VSM constrained burn thickness
+ 	for (int i =0; i<ed->m_soid.actual_num_soil; i++){
+  		if(ed->m_sois.type[i]<=2){ //Yuan: VSM constrained burn thickness
+//  		if(ed->m_sois.type[i]<=2 && ed->m_soid.allvwc[i]<=(VSMburn*ed->m_sois.por[i])){ //Yuan: VSM constrained burn thickness
   	  		totorg += ed->m_sois.dz[i];
   		}else{
   	  		break;
@@ -347,8 +529,9 @@ void WildFire::updateBurnThickness(){
 
   	}
 
-  	bdepth = getBurnThick();
-  	if (bdepth>totorg) {bdepth=totorg;}  //Yuan:
+  	bdepth = getBurnThick(yrind,friderived);
+
+ 	if (bdepth>totorg) {bdepth=totorg;}  //Yuan:
 
   	fd->y_soid.burnthick = bdepth;
 
@@ -356,53 +539,56 @@ void WildFire::updateBurnThickness(){
 
 void WildFire::getBurnVegetation() {
 
-	// above ground
-	if(fd->useseverity){    //Yuan: the severity categories are from ALFRESCO:
-		// 0 - no burning; 1 - low; 2 - moderate; 3 - high + low surface; 4 - high + high surface
-		// so, 1, 2, and 3/4 correspond to TEM's low, moderate, and high. But needs further field data supports
-		if (oneseverity<=0) {
-			r_burn2ag_cn= 0.0;
-			r_dead2ag_cn= 0.0;
-		}else if (oneseverity<=1) {
-			r_burn2ag_cn= 0.16;
-			r_dead2ag_cn= 0.76;
-		}else if (oneseverity<=2) {
-			r_burn2ag_cn= 0.24;
-			r_dead2ag_cn= 0.75;
-		}else if (oneseverity<=4) {
+//cout <<"Vegetation type: "<< fd->cd->vegtype<<"\n";
+
+	//rules for tundra ecosystems (Mack et al. 2011);
+	if (fd->cd->vegtype > 3) {
 			r_burn2ag_cn= 0.32;
 			r_dead2ag_cn= 0.67;
-		}
-
 	} else {
-		if (fd->cd->drgtype ==0 ) {
-			if (oneseason == 2) {  //late fire
-				r_burn2ag_cn = 0.32;    // Yi et al.: 2010
-				r_dead2ag_cn = 0.67;    // 0.01 living
-
-			} else {   // early- or cold-season fires
-				if(onesize<=1){                     //Yuan: (firesize: 1, 2, 3, 4)
-					r_burn2ag_cn = 0.01;    //Yuan: trace fire-size
-					r_dead2ag_cn = 0.01;
-				}else if(onesize<=2){
-					r_burn2ag_cn = 0.16;    // Yi et al.: 2010
-					r_dead2ag_cn = 0.76;    // half of high severity
-				}else{
-					r_burn2ag_cn = 0.24;    // Yi et al.: 2010
-					r_dead2ag_cn = 0.75;    // 2/3 of high severity
-				}
+	//rules for boreal forest;
+/*		if(fd->useseverity){    //Yuan: the severity categories are from ALFRESCO:
+		// 0 - no burning; 1 - low; 2 - moderate; 3 - high + low surface; 4 - high + high surface
+		// so, 1, 2, and 3/4 correspond to TEM's low, moderate, and high. But needs further field data supports
+			if (oneseverity<=0) {
+				r_burn2ag_cn= 0.0;
+				r_dead2ag_cn= 0.0;
+			}else if (oneseverity<=1) {
+				r_burn2ag_cn= 0.16;
+				r_dead2ag_cn= 0.76;
+			}else if (oneseverity<=2) {
+				r_burn2ag_cn= 0.24;
+				r_dead2ag_cn= 0.75;
+			}else if (oneseverity<=4) {
+				r_burn2ag_cn= 0.32;
+				r_dead2ag_cn= 0.67;
 			}
+		} else {
+*/			if (fd->cd->drgtype ==0 ) {
+				if (onefireseason == 2) {  //late fire
+					r_burn2ag_cn = 0.32;    // Yi et al.: 2010
+					r_dead2ag_cn = 0.67;    // 0.01 living
 
-		} else {    // poorly-drained
-			r_burn2ag_cn = 0.16;    // Yi et al.: 2010
-			r_dead2ag_cn = 0.76;    //default value
-
+				} else {   // early- or cold-season fires
+					if(onefiresize<=1){                     //Yuan: (firesize: 1, 2, 3, 4)
+						r_burn2ag_cn = 0.01;    //Yuan: trace fire-size
+						r_dead2ag_cn = 0.01;
+					}else if(onefiresize<=2){
+						r_burn2ag_cn = 0.16;    // Yi et al.: 2010
+						r_dead2ag_cn = 0.76;    // half of high severity
+					}else{
+						r_burn2ag_cn = 0.24;    // Yi et al.: 2010
+						r_dead2ag_cn = 0.75;    // 2/3 of high severity
+					}
+				}
+			} else {    // poorly-drained
+				r_burn2ag_cn = 0.16;    // Yi et al.: 2010
+				r_dead2ag_cn = 0.76;    //default value
+			}
 		}
-
-	}
+//	}
 
 	r_live2ag_cn=1.-r_burn2ag_cn-r_dead2ag_cn;
-
 	// below-ground death/living
 	// Note: root burning was determined by ground burning depth, so this must be called after ground burning done
 	r_live2bg_cn = r_live2ag_cn;
@@ -410,66 +596,102 @@ void WildFire::getBurnVegetation() {
 	r_dead2bg_cn = 1- r_burn2bg_cn - r_live2bg_cn;
 };
 
-double WildFire::getBurnThick(){
-    double bthick=0;
 
-    // double maxburn = firpar.burnthick_max;
-    double totorg = ed->m_soid.mossthick + ed->m_soid.shlwthick +ed->m_soid.deepthick ;
+double WildFire::getBurnThick(const int & yrind, const bool & friderived){
+	double bthick=0.;
+	double OLR=0.;
+	// double maxburn = firpar.burnthick_max;
+	double totorg = ed->m_soid.mossthick + ed->m_soid.shlwthick +ed->m_soid.deepthick ;
 
-    // currently use half of the total organic
-    if(!fd->useseverity){
-    	if(fd->cd->drgtype==0){
-     		if(oneseason==1 ||oneseason==2 || oneseason==4){          //Yuan: bug here? (fireseason: 1, 2(early), 3(late), 4)
-     			if(onesize<=1){                     //Yuan: bug here? (firesize: 1, 2, 3, 4)
-     				bthick = 0.05 * totorg;    //Yuan: trace fire-size
-     			}else if(onesize<=2){
-     		   		bthick = 0.54 * totorg;
-     			}else{
-     		  		bthick = 0.69 * totorg;
-     			}
-     		}else if (oneseason==3){ //late season
-     			bthick = 0.8 * totorg;
-     		}
+	//rules for tundra ecosystems (Mack et al. 2011);
+	if (fd->cd->vegtype > 3) {
+		bthick = ((21.5-6.1)/21.5) * totorg;
+		//cout <<"totorg = "<<totorg<<"\n";
+		//cout <<"btick = "<<bthick<<"\n";
+	} else {	
+	//rules for boreal forest;
+	// currently use half of the total organic
+//		if(!fd->useseverity){
 
-    	}else if(fd->cd->drgtype==1){
-     		bthick = 0.48 * totorg;
-     	}
 
-     }else{     //Yuan: the severity categories are from ALFRESCO:
- 		// 0 - no burning; 1 - low; 2 - moderate; 3 - high + low surface; 4 - high + high surface
- 		// so, 1, 2, and 3/4 correspond to TEM's low, moderate, and high. But needs further field data supports
-    	 if (fd->cd->drgtype==0) { //dry upland
-    		 if (oneseverity<=0) {          // no burning
-    			 bthick = 0.0;
-    		 }else if (oneseverity<=1) {   //low
-    			 bthick = 0.54 * totorg;
-    		 }else if (oneseverity<=2) {   //moderate
-    			 bthick = 0.69 * totorg;
-    		 }else if (oneseverity<=4){    //high
-    			 bthick = 0.80 * totorg;
-    		 }
+		if (friderived) {
 
-    	 } else if (fd->cd->drgtype ==1){  //wet lowland
-    		 bthick = 0.48 * totorg;
-    	 }
-     }
+			if(fd->cd->drgtype==0){
+				if(onefireseason==1 ||onefireseason==2 || onefireseason==4){          //Yuan: bug here? (fireseason: 1, 2(early), 3(late), 4)
+					if(onefiresize<=1){                     //Yuan: bug here? (firesize: 1, 2, 3, 4)
+						bthick = 0.05 * totorg;    //Yuan: trace fire-size
+						OLR=0.05;
+					}else if(onefiresize<=2){
+						bthick = 0.54 * totorg;
+						OLR=0.54;
+					}else{
+						bthick = 0.69 * totorg;
+						OLR=0.69;
+					}
+				}else if (onefireseason==3){ //late season
+					bthick = 0.8 * totorg;
+					OLR=0.8;
+				}
+			}else if(fd->cd->drgtype==1){
 
-     if(bthick <0.){
-//     	string msg = "burn thickness should be greater than zero";
-// 		char* msgc = const_cast< char* > ( msg.c_str());
-// 		throw Exception(msgc, I_BURN_ZERO);
-    	 bthick = 0.;
-     }
+				bthick = 0.48 * totorg;	
+				OLR=0.48;
+			}
+cout << "OLR: " << OLR <<"\n";
+		} else {
+			if(fd->gd->slope<2){
+				OLR=0.1276966713-0.0319397467*fd->gd->slope+0.0020914862*onefiredate+0.0127016155* log (onefirearea);
+			}else if(fd->gd->slope>=2){
+				OLR=-0.2758306315+0.0117609336*fd->gd->slope-0.0744057680*cos ( fd->gd->aspect * 3.14159265 / 180 ) +0.0260221684*ed->m_sois.tshlw+0.0011413114*onefiredate+0.0336302905*log (onefirearea);
+			}
+cout << "OLR: " << OLR <<"\n";
+			
+			if (OLR > 1) OLR=1;
+			if (OLR < 0) OLR=0;
+			bthick = OLR * totorg;
 
-     if(bthick <ed->m_soid.mossthick){
-      	bthick =ed->m_soid.mossthick;
-     }
+			if (bthick < 0) {bthick=0;}
+			
+		}
 
-     if(totorg-bthick<0.02){ //there are at least 2 cm orgnanic left
-     	bthick = totorg-0.02;
-     }
 
-     return bthick;
+/*		}else{     //Yuan: the severity categories are from ALFRESCO:
+		 	// 0 - no burning; 1 - low; 2 - moderate; 3 - high + low surface; 4 - high + high surface
+		 	// so, 1, 2, and 3/4 correspond to TEM's low, moderate, and high. But needs further field data supports
+			if (fd->cd->drgtype==0) { //dry upland
+				if (oneseverity<=0) {          // no burning
+					bthick = 0.0;
+				}else if (oneseverity<=1) {   //low
+					bthick = 0.54 * totorg;
+				}else if (oneseverity<=2) {   //moderate
+					bthick = 0.69 * totorg;
+				}else if (oneseverity<=4){    //high
+					bthick = 0.80 * totorg;
+				}
+			} else if (fd->cd->drgtype ==1){  //wet lowland
+				bthick = 0.48 * totorg;
+			}
+		}
+*/	}
+
+	if(bthick <0.){
+	//     	string msg = "burn thickness should be greater than zero";
+	// 		char* msgc = const_cast< char* > ( msg.c_str());
+	// 		throw Exception(msgc, I_BURN_ZERO);
+		bthick = 0.;
+	}
+
+	if(bthick <ed->m_soid.mossthick){
+		bthick =ed->m_soid.mossthick;
+	}
+
+	if(totorg-bthick<0.02){ //there are at least 2 cm orgnanic left
+		bthick = totorg-0.02;
+	}
+cout << "bthick: " << bthick <<"\n";
+fd->y_soid.OLR=OLR;
+
+	return bthick;
 };
 
 void WildFire::setCohortLookup(CohortLookup* chtlup){

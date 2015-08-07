@@ -141,12 +141,26 @@ int SiteinInputer::getSiteinData(SiteIn* sid, const int & recid){
 	avlnV->set_cur(recid);
 	avlnV->get(&sid->avln, 1);
 
-	NcVar* mintypeV = siteFile.get_var("MINTYPE");
-	if(mintypeV==NULL){
-	  cout <<"cannot get mineral type \n"; 
+	NcVar* minclayV = siteFile.get_var("MINCLAY");
+	if(minclayV==NULL){
+	  cout <<"cannot get clay \n"; 
 	}
-	mintypeV->set_cur(recid);
-	mintypeV->get(sid->mintype, 1, MAX_MIN_LAY); 
+	minclayV->set_cur(recid);
+	minclayV->get(sid->minclay, 1, MAX_MIN_LAY); 
+
+	NcVar* minsandV = siteFile.get_var("MINSAND");
+	if(minsandV==NULL){
+	  cout <<"cannot get sand \n"; 
+	}
+	minsandV->set_cur(recid);
+	minsandV->get(sid->minsand, 1, MAX_MIN_LAY); 
+
+	NcVar* minsiltV = siteFile.get_var("MINSILT");
+	if(minsiltV==NULL){
+	  cout <<"cannot get silt \n"; 
+	}
+	minsiltV->set_cur(recid);
+	minsiltV->get(sid->minsilt, 1, MAX_MIN_LAY); 
 			
 	NcVar* zoutV = siteFile.get_var("ZOUT");
 	if(zoutV==NULL){

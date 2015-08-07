@@ -77,11 +77,12 @@ void Vegetation_Bgc::initializeState(const int & drgtypep, const int & vegtypep)
 	int vegtype = vegtypep;
 
 	bd->m_vegs.c = chtlu->initvegc[drgtype][vegtype];
-    bd->m_vegs.strn = chtlu->initstrn[drgtype][vegtype];
-    bd->m_vegs.ston = chtlu->initston[drgtype][vegtype];
+    	bd->m_vegs.strn = chtlu->initstrn[drgtype][vegtype];
+    	bd->m_vegs.ston = chtlu->initston[drgtype][vegtype];
 	bd->m_vegs.deadc =0;
 	bd->m_vegs.deadn =0;
 	bd->m_vegd.lai =0.1;
+//	bd->m_vegs.standingc =0;
 };
 
 //Yuan: better not to read in netcdf file data here
@@ -92,13 +93,14 @@ void Vegetation_Bgc::initializeState5restart(RestartData *resin){
  	bd->m_vegs.deadc = resin->deadc; //resin->getDEADC(bd->m_vegs.deadc, fd->cd->reschtid);
  	bd->m_vegs.deadn = resin->deadn; //resin->getDEADN(bd->m_vegs.deadn, fd->cd->reschtid);
  	bd->m_vegs.unnormleaf = resin->unnormleaf; //resin->getUNNORMLEAF(bd->m_vegs.unnormleaf, fd->cd->reschtid);
- 	
+
  	bd->prvunleafmx = resin->prvunnormleafmx; //resin->getPRVUNNORMLEAFMX(bd->prvunleafmx, fd->cd->reschtid);
  	bd->prvtopt     = resin->prvtopt; //resin->getPRVTOPT(bd->prvtopt, fd->cd->reschtid);
  	bd->c2n         = resin->c2n; //resin->getC2N(bd->c2n, fd->cd->reschtid);
  	bd->foliagemx   = resin->foliagemx; //resin->getFOLIAGEMX(bd->foliagemx, fd->cd->reschtid);
+
  	bd->topt        = bd->prvtopt;
- 	bd->unleafmx    = bd->prvunleafmx; 	
+	bd->unleafmx    = bd->prvunleafmx; 	
  
  	bd->m_vegd.lai  = resin->lai; //resin->getLAI(bd->m_vegd.lai, fd->cd->reschtid);
  
@@ -129,7 +131,7 @@ void Vegetation_Bgc::prepareIntegration(const bool & equil ){
 	equiled = equil;
 	
 	double pet = ed->m_l2a.pet;
-    double eet = ed->m_l2a.eet;
+    	double eet = ed->m_l2a.eet;
   	if (pet==0.0) pet = 0.0001;    //Yuan: to avoid gv=NaN
 	bd->m_vegd.gv = getGV(eet,  pet);
 	
@@ -140,7 +142,7 @@ void Vegetation_Bgc::prepareIntegration(const bool & equil ){
 	tmp_vegs.unnormleaf = bd->m_vegs.unnormleaf;
 	
 	bd->m_vegd.ftemp = getTempFactor4GPP(ed->m_atms.ta);
-
+//	cout << "ed->m_atms.ta in vegetation_bgc: "<< ed->m_atms.ta << "\n";
 	bd->m_vegd.raq10 = getRaq10(ed->m_atms.ta);
 	
 };
@@ -157,25 +159,40 @@ void Vegetation_Bgc::delta(){
 	double par = ed->m_a2l.par;
 	//double pet = ed->m_l2a.pet;
 	double eet = ed->m_l2a.eet;
+//cout << "ed->m_l2a.eet: "<<ed->m_l2a.eet<<"\n";  	
+//cout << "par: "<<par<<"\n";  	
+//cout << "bd->m_vegd.leaf: "<<bd->m_vegd.leaf<<"\n"; 
+//cout << "bd->m_vegd.foliage: "<< bd->m_vegd.foliage<<"\n"; 
+
 
 	double tempunnormleaf; 
-    tempunnormleaf = getUnnormleaf(ed->prveetmx, eet, tmp_vegs.unnormleaf);
+    	tempunnormleaf = getUnnormleaf(ed->prveetmx, eet, tmp_vegs.unnormleaf);
    	del_vegs.unnormleaf = tempunnormleaf - tmp_vegs.unnormleaf;
   	bd->m_vegd.leaf = getLeaf(tempunnormleaf);
   
-  	if(bd->cd->vegtype<=3){
+  	if(bd->cd->vegtype>3){
   		double alleaf =bgcpar.leafmxc/(1.0 +bgcpar.kleafc * exp( bgcpar.cov* tmp_vegs.c ));
-     	bd->m_vegd.foliage = alleaf /bgcpar.leafmxc;
+     		bd->m_vegd.foliage = alleaf /bgcpar.leafmxc;
  	} else {
   	 	bd->m_vegd.foliage = getFoliage();
   	}
 
   	bd->m_vegd.lai = bgcpar.sla *bgcpar.leafmxc*bd->m_vegd.foliage* bd->m_vegd.leaf ;
+
   	bd->m_vegd.fpc = 1.0 - exp( -0.5 * bd->m_vegd.lai);
 
-  	del_a2v.ingpp = getGPP(co2, par, bd->m_vegd.leaf, bd->m_vegd.foliage, bd->m_vegd.ftemp, bd->m_vegd.gv);
-                   
+  	del_a2v.ingpp = getGPP(co2, par, bd->m_vegd.leaf, bd->m_vegd.foliage, bd->m_vegd.ftemp, bd->m_vegd.gv);             
+//cout << "co2: "<<co2<<"\n";  	
+//cout << "par: "<<par<<"\n";  	
+//cout << "bd->m_vegd.leaf: "<<bd->m_vegd.leaf<<"\n"; 
+//cout << "bd->m_vegd.foliage: "<< bd->m_vegd.foliage<<"\n"; 
+//cout << "bd->m_vegd.ftemp: "<<bd->m_vegd.ftemp<<"\n"; 
+//cout << "bd->m_vegd.gv: "<<bd->m_vegd.gv<<"\n"; 
+
+
+
   	del_soi2v.innuptake =sb->getNuptake(bd->m_vegd.foliage, bd->m_vegd.raq10, bgcpar.kn1, calpar.nmax);
+
    	if ( del_soi2v.innuptake< 0.0 ) { del_soi2v.innuptake = 0.0; }
   
   	del_v2soi.ltrfalc = calpar.cfall * tmp_vegs.c;
@@ -208,78 +225,72 @@ void Vegetation_Bgc::delta(){
 
 void Vegetation_Bgc::deltanfeed(){
 	 //////// nitrogen feedback
-  if(nfeed ==1){
-  	if(del_soi2v.innuptake ==0.0) del_soi2v.innuptake =0.000001;
-  	
-  	double inprodcn = del_a2v.innpp / (del_soi2v.innuptake + tmp_vegs.ston);
-  	
-  	if(del_v2soi.ltrfaln <= del_v2soi.ltrfalc/cneven){
-  		del_v2v.nresorb = del_v2soi.ltrfalc/cneven - del_v2soi.ltrfaln;
-  	}else{
-  		del_v2soi.ltrfaln = del_v2soi.ltrfalc/cneven;
-  		del_v2v.nresorb =0.;
-  	}
-  
-  	if(tmp_vegs.c>0.){
-  		del_v2v.nresorb  *= tmp_vegs.strn/tmp_vegs.c  *bd->c2n;
-  	}
-  
-  	if(inprodcn > cneven){//cneven is corresponding to Pcn in ATMcGuire71992a P106
-  	  	del_a2v.npp = cneven * (del_soi2v.nuptake +tmp_vegs.ston);
-      	if (del_a2v.npp > 0.0) { 
-      		del_v2a.rg = 0.25 * del_a2v.npp;
-      	} else {
-      		del_v2a.rg = 0.0;
-      	}
-   
-      	del_a2v.gpp = del_a2v.npp + del_v2a.rg + del_v2a.rm;
-      	if (del_a2v.gpp < 0.0) { del_a2v.gpp = 0.0; }
-      	del_v2v.nmobil = tmp_vegs.ston;
-  	} else {
-  	   	del_soi2v.nuptake = del_soi2v.innuptake * (inprodcn - bgcpar.cnmin)
-                        * (inprodcn - 2*cneven
-                        + bgcpar.cnmin);
-       	del_soi2v.nuptake /= ((inprodcn - bgcpar.cnmin)
-                         * (inprodcn - 2*cneven
-                         + bgcpar.cnmin)) - pow( inprodcn
-                         - cneven,2.0 );
-      	if ( del_soi2v.nuptake< 0.0 ) {del_soi2v.nuptake = 0.0; }
-      	if ( tmp_vegs.ston>= del_a2v.npp/cneven ){
-        		del_v2v.nmobil = del_a2v.npp/cneven;
+  	if(nfeed ==1){
+	  	if(del_soi2v.innuptake ==0.0) del_soi2v.innuptake =0.000001;
+	  	
+	  	double inprodcn = del_a2v.innpp / (del_soi2v.innuptake + tmp_vegs.ston);
+	  	
+	  	if(del_v2soi.ltrfaln <= del_v2soi.ltrfalc/cneven){
+	  		del_v2v.nresorb = del_v2soi.ltrfalc/cneven - del_v2soi.ltrfaln;
+	  	}else{
+	  		del_v2soi.ltrfaln = del_v2soi.ltrfalc/cneven;
+	  		del_v2v.nresorb =0.;
+	  	}
+	  
+	  	if(tmp_vegs.c>0.){
+	  		del_v2v.nresorb  *= tmp_vegs.strn/tmp_vegs.c  *bd->c2n;
+	  	}
+	  
+	  	if(inprodcn > cneven){//cneven is corresponding to Pcn in ATMcGuire71992a P106
+	  	  	del_a2v.npp = cneven * (del_soi2v.nuptake +tmp_vegs.ston);
+	      		if (del_a2v.npp > 0.0) { 
+	      			del_v2a.rg = 0.25 * del_a2v.npp;
+	      		} else {
+	      			del_v2a.rg = 0.0;
+	      		}
+	   
+	      		del_a2v.gpp = del_a2v.npp + del_v2a.rg + del_v2a.rm;
+	      		if (del_a2v.gpp < 0.0) { del_a2v.gpp = 0.0; }
+	      		del_v2v.nmobil = tmp_vegs.ston;
+	  	} else {
+	  	   	del_soi2v.nuptake = del_soi2v.innuptake*(inprodcn-bgcpar.cnmin)*(inprodcn-2*cneven+bgcpar.cnmin);
+	       		del_soi2v.nuptake /= ((inprodcn - bgcpar.cnmin)* (inprodcn - 2*cneven+ bgcpar.cnmin)) - pow( inprodcn- cneven,2.0 );
+
+	      		if ( del_soi2v.nuptake< 0.0 ) {del_soi2v.nuptake = 0.0; }
+	      		if ( tmp_vegs.ston>= del_a2v.npp/cneven ){
+				del_v2v.nmobil = del_a2v.npp/cneven;
 				if ( del_v2v.nmobil < 0.0 && tmp_vegs.c > 0.0 ){
-	  				del_v2v.nmobil *= (tmp_vegs.strn/tmp_vegs.c) * bd->c2n;
+		  				del_v2v.nmobil *= (tmp_vegs.strn/tmp_vegs.c) * bd->c2n;
 				}
 				del_soi2v.suptake = 0.0;
-      	} else {
-        		del_v2v.nmobil = tmp_vegs.ston;
+	      		} else {
+				del_v2v.nmobil = tmp_vegs.ston;
 				del_soi2v.suptake = (del_a2v.npp/cneven) - del_v2v.nmobil;
-				
 				if ( del_soi2v.suptake < 0.0 ) { del_soi2v.suptake = 0.0; }
 				if (del_soi2v.suptake > del_soi2v.nuptake) {
-          			del_soi2v.suptake = del_soi2v.nuptake;
-        		}
-      	}
+		  			del_soi2v.suptake = del_soi2v.nuptake;
+				}
+	      		}
 
-      	if ( (tmp_vegs.ston + del_soi2v.nuptake - del_soi2v.suptake
-         		+ del_v2v.nresorb - del_v2v.nmobil) < (bgcpar.labncon
-         		* (tmp_vegs.strn  + del_soi2v.suptake - del_v2soi.ltrfaln
-         		- del_v2v.nresorb  + del_v2v.nmobil)) ) {
-        		del_soi2v.luptake = del_soi2v.nuptake - del_soi2v.suptake;
-      	} else {
-        		del_soi2v.luptake = (bgcpar.labncon * (tmp_vegs.strn
-                          + del_soi2v.suptake - del_v2soi.ltrfaln
-                          - del_v2v.nresorb + del_v2v.nmobil))
-                          - (tmp_vegs.ston + del_v2v.nresorb
-                          - del_v2v.nmobil);
-	   			if ( del_soi2v.luptake < 0.0 ) { del_soi2v.luptake = 0.0; }
-	     		del_soi2v.nuptake = del_soi2v.suptake + del_soi2v.luptake;
-       	}
-    }
-  }
+	      		if ( (tmp_vegs.ston+del_soi2v.nuptake-del_soi2v.suptake+del_v2v.nresorb-del_v2v.nmobil) < (bgcpar.labncon*(tmp_vegs.strn+del_soi2v.suptake-del_v2soi.ltrfaln-del_v2v.nresorb+del_v2v.nmobil)) ) {
+				del_soi2v.luptake = del_soi2v.nuptake - del_soi2v.suptake;
+	      		} else {
+				del_soi2v.luptake = (bgcpar.labncon * (tmp_vegs.strn+del_soi2v.suptake-del_v2soi.ltrfaln-del_v2v.nresorb + del_v2v.nmobil))-(tmp_vegs.ston+del_v2v.nresorb-del_v2v.nmobil);
+		   		if ( del_soi2v.luptake < 0.0 ) { del_soi2v.luptake = 0.0; }
+		     		del_soi2v.nuptake = del_soi2v.suptake + del_soi2v.luptake;
+	       		}
+	    	}
+  	}
 };
 
 void Vegetation_Bgc::deltastate(){
   	del_vegs.c = del_a2v.gpp- del_v2a.rg - del_v2a.rm - del_v2soi.ltrfalc;
+
+//cout << "del_a2v.gpp: "<< del_a2v.gpp <<"\n";
+//cout << "del_v2a.rg: "<< del_v2a.rg <<"\n";
+//cout << "del_v2a.rm: "<< del_v2a.rm <<"\n";
+//cout << "del_v2soi.ltrfalc: "<< del_v2soi.ltrfalc <<"\n";
+
   	if(tmp_vegs.c + del_vegs.c <0) {
   	 // del_vegs.c = - tmp_vegs.c +0.1;
   	}
@@ -333,7 +344,11 @@ double Vegetation_Bgc::getFoliage( ){
   	}else{
  		foliage = bd->foliagemx;  
   	} 
-  	
+//cout << "vegc: "<< vegc <<"\n"; 	
+//cout << "fcv: "<< fcv <<"\n"; 	
+//cout << "bgcpar.maturefoliagemin: "<< bgcpar.maturefoliagemin <<"\n"; 	
+//cout << "bd->foliagemx: "<< bd->foliagemx <<"\n"; 	
+
   	return foliage;
 };
 
@@ -344,12 +359,18 @@ double Vegetation_Bgc::getUnnormleaf(double &prveetmx, const double & eet, const
   	if (prveetmx <= 0.0) { prveetmx = 1.0; }
   	normeet = eet / prveetmx;
   	if(normeet>1) normeet =1;
-  
-  	unnormleaf = (bgcpar.aleaf* normeet) + (bgcpar.bleaf * prvunleaf)
-               + bgcpar.cleaf;
+  	unnormleaf = (bgcpar.aleaf* normeet) + (bgcpar.bleaf * prvunleaf) + bgcpar.cleaf;
   	if (unnormleaf < (0.5 * bgcpar.minleaf)) {
-    	unnormleaf = 0.5 * bgcpar.minleaf;
+    		unnormleaf = 0.5 * bgcpar.minleaf;
   	}
+
+//cout << "eet: "<< eet <<"\n";
+//cout << "prveetmx: "<< prveetmx <<"\n";
+//cout << "bgcpar.aleaf: "<< bgcpar.aleaf <<"\n";
+//cout << "bgcpar.bleaf: "<< bgcpar.bleaf <<"\n";
+//cout << "bgcpar.cleaf: "<< bgcpar.cleaf <<"\n";
+//cout << "bgcpar.minleaf: "<< bgcpar.minleaf <<"\n";
+
   	return unnormleaf;
 };
 
@@ -364,12 +385,16 @@ double Vegetation_Bgc::getLeaf(const double & unnormleaf ){
    	}
   
   	if ( leaf < bgcpar.minleaf ){
-    	leaf = bgcpar.minleaf;
+    		leaf = bgcpar.minleaf;
   	} else  if (leaf > 1.0 ) {
    		leaf = 1.0; 
    	}
-  	
+
+//cout << "bd->prvunleafmx: "<< bd->prvunleafmx <<"\n";
+//cout << "unnormleaf: "<< unnormleaf <<"\n";
+ 	
   	return leaf;
+
 };
 
 
@@ -383,7 +408,6 @@ double Vegetation_Bgc::getGV(const double & eet,const double & pet ){
     } else {
       	gv = 0.1 + (0.9 * eet / pet);
     }
-  
   	if(gv>1) gv =1;
 
   	return gv;	
@@ -391,20 +415,19 @@ double Vegetation_Bgc::getGV(const double & eet,const double & pet ){
 
 /*! par : photosynthetically active radiation in J/(m2s)
  */
-double  Vegetation_Bgc::getGPP(const double &co2, const double & par,
-                   const double &leaf, const double & foliage,
-                   const double &ftemp, const double & gv) {
+double  Vegetation_Bgc::getGPP(const double &co2, const double & par,const double &leaf, const double & foliage,const double &ftemp, const double & gv) {
 	// origianlly the 
   	double ci  = co2 * gv;
   	double thawpcnt = ed->m_soid.growpct;
   	double fpar = par/(bgcpar.ki +par);
   	double gpp = calpar.cmax * foliage * ci / (bgcpar.kc + ci);
+
   	gpp *= leaf * fpar;
   	gpp *= ftemp;
   	gpp *= thawpcnt;
   	if(gpp<0)gpp=0.;
-  	return gpp;
 
+  	return gpp;
 }; 
 
 double  Vegetation_Bgc::getRm(const double & vegc, const double & raq10, 
@@ -432,7 +455,8 @@ double Vegetation_Bgc::getKr(const double & vegc){
   	double kr;
   	double kra = calpar.kra;
   	double krb = calpar.krb;
-  
+//  cout << "kra: "<< kra <<"\n";
+//  cout << "krb: "<< krb <<"\n";
   	kr = exp((kra*vegc)+krb);	
   	return kr;
 }

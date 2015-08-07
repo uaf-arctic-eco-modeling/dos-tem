@@ -159,7 +159,9 @@
      		float som2co2[MAX_DRG_TYPE][MAX_VEG_TYPE];  //after decomposition, ratio of SOM-Cs to CO2-C released
      
     		float minthick[MAX_MIN_LAY];
-    		int mintype[MAX_MIN_LAY];
+    		int minclay[MAX_MIN_LAY];
+    		int minsand[MAX_MIN_LAY];
+    		int minsilt[MAX_MIN_LAY];
     
   			// hydrological related
 

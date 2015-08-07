@@ -44,7 +44,7 @@
   			float ini_kdcminslow[MAX_DRG_TYPE][MAX_VEG_TYPE];
   
   			float order_cmax[MAX_DRG_TYPE][MAX_VEG_TYPE];
-    		float order_nmax[MAX_DRG_TYPE][MAX_VEG_TYPE];
+    			float order_nmax[MAX_DRG_TYPE][MAX_VEG_TYPE];
    			float order_krb[MAX_DRG_TYPE][MAX_VEG_TYPE];
   			float order_nup[MAX_DRG_TYPE][MAX_VEG_TYPE];
   			float order_cfall[MAX_DRG_TYPE][MAX_VEG_TYPE];

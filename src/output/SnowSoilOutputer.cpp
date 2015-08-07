@@ -231,7 +231,13 @@ void SnowSoilOutputer::outputYearCohortVars(const int & yrcnt){
    		shlwcsumCYV->put_rec(&sslod->yrshlwcsum,yrcnt);
    		deepcsumCYV->put_rec(&sslod->yrdeepcsum,yrcnt);
    		minecsumCYV->put_rec(&sslod->yrminecsum,yrcnt);
-     
+ 
+   		kdfibCYV->put_rec(&sslod->yrkdfib,yrcnt);
+   		kdhumCYV->put_rec(&sslod->yrkdhum,yrcnt);
+    		kdminCYV->put_rec(&sslod->yrkdmin,yrcnt);
+    		kdslowCYV->put_rec(&sslod->yrkdslow,yrcnt);
+
+    
    		orgnCYV->put_rec(&sslod->yrorgn,yrcnt);
    		avlnCYV->put_rec(&sslod->yravln,yrcnt);
 
@@ -297,7 +303,12 @@ void SnowSoilOutputer::defineYearCohortVars(){
     	shlwcsumCYV = yrcf->add_var("SHLWCSUM", ncFloat, ycyearD);
     	deepcsumCYV = yrcf->add_var("DEEPCSUM", ncFloat, ycyearD);
     	minecsumCYV = yrcf->add_var("MINECSUM", ncFloat, ycyearD);
-    	
+
+   	kdfibCYV = yrcf->add_var("KDFIB", ncFloat, ycyearD);
+   	kdhumCYV = yrcf->add_var("KDHUM", ncFloat, ycyearD);
+   	kdminCYV = yrcf->add_var("KDMIN", ncFloat, ycyearD);
+   	kdslowCYV = yrcf->add_var("KDSLOW", ncFloat, ycyearD);
+   	
     	orgnCYV = yrcf->add_var("ORGN", ncFloat, ycyearD);
     	avlnCYV = yrcf->add_var("AVLN", ncFloat, ycyearD);
 

@@ -29,10 +29,12 @@ Ground::Ground(){
    lstfntl  = NULL;
    fstminl  = NULL;
    lstminl  = NULL;
-   
+   fstdeepl =NULL;
+   lstdeepl =NULL;
    fstshlwl = NULL;
    lstshlwl = NULL;
    dtmax = 999.;
+   drainl = NULL;
   
    rock.thick = 50;
    
@@ -55,14 +57,13 @@ int Ground::updateDaily(const int & yrcnt, const int & year,
 	double tsurface;
 	double trans, melt, evap, rnth;
 	curyrcnt = yrcnt;
-    curyear  = year;
-    dtmax    = 0.3;
+    	curyear  = year;
+    	dtmax    = 0.3;
      
-    ed->d_l2soi.perc   = 0.;
-    ed->d_soi2l.qover  = 0.;
-    ed->d_soi2l.qdrain = 0.;
+    	ed->d_l2soi.perc   = 0.;
+    	ed->d_soi2l.qover  = 0.;
+    	ed->d_soi2l.qdrain = 0.;
     
-    //update nfactor based on envlai         
 	tsurface = tdrv2 *ed->d_soid.nfactor;
 	
 	//frontl->tem;	
@@ -78,14 +79,14 @@ int Ground::updateDaily(const int & yrcnt, const int & year,
 	
 	double tdrv1 = tdrv2 * ed->d_soid.nfactor;	
 
-    if(tdrv1>0){
-    	ed->d_snwd.melt +=meltSnowLayers();
+    	if(tdrv1>0){
+    		ed->d_snwd.melt +=meltSnowLayers();
 	}
     
  	bool slchg1= constructSnowLayers(tsurface);
-    if(slchg1)	{       
-    	resetSnowLayerIndex();
-    }
+    	if(slchg1)	{       
+    		resetSnowLayerIndex();
+    	}
     
 	bool slchg2=combineSnowLayers();
 	if(slchg2){		  
@@ -100,66 +101,67 @@ int Ground::updateDaily(const int & yrcnt, const int & year,
 	}
 		 
 	updateSWE();
-    //checkSnowLayers();
-    //added by shuhua on Apr. 18, 2008
-    if(frontl->isSnow() && fstsoill->frozen ==-1){ //for cases with snow fall before ground surface freezing
-    	SoilLayer* sl = dynamic_cast<SoilLayer*>(fstsoill);
-    	sl->addOneFront5Top(0.0, 1);
-    	//also set tem at top of layer to zero, otherwise problem of temperature calcu. occurs
-    	//added by shuhua Apr 22, 2008
-    	sl->tem=0.;
-    	updateFstLstFntLay();
-    	sl= NULL;
-    }
-   /* if(lstminl->frozen ==-1 && lstminl->nextl->tem <0   || lstminl->frozen ==1 && lstminl->nextl->tem >0){
-    	Layer* currl = lstminl;
-    	if(currl->isSoil()){
-    	SoilLayer* sl1 = dynamic_cast<SoilLayer*>(currl);
-    	if(currl->frozen ==1){
-    	sl1->addOneFront5Top(currl->dz,1);
-    	}else if(currl->frozen ==-1){
-    	sl1->addOneFront5Top(currl->dz,-1);	
+    	//checkSnowLayers();
+    	//added by shuhua on Apr. 18, 2008
+    	if(frontl->isSnow() && fstsoill->frozen ==-1){ //for cases with snow fall before ground surface freezing
+    		SoilLayer* sl = dynamic_cast<SoilLayer*>(fstsoill);
+    		sl->addOneFront5Top(0.0, 1);
+    		//also set tem at top of layer to zero, otherwise problem of temperature calcu. occurs
+    		//added by shuhua Apr 22, 2008
+    		sl->tem=0.;
+    		updateFstLstFntLay();
+    		sl= NULL;
     	}
-    	sl1 =NULL;
-    	updateFstLstFntLay();
-    	
-    	}
-    }*/
+
+   /* 	if(lstminl->frozen ==-1 && lstminl->nextl->tem <0   || lstminl->frozen ==1 && lstminl->nextl->tem >0){
+    		Layer* currl = lstminl;
+    		if(currl->isSoil()){
+    			SoilLayer* sl1 = dynamic_cast<SoilLayer*>(currl);
+    			if(currl->frozen ==1){
+    				sl1->addOneFront5Top(currl->dz,1);
+    			}else if(currl->frozen ==-1){
+    				sl1->addOneFront5Top(currl->dz,-1);	
+    			}
+    			sl1 =NULL;
+    			updateFstLstFntLay();
+    		}
+    	}*/
     
-    if(fstfntl==NULL && lstfntl==NULL ){ // there is no front
-     	if(frontl->isSoil()){
-       		if((tstate==1 && tdrv1>0) || (tstate==-1 && tdrv1<0) || tstate==0){//create front
-       	 		error = soil.stefan.updateFronts(tdrv1, frontl, backl,fstsoill, lstminl,mind);
-       		// stefan.checkFrontsValidity(fstsoill);
-       		}
-     	}
-    }else{
+    	if(fstfntl==NULL && lstfntl==NULL ){ // there is no front
+     		if(frontl->isSoil()){
+       			if((tstate==1 && tdrv1>0) || (tstate==-1 && tdrv1<0) || tstate==0){//create front
+       	 			error = soil.stefan.updateFronts(tdrv1, frontl, backl,fstsoill, lstminl,mind);
+       				// stefan.checkFrontsValidity(fstsoill);
+       			}
+     		}
+    	}else{
 		error = soil.stefan.updateFronts(tdrv1, frontl, backl,fstsoill, lstminl,mind);
 		error = soil.stefan.checkFrontsValidity(fstsoill);
-    }
+    	}
    
-    if (error != 0) return error;
+    	if (error != 0) return error;
 
-    ///////////////////////////////////
-    updateFstLstFntLay();
+    	///////////////////////////////////
+    	updateFstLstFntLay();
 	soil.stefan.updateTemps(tdrv1, frontl, backl,fstsoill, fstfntl, lstfntl);
-    
    	ed->d_soid.itnum = soil.stefan.itsumall;
 
 	// at end of the day, calculate the surface runoff and infiltration
 	// and then soil water dynamics at a daily time step
 	trans = ed->d_v2a.trans;  //mm/day
-    evap  = ed->d_soi2a.evap; //mm/day
-    rnth  = (ed->d_v2g.rthfl +ed->d_v2g.rdrip)+ (1-ed->y_vegd.vegfrac)*ed->d_a2l.rnfl; //mm/day
-           //the first two items has already been adjust by ed->y_vegd.vegfrac in VE
+    	evap  = ed->d_soi2a.evap; //mm/day
+    	rnth  = (ed->d_v2g.rthfl +ed->d_v2g.rdrip)+ (1-ed->y_vegd.vegfrac)*ed->d_a2l.rnfl; //mm/day
+        //the first two items has already been adjust by ed->y_vegd.vegfrac in VE
            
-    melt = ed->d_snwd.melt; //mm/day
-    // soil.updateRunoffInfil(fstsoill, rnth, melt);
-    ed->d_soid.watertab = soil.getWaterTable(fstsoill);
-    ed->d_soid.frasat = soil.getFracSat(  ed->d_soid.frasat);
+    	melt = ed->d_snwd.melt; //mm/day
+    	// soil.updateRunoffInfil(fstsoill, rnth, melt);
+
+//cout <<"year: "<< year <<" month: "<< mind <<" day: "<< id <<"\n";
+
+    	ed->d_soid.watertab = soil.getWaterTable(fstsoill);
+    	ed->d_soid.frasat = soil.getFracSat(  ed->d_soid.frasat);         
            
-           
-    updateThermState();
+    	updateThermState();
 
 /* Yuan: Feb. 2011: let the Richards algorithm runs for all
     if(richardl->frozen > -1){//if the soil column is totally frozen
@@ -194,111 +196,109 @@ int Ground::updateDaily(const int & yrcnt, const int & year,
         double infil = ed->d_l2soi.perc;
         double sinday= 24.*3600.; 
         
-		trans /=sinday; // mm/day to mm/s
-		infil /=sinday; // mm/day to mm/s
-		evap /=sinday;  // mm/day to mm/s
+	trans /=sinday; // mm/day to mm/s
+	infil /=sinday; // mm/day to mm/s
+	evap /=sinday;  // mm/day to mm/s
 				
-	    //double watertab =  soil.getWaterTable(frontl);  
+	//double watertab =  soil.getWaterTable(frontl);  
         double  drain = 0; //soil.getDrainage(watertab);
 	        
-	    soil.richard.update(frontl, backl,fstsoill, drainl,  drain,  trans,  evap,infil ,
-	        		 ed->d_soid.watertab );
+	soil.richard.update(frontl, backl,fstsoill, drainl,  drain,  trans,  evap,infil , ed->d_soid.watertab );
  	    
- 	    // double permftab = soil.getPermafrostTable(fstsoill);
- 	       
- 	    //  ed->d_soi2l.qdrain =soil.update5BaseFlow(drainl);
+// 	double permftab = soil.getPermafrostTable(fstsoill);       
+//  	ed->d_soi2l.qdrain =soil.update5BaseFlow(drainl);
  	   
- 	    if(ed->cd->drgtype==0){
- 	         ed->d_soi2l.qdrain =soil.update5Drainage(drainl, ed->d_soid.frasat, ed->d_soid.watertab);
- 	    }else{
- 	         ed->d_soi2l.qdrain =0;	
- 	    }
- 	         
- 	    ed->d_soid.itnumliq = soil.richard.itsum;
- 	      
-//    }
+
+
+
+ 	if(ed->cd->drgtype==0){
+ 		ed->d_soi2l.qdrain =soil.update5Drainage(drainl, ed->d_soid.frasat, ed->d_soid.watertab);
+ 	}else{
+ 		ed->d_soi2l.qdrain =0;	
+ 	}         
+
+
+
+
+ 	ed->d_soid.itnumliq = soil.richard.itsum;      
+//    	}
     
     //at the end of water calculation, adjust water from fntl to nextl layer which is frozen or part frozen
     //May 19, 2010 yis
-    if(fstfntl!=NULL && lstfntl!=NULL){
-    	if(fstfntl->indl ==lstfntl->indl){
-    		if(fstfntl->isSoil()){
-    			SoilLayer* sl = dynamic_cast<SoilLayer*>(fstfntl);
-          		if(sl->fronts[0]->frzing==-1){//thawing front
-          			//put some water of upper layer into this layer
-          			if(fstfntl->prevl!=NULL){
-          				if(fstfntl->prevl->isSoil() && fstfntl->prevl->frozen==-1){
-          					SoilLayer* slp =   dynamic_cast<SoilLayer*>(fstfntl->prevl);
-          					if(slp->getVolLiq()>sl->getVolWater()){
-          						double provide = (slp->getVolLiq()-sl->getVolWater())*slp->dz*1000.;
-          						double receive = (sl->poro - sl->getVolWater())*sl->dz*1000.;
-          						double delta =0;
-          						if(provide >receive){
-          							delta = receive;
-          						}else{
-          							delta = provide;
+    	if(fstfntl!=NULL && lstfntl!=NULL){
+    		if(fstfntl->indl ==lstfntl->indl){
+    			if(fstfntl->isSoil()){
+    				SoilLayer* sl = dynamic_cast<SoilLayer*>(fstfntl);
+          			if(sl->fronts[0]->frzing==-1){//thawing front
+          				//put some water of upper layer into this layer
+          				if(fstfntl->prevl!=NULL){
+          					if(fstfntl->prevl->isSoil() && fstfntl->prevl->frozen==-1){
+          						SoilLayer* slp =   dynamic_cast<SoilLayer*>(fstfntl->prevl);
+          						if(slp->getVolLiq()>sl->getVolWater()){
+          							double provide = (slp->getVolLiq()-sl->getVolWater())*slp->dz*1000.;
+          							double receive = (sl->poro - sl->getVolWater())*sl->dz*1000.;
+          							double delta =0;
+          							if(provide >receive){
+          								delta = receive;
+          							}else{
+          								delta = provide;
+          							}
+          							slp->liq -= delta;
+          							sl->liq +=delta;
           						}
-          						slp->liq -= delta;
-          						sl->liq +=delta;
           					}
           				}
           			}
-          		}
-    		}
-    	
-    	} else { //not the same front
-
-    		if(fstfntl->isSoil()){
-    			if(fstfntl->prevl!=NULL){
-    				SoilLayer* sl = dynamic_cast<SoilLayer*>(fstfntl);
-          		    	if(sl->fronts[0]->frzing==-1){//thawing front
-          		    		//put some water of upper layer into this layer
-          		           	if(fstfntl->prevl->isSoil() && fstfntl->prevl->frozen==-1){
-          		           	SoilLayer* slp =   dynamic_cast<SoilLayer*>(fstfntl->prevl);
-          		           		if(slp->getVolLiq()>sl->getVolWater()){
-          		           			double provide = (slp->getVolLiq()-sl->getVolWater())*slp->dz*1000.;
-          		           			double receive = (sl->poro - sl->getVolWater())*sl->dz*1000.;
-          		           			double delta =0;
-          		           			if(provide >receive){
-          		           				delta = receive;
-          		           			}else{
-          		           				delta = provide;
+    			}   	
+    		} else { //not the same front
+			if(fstfntl->isSoil()){
+	    			if(fstfntl->prevl!=NULL){
+    					SoilLayer* sl = dynamic_cast<SoilLayer*>(fstfntl);
+          		    		if(sl->fronts[0]->frzing==-1){//thawing front
+          		    			//put some water of upper layer into this layer
+          		           		if(fstfntl->prevl->isSoil() && fstfntl->prevl->frozen==-1){
+          		           			SoilLayer* slp =   dynamic_cast<SoilLayer*>(fstfntl->prevl);
+          		           			if(slp->getVolLiq()>sl->getVolWater()){
+          		           				double provide = (slp->getVolLiq()-sl->getVolWater())*slp->dz*1000.;
+          		           				double receive = (sl->poro - sl->getVolWater())*sl->dz*1000.;
+          		           				double delta =0;
+          		           				if(provide >receive){
+          		           					delta = receive;
+          		           				}else{
+          		           					delta = provide;
+          		           				}
+          		           				slp->liq -= delta;
+          		           				sl->liq +=delta;
           		           			}
-          		           			slp->liq -= delta;
-          		           			sl->liq +=delta;
           		           		}
-
-          		           	}
-          		       }
-    			}
-          	}
-
-          	if(lstfntl->isSoil()){
-          		SoilLayer* sl = dynamic_cast<SoilLayer*>(lstfntl);
-          		if(lstfntl->prevl!=NULL){
-          			if(sl->fronts[0]->frzing==-1){//thawing front
-          				//put some water of upper layer into this layer
-          		        if(lstfntl->prevl->isSoil() && lstfntl->prevl->frozen==-1){
-          		        	SoilLayer* slp =   dynamic_cast<SoilLayer*>(lstfntl->prevl);
-          		        	if(slp->getVolLiq()>sl->getVolWater()){
-          		        		double provide = (slp->getVolLiq()-sl->getVolWater())*slp->dz*1000.;
-          		           		double receive = (sl->poro - sl->getVolWater())*sl->dz*1000.;
-          		           		double delta =0;
-          		           		if(provide >receive){
-          		           			delta = receive;
-          		           		}else{
-          		           		    delta = provide;
-          		           		}
-          		           		slp->liq -= delta;
-          		           		sl->liq +=delta;
-          		           	}
-          		        }
+          		      		}
+    				}
+          		}
+          		if(lstfntl->isSoil()){
+          			SoilLayer* sl = dynamic_cast<SoilLayer*>(lstfntl);
+          			if(lstfntl->prevl!=NULL){
+          				if(sl->fronts[0]->frzing==-1){//thawing front
+          					//put some water of upper layer into this layer
+          		        		if(lstfntl->prevl->isSoil() && lstfntl->prevl->frozen==-1){
+          		        			SoilLayer* slp =   dynamic_cast<SoilLayer*>(lstfntl->prevl);
+          		        			if(slp->getVolLiq()>sl->getVolWater()){
+          		        				double provide = (slp->getVolLiq()-sl->getVolWater())*slp->dz*1000.;
+          		           				double receive = (sl->poro - sl->getVolWater())*sl->dz*1000.;
+          		           				double delta =0;
+          		           				if(provide >receive){
+          		           					delta = receive;
+          		           				}else{
+          		           		    			delta = provide;
+          		           				}
+          		           				slp->liq -= delta;
+          		           				sl->liq +=delta;
+          		           			}
+          		        		}
+          				}
           			}
           		}
-          	}
-
-        }
-    }
+        	}
+    	}
     
 	// at end of each day, each layer should be updated
 	updateAllLayers();
@@ -1064,10 +1064,12 @@ void Ground::initRockLayers(){
 void Ground::initSnowSoilLayers5Thickness(){
   
   soil.mineral.initThicknesses(soil.mineral.thick); //mineral thick in m
-  soil.mineral.updateType(soil.mineral.type, MAX_MIN_LAY);   //Yuan:
+  soil.mineral.updateClay(soil.mineral.clay, MAX_MIN_LAY);   //Yuan:
+  soil.mineral.updateSand(soil.mineral.sand, MAX_MIN_LAY);   //Yuan:
+  soil.mineral.updateSilt(soil.mineral.silt, MAX_MIN_LAY);   //Yuan:
 
   for(int il =soil.mineral.num-1; il>=0; il--){
-  	 MineralLayer* ml = new MineralLayer(soil.mineral.dza[il],soil.mineral.type[il], &soillu);
+  	 MineralLayer* ml = new MineralLayer(soil.mineral.dza[il],soil.mineral.clay[il],soil.mineral.sand[il],soil.mineral.silt[il]);
 	 insertFront(ml);
 	 if(soil.mineral.dza[il]==0.3){
 	   drainl = frontl;	
@@ -1134,15 +1136,25 @@ void Ground::initSnowSoilLayers5Restart(RestartData * resin){
 		soiltype[i]=resin->TYPEsoil[i]; //	resin->getTYPEsoil(soiltype, ed->cd->reschtid);
 	}
 		
-	int  mintype[MAX_MIN_LAY];
+	int  minclay[MAX_MIN_LAY];
 	for (int i=0; i<MAX_MIN_LAY; i++){
-		mintype[i]=resin->TYPEmin[i]; //	resin->getTYPEmin(mintype, ed->cd->reschtid);
+		minclay[i]=resin->CLAYmin[i]; //	resin->getTYPEmin(mintype, ed->cd->reschtid);
+	}
+	int  minsand[MAX_MIN_LAY];
+	for (int i=0; i<MAX_MIN_LAY; i++){
+		minsand[i]=resin->SANDmin[i]; //	resin->getTYPEmin(mintype, ed->cd->reschtid);
+	}
+	int  minsilt[MAX_MIN_LAY];
+	for (int i=0; i<MAX_MIN_LAY; i++){
+		minsilt[i]=resin->SILTmin[i]; //	resin->getTYPEmin(mintype, ed->cd->reschtid);
 	}
 	
 	soil.mineral.updateThicknesses(soiltype, dzsoil,MAX_SOI_LAY);
-	soil.mineral.updateType(mintype, MAX_MIN_LAY);
+	soil.mineral.updateClay(minclay, MAX_MIN_LAY);
+	soil.mineral.updateSand(minsand, MAX_MIN_LAY);
+	soil.mineral.updateSilt(minsilt, MAX_MIN_LAY);
 	for(int il =soil.mineral.num-1; il>=0; il--){
-		MineralLayer* ml = new MineralLayer(soil.mineral.dza[il], soil.mineral.type[il], &soillu);//0 means deep organic
+		MineralLayer* ml = new MineralLayer(soil.mineral.dza[il], soil.mineral.clay[il],soil.mineral.sand[il],soil.mineral.silt[il]);//0 means deep organic
 		insertFront(ml);
   	  	//if(soil.mineral.dza[il]==0.1){//july 16
   	  	if(soil.mineral.dza[il]==0.3){
@@ -1152,7 +1164,6 @@ void Ground::initSnowSoilLayers5Restart(RestartData * resin){
 	}
   
 	soil.peat.updateShlwThicknesses(soiltype, dzsoil, MAX_SOI_LAY); //fibthick in m
-	
 	soil.peat.updateDeepThicknesses(soiltype, dzsoil,MAX_SOI_LAY); //humthick in m
 	
 	  
@@ -1576,7 +1587,7 @@ void Ground::updateDeepThickness(){
 
 };
 
-void  Ground::adjustLayerThickness( const double & mossthick){
+void  Ground::adjustLayerThickness(const int & yrcnt, const double & mossthick){
     
     updateMossThickness(mossthick);
     updateShlwThickness();
@@ -1592,13 +1603,9 @@ void  Ground::adjustLayerThickness( const double & mossthick){
 	setLayer5Depth();
 	setFstLstShlwLayers();
 	setFstLstDeepLayers();
-	
-	soil.resetFineRootFrac(fstsoill);
-
-    soil.richard.updateSoilStructure(fstsoill);
-    	
-	
-    soil.layer2structmonthly(fstsoill);
+	soil.resetFineRootFrac(yrcnt, fstsoill);
+    	soil.richard.updateSoilStructure(fstsoill);
+    	soil.layer2structmonthly(fstsoill);
    
 };
 
@@ -1615,7 +1622,7 @@ void Ground::updateLayer5FireGrowth(){
 
 
 
-void Ground::burn(const bool & dslmodule){
+void Ground::burn(const int & yrcnt, const bool & dslmodule){
 	//for later version , only set burndepth here, do not change layer
 	// change layer at begin of a month in updatelayer5firegrowth
 	
@@ -1772,7 +1779,7 @@ void Ground::burn(const bool & dslmodule){
 	setFstLstShlwLayers();
 	setFstLstDeepLayers();
 	
-	soil.resetFineRootFrac(fstsoill);
+	soil.resetFineRootFrac(yrcnt, fstsoill);
 
     soil.richard.updateSoilStructure(fstsoill);
     soil.layer2structmonthly(fstsoill);

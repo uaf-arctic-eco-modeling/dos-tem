@@ -19,9 +19,9 @@ Atmosphere::~Atmosphere(){
 
 void Atmosphere::prepareMonthDrivingData(){
      float lat = ed->gd->lat;
-   
      int dinm[] ={31,28,31,30,31,30,31,31,30,31,30,31};
-    	
+ //   			cout<<"lat :"<<ed->gd->lat<<"\n";
+
      //ta degC, prec mm/mon, nirr w/m2, vap mbar, 
      for(int iy =0; iy<ed->gd->act_atm_drv_yr; iy++){
        	for (int im=0; im<12; im++){
@@ -29,9 +29,11 @@ void Atmosphere::prepareMonthDrivingData(){
        		prec[iy][im] = ed->gd->prec[iy][im];
        		nirr[iy][im] = ed->gd->nirr[iy][im];
        		vap[iy][im]  = ed->gd->vap[iy][im];
+//		if (im == 6) cout << "tair July (src/atmosphere.cpp): " << ta[iy][im] << "\n";
        	}	
      }
-     
+
+
      for(int iy =0; iy<ed->gd->act_atm_drv_yr; iy++){
        	for (int im=0; im<12; im++){
        		vap[iy][im] *=100; // convert from mbar to pa
@@ -41,28 +43,28 @@ void Atmosphere::prepareMonthDrivingData(){
             
     // for equilibrium
     	
-    for(int im =0; im<12; im++){
-    	eq_ta[im]=0.;
-    	eq_prec[im]=0.;
-    	eq_rain[im]=0.;
-    	eq_snow[im]=0.;
-    	eq_nirr[im]=0.;
-    	eq_vap[im]=0.;
+	for(int im =0; im<12; im++){
+		eq_ta[im]=0.;
+		eq_prec[im]=0.;
+		eq_rain[im]=0.;
+		eq_snow[im]=0.;
+		eq_nirr[im]=0.;
+		eq_vap[im]=0.;
     			
-    	for(int iy=0; iy<MAX_ATM_NOM_YR;iy++){    //Yuan: average over the first 30 yrs atm data
-    		eq_ta[im] += ta[iy][im]/MAX_ATM_NOM_YR;
-    		eq_prec[im] += prec[iy][im]/MAX_ATM_NOM_YR;
-    		eq_rain[im] += rain[iy][im]/MAX_ATM_NOM_YR;
-    		eq_snow[im] += snow[iy][im]/MAX_ATM_NOM_YR;
-    		eq_nirr[im] += nirr[iy][im]/MAX_ATM_NOM_YR;
-    		eq_vap[im] += vap[iy][im]/MAX_ATM_NOM_YR;
+		for(int iy=0; iy<MAX_ATM_NOM_YR;iy++){    //Yuan: average over the first 30 yrs atm data
+			eq_ta[im] += ta[iy][im]/MAX_ATM_NOM_YR;
+			eq_prec[im] += prec[iy][im]/MAX_ATM_NOM_YR;
+			eq_rain[im] += rain[iy][im]/MAX_ATM_NOM_YR;
+			eq_snow[im] += snow[iy][im]/MAX_ATM_NOM_YR;
+			eq_nirr[im] += nirr[iy][im]/MAX_ATM_NOM_YR;
+			eq_vap[im] += vap[iy][im]/MAX_ATM_NOM_YR;
 		}
 	}
     		
-    for(int im =0; im<12; im++){
-    		ca_ta[im]=0.;
-    		ca_prec[im]=0.;
-    		ca_rain[im]=0.;
+	for(int im =0; im<12; im++){
+		ca_ta[im]=0.;
+		ca_prec[im]=0.;
+		ca_rain[im]=0.;
     		ca_snow[im]=0.;
     		ca_nirr[im]=0.;
     		ca_vap[im]=0.;
@@ -75,32 +77,34 @@ void Atmosphere::prepareMonthDrivingData(){
     			ca_nirr[im] += nirr[iy][im]/MAX_ATM_NOM_YR;
     			ca_vap[im] += vap[iy][im]/MAX_ATM_NOM_YR;
     		}
-    }
+	}
    
    	// prepare other variables
    	for(int iy=0; iy<ed->gd->act_atm_drv_yr; iy++){
    		yrsumday=0; //Yi: may 17, 2010
    		for(int im=0; im<12;im++){
-	       girr[iy][im] = getGIRR(lat, dinm[im] );
-	       cld[iy][im] = getCLDS(girr[iy][im], nirr[iy][im]);
-	       par[iy][im] = getPAR( cld[iy][im],  nirr[iy][im] );
-    	}
+	       		girr[iy][im] = getGIRR(lat, dinm[im] );
+	       		cld[iy][im] = getCLDS(girr[iy][im], nirr[iy][im]);
+	       		par[iy][im] = getPAR( cld[iy][im],  nirr[iy][im] );
+    		}
    	}
-    	
+
+	yrsumday=0; 
    	for(int im=0; im<12;im++){
-   		yrsumday=0; //Yi: may 17, 2010
-	    eq_girr[im] = getGIRR(lat, dinm[im] );
-	    eq_cld[im] = getCLDS(eq_girr[im], eq_nirr[im]);
-	    eq_par[im] = getPAR( eq_cld[im],  eq_nirr[im] );
-    }
+// 		yrsumday=0; //Yi: may 17, 2010
+	    	eq_girr[im] = getGIRR(lat, dinm[im] );
+	    	eq_cld[im] = getCLDS(eq_girr[im], eq_nirr[im]);
+	    	eq_par[im] = getPAR( eq_cld[im],  eq_nirr[im] );
+    	}
     
-    for(int im=0; im<12;im++){
-   		yrsumday=0; //Yi: may 17, 2010
-	    ca_girr[im] = getGIRR(lat, dinm[im] );
-	    ca_cld[im] = getCLDS(ca_girr[im], ca_nirr[im]);
-	    ca_par[im] = getPAR( ca_cld[im],  ca_nirr[im] );
-    }
-    
+  	yrsumday=0; 
+    	for(int im=0; im<12;im++){
+//		yrsumday=0; //Yi: may 17, 2010
+		ca_girr[im] = getGIRR(lat, dinm[im] );
+		ca_cld[im] = getCLDS(ca_girr[im], ca_nirr[im]);
+	    	ca_par[im] = getPAR( ca_cld[im],  ca_nirr[im] );
+    	}
+  
 };
  
 void Atmosphere::prepareDayDrivingData(){
@@ -326,18 +330,19 @@ void Atmosphere::beginOfMonth(const int & curyrcnt ,const int& currmind,const in
   		if (changeco2) {
   			ed->m_atms.co2  = ed->rd->co2[curyrcnt%ed->rd->act_co2_drv_yr];   //Yuan: this reuse CO2 data sets
   		} else {
-  	    	ed->m_atms.co2  = ed->initco2;
+  	    		ed->m_atms.co2  = ed->initco2;
   		}
 
   		ed->m_atms.ta   = eq_ta[currmind];
+		//if (currmind==6) cout<<"atm->beginOfMonth - m_atms.ta= "<<ed->m_atms.ta<<"\n";
   		ed->m_atms.clds = eq_cld[currmind];
-    	ed->m_atmd.vp   = eq_vap[currmind];
-    	ed->m_a2l.prec  = eq_prec[currmind];
-    	ed->m_a2l.rnfl  = eq_rain[currmind];
-    	ed->m_a2l.snfl  = eq_snow[currmind];
+		ed->m_atmd.vp   = eq_vap[currmind];
+		ed->m_a2l.prec  = eq_prec[currmind];
+		ed->m_a2l.rnfl  = eq_rain[currmind];
+		ed->m_a2l.snfl  = eq_snow[currmind];
    		ed->m_a2l.girr  = eq_girr[currmind];
-    	ed->m_a2l.nirr  = eq_nirr[currmind];
-    	ed->m_a2l.par   = eq_par[currmind];
+		ed->m_a2l.nirr  = eq_nirr[currmind];
+		ed->m_a2l.par   = eq_par[currmind];
 
   	}else {
 
@@ -349,27 +354,29 @@ void Atmosphere::beginOfMonth(const int & curyrcnt ,const int& currmind,const in
  				//Yuan: this reuse the last CO2 data
   			}
   		} else {
-  	    	ed->m_atms.co2  = ed->initco2;
+  	    		ed->m_atms.co2  = ed->initco2;
   		}
 
   		int yrind;
   		if (changeclm) {
-    	    yrind = curyrcnt%ed->gd->act_atm_drv_yr;    //Yuan: this will reuse the whole atm data set
+    			yrind = curyrcnt%ed->gd->act_atm_drv_yr;    //Yuan: this will reuse the whole atm data set
   		} else {
-    	    yrind = curyrcnt%(min(30, ed->gd->act_atm_drv_yr));    //Yuan: this will reuse the atm data of first 30 yrs
+    			yrind = curyrcnt%(min(30, ed->gd->act_atm_drv_yr));    //Yuan: this will reuse the atm data of first 30 yrs
   		}
 
-  		ed->m_atms.ta   = ta[yrind][currmind];
+		ed->m_atms.ta   = ta[yrind][currmind];
   		ed->m_atms.clds = cld[yrind][currmind];
-    	ed->m_atmd.vp   = vap[yrind][currmind];
-    	ed->m_a2l.prec  = prec[yrind][currmind];
-    	ed->m_a2l.rnfl  = rain[yrind][currmind];
-    	ed->m_a2l.snfl  = snow[yrind][currmind];
-    	ed->m_a2l.girr  = girr[yrind][currmind];
-    	ed->m_a2l.nirr  = nirr[yrind][currmind];
-    	ed->m_a2l.par   = par[yrind][currmind];
+    		ed->m_atmd.vp   = vap[yrind][currmind];
+    		ed->m_a2l.prec  = prec[yrind][currmind];
+    		ed->m_a2l.rnfl  = rain[yrind][currmind];
+    		ed->m_a2l.snfl  = snow[yrind][currmind];
+    		ed->m_a2l.girr  = girr[yrind][currmind];
+    		ed->m_a2l.nirr  = nirr[yrind][currmind];
+    		ed->m_a2l.par   = par[yrind][currmind];
+	}
 
-  	}
+//if (currmind == 5) cout << "beginOfMonth / ed->m_atms.ta(5)" << ed->m_atms.ta << "\n";
+//if (currmind == 5) cout << "beginOfMonth / ed->m_a2l.nirr(5)" << ed->m_a2l.nirr << "\n";
 
 };
 
@@ -390,6 +397,9 @@ void Atmosphere::updateDailyEnviron(const int &yrcnt, const int & mid, const int
 		ed->d_atmd.vpd  = eq_vpd_d[mid][dayid];                
 		ed->d_atmd.dersvp = eq_dersvp_d[mid][dayid];
 		ed->d_atmd.abshd  = eq_abshd_d[mid][dayid];
+		if (mid==6) { 
+			//if (dayid==30) cout<< "ta"<< ed->d_atms.ta <<"\n";
+		}
     	
     }else {
     	

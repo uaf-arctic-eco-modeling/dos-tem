@@ -76,7 +76,9 @@ class RestartOutputer {
 
    		NcVar* TYPEsoilV;
 	
-   		NcVar* TYPEminV;
+   		NcVar* CLAYminV;
+   		NcVar* SANDminV;
+   		NcVar* SILTminV;
 	
    		NcVar* TSrockV;
    		NcVar* DZrockV;

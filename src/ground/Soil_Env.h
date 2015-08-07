@@ -22,6 +22,7 @@
 #include "../inc/ErrorCode.h"
 #include "../util/Exception.h"
 
+
 class Soil_Env{
   public:
   Soil_Env();
@@ -57,7 +58,7 @@ class Soil_Env{
 
   
   void initializeParameter(const int &drgtypep, const int &vegtypep);
-  void initializeState( Layer* fstsoill);
+  void initializeState(Layer* fstsoill);
   void initializeState5restart( Layer* fstsoill,RestartData* resin);
   
   
@@ -87,7 +88,7 @@ void retrieveThawPercent(Layer* fstsoill);
 
 //////////////////////
 
-void resetFineRootFrac(Layer* fstsoill);
+void resetFineRootFrac(const int & yrcnt, Layer* fstsoill);
 void resetTypeDZ(Layer* fstsoill);
 soipar_env envpar;
 
@@ -96,25 +97,17 @@ soipar_env envpar;
   private:
   
   
-  double getEvaporation(const double & tsurf, const double & dayl, const double &rad);
-  
-  double getPenMonET(const double & ta, const double& vpd, const double &irad,
-				const double &rv, const double & rh);
-  double updateLayerTemp5Lat(Layer* currl, const double & infil);
-  
-  double getFineRootFrac(const double & layertop, const double & layerbot, const double & mossthick);
-  
- 
-  
+  double getEvaporation(const double & tsurf, const double & dayl, const double &rad);  
+  double getPenMonET(const double & ta, const double& vpd, const double &irad, const double &rv, const double & rh);
+  double updateLayerTemp5Lat(Layer* currl, const double & infil); 
+  double getFineRootFrac(const int & yrcnt, const double & layertop, const double & layerbot, const double & mossthick);
+
   EnvData * ed;	
   FirData * fd;
-  
-
   CohortLookup* chtlu;
-  
+
   void initTempMois(Layer* frontl);
   void initRootMass(Layer* fstsoill);
-
 
 };
 

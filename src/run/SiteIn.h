@@ -26,7 +26,9 @@ class SiteIn {
 		float orgn;
 		float avln;
 	
-		int mintype[MAX_MIN_LAY];
+		int minclay[MAX_MIN_LAY];
+		int minsand[MAX_MIN_LAY];
+		int minsilt[MAX_MIN_LAY];
 	
 		float initz[MAX_SOI_LAY];
 		float initst[MAX_SOI_LAY];

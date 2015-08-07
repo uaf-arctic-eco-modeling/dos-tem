@@ -54,7 +54,7 @@ int Cohort::reset() {
   
 	int errcode = 0;
 	int drgtype = cd->drgtype;
-    int vegtype = cd->vegtype;
+    	int vegtype = cd->vegtype;
  	  
  	 // initial state variables
 
@@ -62,32 +62,36 @@ int Cohort::reset() {
 
 		// first read in the default initial values
 	 	ground.soil.moss.thick = chtlu.mossthick[drgtype][vegtype];
-    	ground.soil.peat.shlwthick = chtlu.fibthick[drgtype][vegtype];
-    	ground.soil.peat.deepthick = chtlu.humthick[drgtype][vegtype];
+    		ground.soil.peat.shlwthick = chtlu.fibthick[drgtype][vegtype];
+    		ground.soil.peat.deepthick = chtlu.humthick[drgtype][vegtype];
 
 		// reset the soil texture data from grid-level soil.nc, rather than 'chtlu',
- 	    // Note that the default mineral layer structure is defined in layerconst.h
- 		 float z=0;
- 		 for (int i=0; i<MAX_MIN_LAY; i++){
+ 	        // Note that the default mineral layer structure is defined in layerconst.h
+ 		float z=0;
+ 		for (int i=0; i<MAX_MIN_LAY; i++){
 	 			 z+=MINETHICK[i];
 	 			 if (z<=0.21) {   //assuming the grid top-soil texture is for top 20 cm
-	 				 ground.soil.mineral.type[i] = gd->topsoil;
+	 				ground.soil.mineral.clay[i] = gd->topclay;
+	 				ground.soil.mineral.sand[i] = gd->topsand;
+	 				ground.soil.mineral.silt[i] = gd->topsilt;
 	 			 } else {
-	 				 ground.soil.mineral.type[i] = gd->botsoil;
+	 				 ground.soil.mineral.clay[i] = gd->botclay;
+	 				 ground.soil.mineral.sand[i] = gd->botsand;
+	 				 ground.soil.mineral.silt[i] = gd->botsilt;
 	 			 }
-
 	 	 }
  		 ground.soil.mineral.thick = z;
 
  		 // then if we have sitein.nc, as specified. In this way, if sitein.nc may not provide
  		 // all data, then model will still be able to use the default.
-	    if(md->initmode ==2){ //from sitein.nc specified as md->initialfile
-	    	setSiteStates(&sitein);
-	    }
+	    	if(md->initmode ==2){ //from sitein.nc specified as md->initialfile
+	    		setSiteStates(&sitein);
+	    	}
 	} else {    //restart
 		ground.soil.moss.thick = 0.0;
 		ground.soil.peat.shlwthick = 0.0;
 		ground.soil.peat.deepthick = 0.0;
+
 		for (int i=0; i<MAX_SOI_LAY; i++){
 			if (resid.TYPEsoil[i]==0) ground.soil.moss.thick += resid.DZsoil[i];
 			if (resid.TYPEsoil[i]==1) ground.soil.peat.shlwthick += resid.DZsoil[i];
@@ -96,14 +100,17 @@ int Cohort::reset() {
 
 		}
 		for(int j=0; j<MAX_MIN_LAY; j++){
-			ground.soil.mineral.type[j] = resid.TYPEmin[j];
+			ground.soil.mineral.clay[j] = resid.CLAYmin[j];
+			ground.soil.mineral.sand[j] = resid.SANDmin[j];
+			ground.soil.mineral.silt[j] = resid.SILTmin[j];
 		}
+
 
 		for(int i=0; i<12; i++){
  			ve.envlaiall[i] =  chtlu.envlai[vegtype][i] ;
  		}
 	}
-  
+
  	fire.initializeParameter(drgtype, vegtype);
  	sb.initializeParameter(drgtype, vegtype);
  	vb.initializeParameter(drgtype, vegtype);
@@ -125,9 +132,11 @@ int Cohort::reset() {
  	} else {
  		if(md->runsp){
  	  		cd->reschtid = cd->spchtid;	
- 		} else if (md->runtr){
+		} else if (md->runtr){
  	  		cd->reschtid = cd->trchtid;	
- 		}
+ 		} else if (md ->runsc){
+ 	  		cd->reschtid = cd->scchtid;	
+		}
  		
  		fire.initializeState5restart(&resid);
  		vb.initializeState5restart(&resid);
@@ -268,8 +277,12 @@ void Cohort::setSiteStates(SiteIn *initstate){
 		ground.soil.peat.deepthick = initstate->humthick;
 
 	for(int i=0; i<MAX_MIN_LAY; i++){
- 		if (initstate->mintype[i]!=-999) 
- 			ground.soil.mineral.type[i] = initstate->mintype[i];
+ 		if (initstate->minclay[i]!=-999) 
+ 			ground.soil.mineral.clay[i] = initstate->minclay[i];
+  		if (initstate->minsand[i]!=-999) 
+			ground.soil.mineral.sand[i] = initstate->minsand[i];
+ 		if (initstate->minsilt[i]!=-999) 
+ 			ground.soil.mineral.silt[i] = initstate->minsilt[i];
  	}
 
  	for (int i=0; i<MAX_SOI_LAY; i++) {
@@ -283,6 +296,7 @@ void Cohort::setSiteStates(SiteIn *initstate){
  		if (initstate->initst[i]!=-999) ground.soil.initem[i]=initstate->initst[i];
  		if (initstate->initsm[i]!=-999) ground.soil.inivwc[i]=initstate->initsm[i];
 	}
+
 
  	//update the variables in the module, due to above modification
 	ground.initializeLayerStructure();
@@ -313,8 +327,10 @@ void Cohort::getSiteStates(SiteIn *currstate){
 	double humc  = 0.0;
 	double minc  = 0.0;
 	int TYPEsoil[MAX_SOI_LAY];
-	int TYPEmin[MAX_MIN_LAY];
-	updateSoilLayerType(TYPEsoil, TYPEmin);
+	int CLAYmin[MAX_MIN_LAY];
+	int SANDmin[MAX_MIN_LAY];
+	int SILTmin[MAX_MIN_LAY];
+	updateSoilLayerType(TYPEsoil, CLAYmin, SANDmin, SILTmin);
 	for (int il=0; il<MAX_SOI_LAY; il++){
 		soilc+=bd->m_sois.nonc[il]+bd->m_sois.reac[il];
 		if (TYPEsoil[il]==1){
@@ -334,7 +350,9 @@ void Cohort::getSiteStates(SiteIn *currstate){
 	currstate->orgn = bd->m_sois.orgn;
 	
 	for (int il=0; il<MAX_MIN_LAY; il++){
-		currstate->mintype[il]=TYPEmin[il];
+		currstate->minclay[il]=CLAYmin[il];
+		currstate->minsand[il]=SANDmin[il];
+		currstate->minsilt[il]=SILTmin[il];
 	}
 	
     for (int i=0; i<MAX_SOI_LAY; i++) {
@@ -422,8 +440,8 @@ void Cohort::getCalPar(vegpar_cal *vbcalpar, soipar_cal *sbcalpar){
 
 };
 
-void Cohort::fireDrivingData(bool runsp, bool runtr, bool runsc){
-	fire.prepareDrivingData(runsp, runtr, runsc);
+void Cohort::fireDrivingData(bool runeq, bool runsp, bool runtr, bool runsc){
+	fire.prepareDrivingData(runeq, runsp, runtr, runsc);
 	firstfireyr = fire.firstfireyr;
 };
 
@@ -432,38 +450,41 @@ int Cohort::timerOutputYearIndex(bool equiled, bool spined, bool outputSpinup){
 };
 
 int Cohort::updateMonthly(const int & outputyrind,const int & yrcnt, const int & currmind,
-             const int & dinmcurr, const bool & assigneq, const bool & useeq){
+        const int & dinmcurr, const bool & assigneq, const bool & useeq){
 	int error = 0;
-	
+//	if (currmind == 5) cout << "update monthly/ ed->m_atms.co2(5)" << ed->m_atms.co2 << "\n";
+//	if (currmind == 5) cout << "update monthly/ ed->m_a2l.nirr(5)" << ed->m_a2l.nirr << "\n";
+//	if (currmind == 5) cout << "dslmodule " << dslmodule<<"\n";
+//	if (currmind == 5) cout << "dsbmodule " << dsbmodule<<"\n";
+//	if (currmind == 5) cout << "ecomodule " << ecomodule<<"\n";
+//	if (currmind == 5) cout << "envmodule " << envmodule<<"\n";
+
 	if (veupdateLAI5Vegc) {
 		ve.updateLAI5Vegc=true;
 	}else{
 		ve.updateLAI5Vegc=false;	
 	}
-	
-   	if(currmind ==0){
+   	if(currmind == 0){
   	 	fd->beginOfYear();
    	}	
-   
    	if(dsbmodule){	
   		updateMonthly_Fir(yrcnt, currmind);
    	}
-  
   	if(dslmodule ){
-    	updateMonthly_Dsl(currmind);
+    		updateMonthly_Dsl(yrcnt, currmind);
   	}
   
   	int calyr = timer->getCalendarYear(equiled, spined);
+//	if (currmind == 5) cout << "update monthly/ ed->m_atms.co2(5)" << ed->m_atms.co2 << "\n";
+
   	if(envmodule){
   		error = updateMonthly_Env( yrcnt,calyr, currmind, dinmcurr, assigneq );
-        if (error != 0) return error;
-
+//		cout<<"error update monthly: "<<error<<"\n";
+        	if (error != 0) return error;
   	}
-  
   	if(ecomodule){
   		updateMonthly_Bgc( yrcnt,calyr, currmind, dinmcurr ,useeq);
   	}
-
   	if(currmind==11){
   		fd->endOfYear();
   	}
@@ -474,6 +495,8 @@ int Cohort::updateMonthly(const int & outputyrind,const int & yrcnt, const int &
 			updateRegionalOutputBuffer(currmind);
 		}
 	}
+//	if (currmind == 5) cout << "update monthly/ ed->m_atms.co2(5)" << ed->m_atms.co2 << "\n";
+//	if (currmind == 5) cout << "after daily/ ed->m_a2l.nirr(5)" << ed->m_a2l.nirr << "\n";
 
 	return 0;
 
@@ -485,16 +508,14 @@ int Cohort::updateMonthly(const int & outputyrind,const int & yrcnt, const int &
 void Cohort::updateMonthly_Fir(const int & yrcnt, const int & currmind  ){ 
   
   	int fireoccur = fire.getOccur(yrcnt, currmind, friderived);
-       
-   	if(fireoccur==1 ){
-   	
-    	double inputnonc = bd->m_sois.wdebris;
-  		fire.burn(yrcnt, friderived);
 
+   	if(fireoccur==1 ){
+    		double inputnonc = bd->m_sois.wdebris;
+		fire.burn(yrcnt, friderived);
    		sb.assignCarbon5Struct2Layer(ground.fstsoill);
    	
  		if(dslmodule){
- 			ground.burn(dslmodule);
+ 			ground.burn(yrcnt,dslmodule);
 		   	sb.updateDeepCarbonAfterLayerDivide(ground.fstdeepl);
  		}
 
@@ -502,18 +523,18 @@ void Cohort::updateMonthly_Fir(const int & yrcnt, const int & currmind  ){
  		bd->m_sois.wdebris = 0.0; //Yi: May 21, 2010: there is a need to set wdebris to zero
    	} 
 
-    if(currmind==11){
+    	if(currmind==11){
 	  	if(outSiteYear){
   			updateSiteYlyOutputBuffer_Fir();
 	  	}
-    }
+    	}
    
 };
 
 /////////////////////////////////////////////////////////////////////////////////
 //   Dynamical Soil Layer Module (DSL) calling, but only at yearly timestep
 ////////////////////////////////////////////////////////////////////////////////
-void Cohort::updateMonthly_Dsl(const int & currmind){
+void Cohort::updateMonthly_Dsl(const int & yrcnt, const int & currmind){
 	if(currmind==0){ 
 		//only update the thickness at begin of year , since it is a slow process 	
 //  		if(equiled){   //Yuan: so that this module can be used for eq-run
@@ -552,7 +573,7 @@ void Cohort::updateMonthly_Dsl(const int & currmind){
 		   
 //		    if(envmodule && ecomodule){    //Yuan: this doesn't make sense
 
-		    	ground.adjustLayerThickness(mossthick);
+		    	ground.adjustLayerThickness(yrcnt, mossthick);
 		           	
 	     	 	sb.updateShallowCarbonAfterLayerDivide(ground.fstshlwl, ground.lstshlwl);
 	     	 	sb.updateDeepCarbonAfterLayerDivide(ground.fstdeepl);
@@ -571,68 +592,73 @@ int Cohort::updateMonthly_Env(const int & yrcnt,const int &  calyr,
 			const int & currmind, const int & dinmcurr, const bool & assigneq){
 
 	int error = 0;
-
 	double tdrv, daylength; 
-
 	//update the atmosphere first
-    int inputyrind = timer->getInputYearIndex(equiled, spined);
+	int inputyrind = timer->getInputYearIndex(equiled, spined);
 
-//	atm->beginOfMonth(inputyrind,currmind,dinmcurr, equiled);
-    //Yuan: change climate/co2 option added
-    if (md->runeq) {
-    	atm->beginOfMonth(inputyrind,currmind,dinmcurr, true, false, false); //first t/f: for normal/dynamical, 2nd t/f: for change clm
-    } else if (md->runsp) {
-    	if (md->changeclimate) {    //when define this option for sp-run, remember it controls normal/dynamical weather option
-        	atm->beginOfMonth(inputyrind,currmind,dinmcurr, false, false, md->changeco2);
-    	} else {
-        	atm->beginOfMonth(inputyrind,currmind,dinmcurr, true, false, md->changeco2);
-    	}
-    } else {
-    	atm->beginOfMonth(inputyrind,currmind,dinmcurr, false, md->changeclimate, md->changeco2);
-    }
+	//atm->beginOfMonth(inputyrind,currmind,dinmcurr, equiled);
+	//Yuan: change climate/co2 option added
 
- 	if(currmind==0){ //begin of year
+	if (md->runeq) {
+    		atm->beginOfMonth(inputyrind,currmind,dinmcurr, true, false, false); //first t/f: for normal/dynamical, 2nd t/f: for change clm
+//		if (currmind == 5) cout << "beginOfMonth / ed->m_atms.ta(5)" << ed->m_atms.ta << "\n";
+//		if (currmind == 5) cout << "beginOfMonth / ed->m_a2l.nirr(5)" << ed->m_a2l.nirr << "\n";
+	
+	} else if (md->runsp) {
+		if (md->changeclimate) {    //when define this option for sp-run, remember it controls normal/dynamical weather option
+			atm->beginOfMonth(inputyrind,currmind,dinmcurr, false, false, md->changeco2);
+		} else {
+			atm->beginOfMonth(inputyrind,currmind,dinmcurr, true, false, md->changeco2);
+		}
+	} else {
+		atm->beginOfMonth(inputyrind,currmind,dinmcurr, false, md->changeclimate, md->changeco2);
+	}
+
+	if(currmind==0){ //begin of year
 		ed->beginOfYear();
 	} 
 	
 	ed->y_vegd.vegfrac =1;
-	
 	//if(currmind>=5 && currmind<=9){  //for warm season
 		
-		if(cd->vegtype <=3){
-		   ed->d_soid.nfactor =1;      //tundra	
-		}else if(cd->vegtype==4){      //deciduous
-		   ed->d_soid.nfactor = 0.94;  //
-		}else{                         // coniferous
-		    if(fd->ysf <ve.envpar.matureage){
-		        ed->d_soid.nfactor = 1.1 -(fd->ysf)/ve.envpar.matureage * (1.1 -0.66);	
-		     }else{
-		     	ed->d_soid.nfactor =0.66; 
-		     }
+	if(cd->vegtype > 3){
+		ed->d_soid.nfactor =1;      	//tundra	
+	}else if(cd->vegtype==3){      		//deciduous
+		ed->d_soid.nfactor = 0.94;  	//
+	}else{                         // coniferous
+		if(fd->ysf <ve.envpar.matureage){
+			ed->d_soid.nfactor = 1.1 -(fd->ysf)/ve.envpar.matureage * (1.1 -0.66);	
+		}else{
+			ed->d_soid.nfactor =0.66; 
 		}
-    
-    //}else{
-    //   	ed->d_soid.nfactor =1;
-    //}
+	}
+//   if (currmind==11)  cout<<"nfactor: "<<ed->d_soid.nfactor<<" Mature Age: "<<ve.envpar.matureage<<"\n";
+
+	//}else{
+	//   	ed->d_soid.nfactor =1;
+	//}
       
 	//when the soil carbon changed, the soil layer thickness will change, and the thickness
-	//might become too small or too big , so there is a need to combine or divide a layer	
+	//might become too small or too big , so there is a need to combine or divide a layer
+	
 	double meandayl = gd->alldaylengths[currmind*30+15];
 	ve.updateEnvLai(currmind, bd->m_vegd.lai);
-	ve.beginOfMonth(meandayl);//update some variables which will not change in one month
-	
-	ed->beginOfMonth();
-		
-	for(int id =0; id<dinmcurr; id++){
+//cout << "bd->m_vegd.lai 5 cohort" << bd->m_vegd.lai <<"\n";
+//cout << "currmind" << currmind <<"\n";
 
-        ed->beginOfDay();
-        
-        int doy =timer->getDOYIndex(currmind, id);
-         
+//cout << "ed->d_vegd.envlai" << ed->d_vegd.envlai <<"\n";
+	ve.beginOfMonth(meandayl);//update some variables which will not change in one month
+	ed->beginOfMonth();
+
+//	if (currmind == 5) cout << "before daily/ ed->m_atms.ta(5)" << ed->m_atms.co2 << "\n";
+//	if (currmind == 5) cout << "before daily/ ed->m_a2l.nirr(5)" << ed->m_a2l.nirr << "\n";
+
+	for(int id =0; id<dinmcurr; id++){
+		ed->beginOfDay();
+		int doy =timer->getDOYIndex(currmind, id);
 		daylength = gd->alldaylengths[doy];
-		
 		//Yuan: climate change OR NOT:
-//        atm->updateDailyEnviron(yrcnt, currmind, id, equiled, spined);
+		//atm->updateDailyEnviron(yrcnt, currmind, id, equiled, spined);
 		if (md->runeq) {
 			atm->updateDailyEnviron(yrcnt, currmind, id, true, false);   //normal: averaged over first 30-yrs
 		} else if(md->runsp){
@@ -644,55 +670,86 @@ int Cohort::updateMonthly_Env(const int & yrcnt,const int &  calyr,
 		} else {
 			atm->updateDailyEnviron(yrcnt, currmind, id, false, true);   //dynamical: over the whole data
 		}
-
 		tdrv = ed->d_atms.ta;  
-		 
-	    // for some factors from other components
+		//for some factors from other components
 		ed->d_vegd.btran =  ground.getSoilTransFactor();
-		
-		// calculate vegetation water dynamics
+		//calculate vegetation water dynamics
 		ve.updateDaily(daylength);
-		// ground/soil water dynamics
+		//ground/soil water dynamics
 		error = ground.updateDaily(yrcnt, calyr, currmind, id, tdrv, daylength);
 		if (error != 0) return error;
-		
 		ground.soil.layer2structdaily(ground.fstsoill);
 		ground.soil.retrieveDailyOutputs(ground.fstsoill,ground.fstminl, ground.lstminl, ground.backl);
-        ground.soil.retrieveDailyFronts(ground.fstsoill);
-        ground.snow.retrieveDailyOutputs(ground.frontl);
+        	ground.soil.retrieveDailyFronts(ground.fstsoill);
+        	ground.snow.retrieveDailyOutputs(ground.frontl);
 		ed->endOfDay(dinmcurr, doy);//accumulate daily var into monthly var    
 
 //	    #ifdef ODAY
 		if(outSiteDay){
-	      	updateSiteDlyOutputBuffer_Env(doy);
-	    }
-//	    #endif
-		    		
-		if(id==dinmcurr-1){	// at end of one month
-     		ground.soil.layer2structmonthly(ground.fstsoill);
-      		ed->endOfMonth(currmind,assigneq);
-
-     		if (outSiteMonth) {
+	      		updateSiteDlyOutputBuffer_Env(doy);
+	    	}
+//	    #endif 	
+		if (id==dinmcurr-1){	// at end of one month
+			//cout << "cohort ta " << ed->m_atms.ta << "\n";
+     			ground.soil.layer2structmonthly(ground.fstsoill);
+      			ed->endOfMonth(currmind,assigneq);
+//	if (currmind == 6) cout << "tas in envdata "<<ed->m_atms.ta<<" for month("<<currmind<<") and year ("<< yrcnt <<")"<<"\n";
+     			if (outSiteMonth) {
    				updateSiteMlyOutputBuffer_Env(currmind);
-     		}
+     			}
+			//Yuan: for output soil climate variables
+ 
 
-     		//Yuan: for output soil climate variables
-     		if (outSoilClm) {
-     			updateSclmOutputBuffer(currmind);
-     		}
+ 
+//cout<<"cd->drgtype: "<< cd->drgtype <<"\n";
+//cout<<"ed->m_sois.numsl: "<< ed->m_sois.numsl <<"\n";
+//for(int il =0;il<MAX_SOI_LAY; il++){
+//cout<<"(int)ed->m_sois.type[il]: "<< (int)ed->m_sois.type[il] <<"\n";
+//cout<<"ed->m_sois.por[il]: "<< ed->m_sois.por[il] <<"\n";
+//cout<<"ed->m_sois.dz[il]: "<< ed->m_sois.dz[il] <<"\n";
+//cout<<"ed->m_sois.rootfrac[il]: "<< ed->m_sois.rootfrac[il] <<"\n";
+//cout<<"ed->m_soid.tem[il]: "<< ed->m_soid.tem[il] <<"\n";
+//cout<<"ed->m_soid.alllwc[il]: "<< ed->m_soid.alllwc[il] <<"\n";
+//cout<<"ed->m_soid.allvwc[il]: "<< ed->m_soid.allvwc[il] <<"\n";
+//cout<<"ed->m_soid.alliwc[il]: "<< ed->m_soid.alliwc[il] <<"\n";
+//}
+//for(int il =0; il<MAX_MIN_LAY ; il++){
+//cout<<"ground.soil.mineral.clay[il] : "<< ground.soil.mineral.clay[il] <<"\n";
+//cout<<"ground.soil.mineral.sand[il]: "<< ground.soil.mineral.sand[il] <<"\n";
+//cout<<"ground.soil.mineral.silt[il]: "<< ground.soil.mineral.silt[il] <<"\n";
+//}
+//cout<<"ed->m_ald: "<< ed->m_ald <<"\n";
+//cout<<"ed->m_soid.watertab: "<< ed->m_soid.watertab <<"\n";
+//cout<<"ed->m_l2a.pet: "<< ed->m_l2a.pet <<"\n";
+//cout<<"ed->m_l2a.eet: "<< ed->m_l2a.eet <<"\n";
+//cout<<"ed->y_l2a.eet: "<< ed->y_l2a.eet <<"\n";
+//cout<<"ed->y_l2a.pet: "<< ed->y_l2a.pet <<"\n";
+//cout<<"ed->prveetmx: "<< ed->prveetmx <<"\n";
+//cout<<"ed->prvpetmx: "<< ed->prvpetmx <<"\n";
+
+
+
+
+
+
+    			if (outSoilClm) {
+     				updateSclmOutputBuffer(currmind);
+     			}
 		}
 	}
 	
+//	if (currmind == 5) cout << "after daily/ ed->m_atms.co2(5)" << ed->m_atms.co2 << "\n";
+//	if (currmind == 5) cout << "after daily/ ed->m_a2l.nirr(5)" << ed->m_a2l.nirr << "\n";
+
+
+
 	if(currmind==11){ 	
 	  	ed->endOfYear(assigneq);
-	  	
 	  	if (outSiteYear) {
   			updateSiteYlyOutputBuffer_Env();
 	  	}
-    }
-	
-	return 0;
-
+    	}
+return 0;
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -708,9 +765,10 @@ void Cohort::updateMonthly_Bgc(const int & yrcnt,const int &  calyr,
 		ed->m_l2a.eet= ed->eq_eet[currmind];
 		ed->m_a2l.par = ed->eq_par[currmind];
 		ed->m_soid.growpct = ed->eq_grow[currmind];
-		    
+	
+
 		for(int il =0; il<MAX_SOI_LAY; il++){
-			ed->m_sois.ts[il] = ed->eq_ts[currmind][il];
+		    ed->m_sois.ts[il] = ed->eq_ts[currmind][il];
 		    ed->m_sois.liq[il] = ed->eq_liq[currmind][il];
 		    ed->m_sois.ice[il] = ed->eq_ice[currmind][il];
 		    ed->m_soid.allvwc[il] = ed->eq_vwc[currmind][il];
@@ -741,15 +799,15 @@ void Cohort::updateMonthly_Bgc(const int & yrcnt,const int &  calyr,
 	vb.updateToptUnleafmx(currmind);
 		 
 	//at end of biogeochemistry processes, the layer should be changed
-    //update the soil layer related variables
-    sb.afterIntegration();
-    vb.afterIntegration();
-    bd->endOfMonth(currmind);
+    	//update the soil layer related variables
+    	sb.afterIntegration();
+    	vb.afterIntegration();
+    	bd->endOfMonth(currmind);
 
 	if (outSiteMonth) {
 		 updateSiteMlyOutputBuffer_Bgc(currmind);
 	}
-		 		 
+
 	if(currmind==11){
 		vb.adapt();
 		bd->endOfYear(sb.bgcpar.cnsoil);
@@ -982,22 +1040,22 @@ void Cohort::updateSiteMlyOutputBuffer_Bgc(const int & im){
 	    
 	    	//2D to 1D (for Java data reading)
 	    	sslod->reac1D[im*MAX_OUT_SOI+il]= bd->m_sois.reac[il];
-			sslod->nonc1D[im*MAX_OUT_SOI+il]= bd->m_sois.nonc[il];			  
-	   		sslod->rrh1D[im*MAX_OUT_SOI+il]= bd->m_soi2a.rrh[il];
-	   		sslod->nrh1D[im*MAX_OUT_SOI+il]= bd->m_soi2a.nrh[il];
-		    sslod->rhmoist1D[im*MAX_OUT_SOI+il]= bd->m_soid.rhmoist[il];
-		    sslod->rhq101D[im*MAX_OUT_SOI+il]= bd->m_soid.rhq10[il];
-	   		sslod->ksoil1D[im*MAX_OUT_SOI+il]= bd->m_soid.ksoil[il];
+		sslod->nonc1D[im*MAX_OUT_SOI+il]= bd->m_sois.nonc[il];			  
+	   	sslod->rrh1D[im*MAX_OUT_SOI+il]= bd->m_soi2a.rrh[il];
+	   	sslod->nrh1D[im*MAX_OUT_SOI+il]= bd->m_soi2a.nrh[il];
+		sslod->rhmoist1D[im*MAX_OUT_SOI+il]= bd->m_soid.rhmoist[il];
+		sslod->rhq101D[im*MAX_OUT_SOI+il]= bd->m_soid.rhq10[il];
+	   	sslod->ksoil1D[im*MAX_OUT_SOI+il]= bd->m_soid.ksoil[il];
 	    	sslod->kdl1D[im*MAX_OUT_SOI+il]= bd->m_soid.kdl[il];
 	    	sslod->kdr1D[im*MAX_OUT_SOI+il]= bd->m_soid.kdr[il];
 	    	sslod->kdn1D[im*MAX_OUT_SOI+il]= bd->m_soid.kdn[il];
 	   	}	
 	   	
-	    sslod->ninput[im]=bd->m_a2soi.ninput;
+	    	sslod->ninput[im]=bd->m_a2soi.ninput;
 	   	sslod->nlost[im]= bd->m_soi2l.nlost;
 	   	sslod->netnmin[im]= bd->m_soi2soi.netnmin;
 	   	sslod->nimmob[im]= bd->m_soi2soi.nimmob;
-	    sslod->orgn[im]= bd->m_sois.orgn;
+	    	sslod->orgn[im]= bd->m_sois.orgn;
 	   	sslod->avln[im]= bd->m_sois.avln;
 	   	sslod->reacsum[im]= bd->m_soid.reacsum;
 	   	sslod->noncsum[im]= bd->m_soid.noncsum;
@@ -1133,6 +1191,11 @@ void Cohort::updateSiteYlyOutputBuffer_Bgc(){
     sslod->yrdeepcsum =bd->y_soid.deepc;
     sslod->yrminecsum =bd->y_soid.minec;
     
+	sslod->yrkdfib = bd->kdfib;
+ 	sslod->yrkdhum = bd->kdhum;
+ 	sslod->yrkdmin = bd->kdmin;
+ 	sslod->yrkdslow = bd->kdslow;
+
     sslod->yrorgn =bd->y_sois.orgn;
     sslod->yravln =bd->y_sois.avln;
     sslod->yrsnuptake=bd->y_soi2v.nuptake;
@@ -1151,6 +1214,7 @@ void Cohort::updateRegionalOutputBuffer(const int & im){
 		if(md->runeq) regnod->chtid = cd->eqchtid;
 		if(md->runsp) regnod->chtid = cd->spchtid;
 		if(md->runtr) regnod->chtid = cd->trchtid;
+		if(md->runsc) regnod->chtid = cd->scchtid;
 	}
 
 	if (im==11) {
@@ -1485,8 +1549,7 @@ void Cohort::updateRegionalOutputBuffer(const int & im){
 
 	}
 
-	if (regnod->outvarlist[51]==2 || regnod->outvarlist[52]==2
-			|| regnod->outvarlist[53]==2) {
+	if (regnod->outvarlist[51]==2 || regnod->outvarlist[52]==2 || regnod->outvarlist[53]==2) {
 		for (int il=0; il<ed->m_soid.actual_num_soil; il++){
 			double ztop = ed->m_sois.z[il];
 			double zbot = ed->m_sois.z[il]+ed->m_sois.dz[il];
@@ -1511,6 +1574,48 @@ void Cohort::updateRegionalOutputBuffer(const int & im){
 
 	}
 
+	if (regnod->outvarlist[54]>=1 && im==11) {
+		regnod->snowstart= ed->y_sois.snowstart;}
+
+	if (regnod->outvarlist[55]>=1 && im==11) {
+		regnod->snowend= ed->y_sois.snowend;}
+
+	if (regnod->outvarlist[56]>=1 && im==11) {
+		regnod->burnsoiln = fd->y_soi2a.orgn;}
+
+	if (regnod->outvarlist[57]>=1 && im==11) {
+		regnod->burnvegn = fd->y_v2a.orgn;}
+
+	if (regnod->outvarlist[58]>=1 && im==11) {
+		regnod->ndepo = fd->y_a2soi.orgn;}
+
+
+	if (regnod->outvarlist[59]==1 && im==11) {
+		regnod->deadc[0] = bd->y_vegs.deadc;
+	} else if (regnod->outvarlist[59]==2) {
+		regnod->deadc[im] = bd->m_vegs.deadc;
+	}
+
+	if (regnod->outvarlist[60]==1 && im==11) {
+		regnod->deadn[0] = bd->y_vegs.deadn;
+	} else if (regnod->outvarlist[60]==2) {
+		regnod->deadn[im] = bd->m_vegs.deadn;
+	}
+
+	if (regnod->outvarlist[61]==1 && im==11) {
+		regnod->dwd[0] = bd->y_sois.wdebris;
+	} else if (regnod->outvarlist[61]==2) {
+		regnod->dwd[im] = bd->m_sois.wdebris;
+	}
+
+	if (regnod->outvarlist[62]==1 && im==11) {
+		regnod->dwdrh[0] = bd->y_soi2a.wdrh;
+	} else if (regnod->outvarlist[62]==2) {
+		regnod->dwdrh[im] = bd->m_soi2a.wdrh;
+	}
+
+	if (regnod->outvarlist[63]>=1 && im==11) {
+		regnod->ORL = fd->y_soid.OLR;}
 };
 
 void Cohort::updateRestartOutputBuffer(const int & stage){
@@ -1523,7 +1628,9 @@ void Cohort::updateRestartOutputBuffer(const int & stage){
  	try {
  		if(stage==1) resod->chtid = cd->eqchtid;
  		if(stage==2) resod->chtid = cd->spchtid;
- 		if(stage>=3) resod->chtid = cd->trchtid;
+//		if(stage>=3) resod->chtid = cd->trchtid;
+ 		if(stage==3) resod->chtid = cd->trchtid;
+		if(stage==4) resod->chtid = cd->scchtid;
 
  	int snowcount =-1;
  	int soilcount =-1;
@@ -1543,34 +1650,51 @@ void Cohort::updateRestartOutputBuffer(const int & stage){
  		  resod->LIQsnow[snowcount] = currl->liq;
  		  resod->ICEsnow[snowcount] = currl->ice;
  		  resod->RHOsnow[snowcount] = currl->rho;
- 		
+
+//cout<<"resod->TSsnow ["<<snowcount <<"]: "<< currl->tem <<"\n";
+//cout<<"resod->DZsnow ["<<snowcount <<"]: "<< currl->dz <<"\n";
+//cout<<"resod->LIQsnow ["<<snowcount <<"]: "<< currl->liq <<"\n";
+//cout<<"resod->ICEsnow ["<<snowcount <<"]: "<< currl->ice <<"\n";
+//cout<<"resod->AGEsnow ["<<snowcount <<"]: "<< currl->age <<"\n";
+//cout<<"resod->RHOsnow ["<<snowcount <<"]: "<< currl->rho <<"\n";
+		
  		//Soil layers
  		}else if(currl->isSoil()){
- 		  soilcount++;
  		  
- 		  resod->DZsoil[soilcount] = currl->dz;
- 		  resod->TSsoil[soilcount] = currl->tem;
- 		  resod->LIQsoil[soilcount] = currl->liq;
- 		 
- 		  resod->ICEsoil[soilcount] = currl->ice;
- 		  resod->FROZENsoil[soilcount] = currl->frozen;
+			soilcount++;
+ 		  
+ 		  	resod->DZsoil[soilcount] = currl->dz;
+ 		  	resod->TSsoil[soilcount] = currl->tem;
+ 		  	resod->LIQsoil[soilcount] = currl->liq;
+ 		  	resod->ICEsoil[soilcount] = currl->ice;
+ 		  	resod->FROZENsoil[soilcount] = currl->frozen;
+
+//cout<<"Out2_resod->dz ["<<soilcount <<"]: "<< currl->dz <<"\n";
+//cout<<"Out2_resod->tem ["<<soilcount <<"]: "<< currl->tem <<"\n";
+//cout<<"Out2_resod->liq ["<<soilcount <<"]: "<< currl->liq <<"\n";
+//cout<<"Out2_resod->ice ["<<soilcount <<"]: "<< currl->ice <<"\n";
+//cout<<"Out2_resod->frozen ["<<soilcount <<"]: "<< currl->frozen <<"\n";
  		 
  		  sl = dynamic_cast<SoilLayer*>(currl);
  		 
  		  if(sl->isMoss()){
  			  resod->TYPEsoil[soilcount] = 0;
- 		  }else if(sl->isPeat()){
+//cout<<"Out2_resod->TYPEsoil ["<<soilcount <<"]: "<< resod->TYPEsoil[soilcount] <<"\n";
+  		  }else if(sl->isPeat()){
  			  pl = dynamic_cast<PeatLayer*>(currl);
  		  	  if(pl->isFibric){
  		  		  resod->TYPEsoil[soilcount] =1;
+//cout<<"Out2_resod->TYPEsoil ["<<soilcount <<"]: "<< resod->TYPEsoil[soilcount] <<"\n";
  		  		  shlwno++;
  		  	  }else if(pl->isHumic){
  		  		  resod->TYPEsoil[soilcount] =2;
+//cout<<"Out2_resod->TYPEsoil ["<<soilcount <<"]: "<< resod->TYPEsoil[soilcount] <<"\n";
  		  		  deepno++;
  		  	  }
  		  }else if(sl->isMineral()){
  		  	  resod->TYPEsoil[soilcount] = 3;
- 		  }
+//cout<<"Out2_resod->TYPEsoil ["<<soilcount <<"]: "<< resod->TYPEsoil[soilcount] <<"\n";
+		  }
  		  
  		  if(sl->fronts.size()>0){
  		  	  if(sl->frozen !=0 ){
@@ -1580,7 +1704,10 @@ void Cohort::updateRestartOutputBuffer(const int & stage){
    		    	  frontcount++;
    		    	  resod->frontFT[frontcount] = sl->fronts[i]->frzing;
    		    	  resod->frontZ[frontcount] = sl->z  + sl->fronts[i]->dz;
-   		      }	
+
+//cout<<"Out2_resod->frontFT ["<<soilcount <<"]: "<< sl->fronts[i]->frzing <<"\n";
+//cout<<"Out2_resod->frontZ ["<<soilcount <<"]: "<< sl->z  + sl->fronts[i]->dz <<"\n";
+  		      }	
    		  }
  		  
  		//rock layers
@@ -1588,6 +1715,8 @@ void Cohort::updateRestartOutputBuffer(const int & stage){
  		  rockcount++;
  		  resod->DZrock[rockcount] = currl->dz;
  		  resod->TSrock[rockcount] = currl->tem;
+//cout<<"Out2_resod->DZrock ["<<rockcount <<"]: "<< currl->dz <<"\n";
+//cout<<"Out2_resod->TSrock ["<<rockcount <<"]: "<< currl->tem <<"\n";
  		}
  		
  		currl =currl->nextl;	
@@ -1595,33 +1724,35 @@ void Cohort::updateRestartOutputBuffer(const int & stage){
  	
  	for(int il =0; il<MAX_SOI_LAY ; il++){
  		if(resod->TYPEsoil[il] >=0){
- 	      resod->NONCsoil[il] =bd->m_sois.nonc[il];
- 		  resod->REACsoil[il] =bd->m_sois.reac[il];
- 		}
+ 	      		resod->NONCsoil[il] =bd->m_sois.nonc[il];
+ 		  	resod->REACsoil[il] =bd->m_sois.reac[il];
+//cout<<"Out2_resod->NONCsoil ["<<il <<"]: "<< bd->m_sois.nonc[il] <<"\n";
+//cout<<"Out2_resod->REACsoil ["<<il <<"]: "<< bd->m_sois.reac[il] <<"\n";
+		}
  	}
  	
  	for(int il =0; il<MAX_MIN_LAY ; il++){
- 		resod->TYPEmin[il] =ground.soil.mineral.type[il];
- 	}
+ 		resod->CLAYmin[il] =ground.soil.mineral.clay[il];
+ 		resod->SANDmin[il] =ground.soil.mineral.sand[il];
+  		resod->SILTmin[il] =ground.soil.mineral.silt[il];
+//cout<<"Out2_resod->CLAYmin ["<<il <<"]: "<< ground.soil.mineral.clay[il] <<"\n";
+//cout<<"Out2_resod->SANDmin ["<<il <<"]: "<< ground.soil.mineral.sand[il] <<"\n";
+//cout<<"Out2_resod->SILTmin ["<<il <<"]: "<< ground.soil.mineral.silt[il] <<"\n";
+  	}
  	
  	resod->perma = ed->permafrost;
-
  	resod->vegc = bd->m_vegs.c;
  	resod->deadc = bd->m_vegs.deadc;
  	resod->deadn = bd->m_vegs.deadn;
  	resod->unnormleaf = bd->m_vegs.unnormleaf;
  	resod->prvunnormleafmx = bd->prvunleafmx;
- 	resod->foliagemx = bd->foliagemx;
- 	
+ 	resod->foliagemx = bd->foliagemx;	
  	resod->prvtopt = bd->prvtopt;
- 	
  	resod->strn = bd->m_vegs.strn;
  	resod->ston = bd->m_vegs.ston;
- 		
  	resod->soln = bd->m_sois.orgn;
  	resod->avln = bd->m_sois.avln;
  	resod->wdebris = bd->m_sois.wdebris;
- 	
  	resod->prveetmx = ed->prveetmx;
  	resod->prvpetmx = ed->prvpetmx;
  	resod->c2n = bd->c2n;
@@ -1629,33 +1760,60 @@ void Cohort::updateRestartOutputBuffer(const int & stage){
  	resod->kdhum = bd->kdhum;
  	resod->kdmin = bd->kdmin;
  	resod->kdslow = bd->kdslow;
- 	
  	resod->lai = bd->m_vegd.lai;
-	
  	resod->ysf = fd->ysf;
  	resod->burnedn = fd->y_a2soi.orgn;
-  
+
+//cout<<"Out2_resod->perma: "<< ed->permafrost <<"\n";
+//cout<<"Out2_resod->vegc: "<< bd->m_vegs.c <<"\n";
+//cout<<"Out2_resod->deadc: "<< bd->m_vegs.deadc <<"\n";
+//cout<<"Out2_resod->deadn: "<<  bd->m_vegs.deadn <<"\n";
+//cout<<"Out2_resod->unnormleaf: "<< bd->m_vegs.unnormleaf <<"\n";
+//cout<<"Out2_resod->prvunleafmx: "<< bd->prvunleafmx <<"\n";
+//cout<<"Out2_resod->foliagemx: "<<  bd->foliagemx <<"\n";
+//cout<<"Out2_resod->prvtopt: "<< bd->prvtopt <<"\n";
+//cout<<"Out2_resod->strn: "<< bd->m_vegs.strn <<"\n";
+//cout<<"Out2_resod->ston: "<< bd->m_vegs.ston <<"\n";
+//cout<<"Out2_resod->orn: "<<  bd->m_sois.orgn <<"\n";
+//cout<<"Out2_resod->avln: "<<  bd->m_sois.avln <<"\n";
+//cout<<"Out2_resod->wdebris: "<<  bd->m_sois.wdebris <<"\n";
+//cout<<"Out2_resod->c2n: "<< bd->c2n <<"\n";
+//cout<<"Out2_resod->kdfib: "<< bd->kdfib <<"\n";
+//cout<<"Out2_resod->kdhum: "<< bd->kdhum <<"\n";
+//cout<<"Out2_resod->kdmin: "<< bd->kdmin <<"\n";
+//cout<<"Out2_resod->lai: "<< bd->m_vegd.lai <<"\n";
+//cout<<"Out2_resod->ysf: "<< fd->ysf <<"\n";
+//cout<<"Out2_resod->burnedn: "<< fd->y_a2soi.orgn <<"\n";
+
+
+
+
+
  	for(unsigned int i=0; i<ed->eetmxque.size();i++){
  		if(i<10){
  			resod->eetmxA[i] = ed->eetmxque[i];
+//cout<<"Out2_resod->eetmxque["<<i<<"]: "<< ed->eetmxque[i] <<"\n";
  		}	
  	}
  	
  	for(unsigned int i=0; i<ed->petmxque.size();i++){
  		if(i<10){
  			resod->petmxA[i] = ed->petmxque[i];
+//cout<<"Out2_resod->petmxA["<<i<<"]: "<< ed->petmxque[i] <<"\n";
  		}	
  	}
  	
  	for(unsigned int i=0; i<bd->toptque.size();i++){
  		if(i<10){
  			resod->toptA[i] = bd->toptque[i];
+//cout<<"Out2_resod->toptA["<<i<<"]: "<< bd->toptque[i] <<"\n";
  		}	
  	}
  	
  	for(unsigned  int i=0; i<bd->unleafmxque.size();i++){
  		if(i<10){
  			resod->unnormleafmxA[i] = bd->unleafmxque[i];
+//cout<<"Out2_resod->unnormleafmxA["<<i<<"]: "<< bd->unleafmxque[i] <<"\n";
  		}	
  	}
  	
@@ -1676,7 +1834,6 @@ void Cohort::updateSclmOutputBuffer(const int &im){ //Monthly
 	    	sclmod->poro[il] = ed->m_sois.por[il];
 	    	sclmod->dz[il]   = ed->m_sois.dz[il];
 	    	sclmod->rootfrac[il] = ed->m_sois.rootfrac[il];
-
 	    	sclmod->ts[im][il]  = ed->m_soid.tem[il];
 	    	sclmod->liq[im][il] = ed->m_soid.alllwc[il];
 	    	sclmod->vwc[im][il] = ed->m_soid.allvwc[il];
@@ -1684,7 +1841,9 @@ void Cohort::updateSclmOutputBuffer(const int &im){ //Monthly
 	   	}
 
  		for(int il =0; il<MAX_MIN_LAY ; il++){
- 			sclmod->mintype[il] =ground.soil.mineral.type[il];
+ 			sclmod->minclay[il] =ground.soil.mineral.clay[il];
+ 			sclmod->minsand[il] =ground.soil.mineral.sand[il];
+ 			sclmod->minsilt[il] =ground.soil.mineral.silt[il];
  		}
 
  		sclmod->ald[im] = ed->m_ald;
@@ -1704,7 +1863,7 @@ void Cohort::updateSclmOutputBuffer(const int &im){ //Monthly
  	}
 };
 
-void Cohort::updateSoilLayerType(int TYPEsoil[], int TYPEmin[]){
+void Cohort::updateSoilLayerType(int TYPEsoil[], int CLAYmin[], int SANDmin[], int SILTmin[]){
  	Layer* currl = ground.frontl;
  	SoilLayer*sl;
  	PeatLayer* pl;
@@ -1736,7 +1895,9 @@ void Cohort::updateSoilLayerType(int TYPEsoil[], int TYPEmin[]){
  		currl =currl->nextl;
 
  		for(int il =0; il<MAX_MIN_LAY ; il++){
- 	 		TYPEmin[il] =ground.soil.mineral.type[il];
+ 	 		CLAYmin[il] =ground.soil.mineral.clay[il];
+ 	 		SANDmin[il] =ground.soil.mineral.sand[il];
+ 	 		SILTmin[il] =ground.soil.mineral.silt[il];
  	 	}
 
  	}

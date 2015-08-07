@@ -24,7 +24,9 @@ SiteIn::SiteIn(){
 	avln= -999;
 	
 	for (int i=0; i<MAX_MIN_LAY; i++){
-		mintype[i]=-999;
+		minclay[i]=-999;
+		minsand[i]=-999;
+		minsilt[i]=-999;
 	}
 	
 	for (int i=0; i<MAX_SOI_LAY; i++){

@@ -61,11 +61,11 @@ void Rock::initializeState5restart( Layer* lstminl, RestartData * resin){
 		  rcind ++;
 		
 		  currl->tem = TSrock[rcind];
-          currl->liq =0;
-          currl->ice =0;
-          currl->wat =0;
-          currl->age =0;
-          currl->poro=0;
+          currl->liq =0.;
+          currl->ice =0.;
+          currl->wat =0.;
+          currl->age =0.;
+          currl->poro=0.;
           
 			
 		}

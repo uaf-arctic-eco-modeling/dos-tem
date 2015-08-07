@@ -41,7 +41,9 @@ class SoilclmInputer{
 
 		NcVar* dzV;
 		NcVar* typeV;
-		NcVar* mintypeV;
+		NcVar* minclayV;
+		NcVar* minsandV;
+		NcVar* minsiltV;
 		NcVar* poroV;
 		NcVar* rootfracV;
 

@@ -33,7 +33,9 @@ class RestartData {
 	    double petmxA[10];
 	    double unnormleafmxA[10];
 	        
-	    int TYPEmin[MAX_MIN_LAY];   
+	    int CLAYmin[MAX_MIN_LAY];   
+	    int SANDmin[MAX_MIN_LAY];
+	    int SILTmin[MAX_MIN_LAY];
 	    double TSrock[MAX_ROC_LAY]; 
 	    double DZrock[MAX_ROC_LAY];
 	    double frontZ[MAX_NUM_FNT];

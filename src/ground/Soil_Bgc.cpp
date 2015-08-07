@@ -40,7 +40,7 @@ void Soil_Bgc::updateDeepThickness(Layer* fstdeepl, Layer* lstdeepl){
  			 		dbmbot = pow( (cumcarbonbot/10000.)/bgcpar.deepa, 1./bgcpar.deepb)/100.;
  			 		tempdz = dbmbot - dbmtop;
  			 		dbmtop = dbmbot;
- 				    cumcarbontop = cumcarbonbot;
+ 				    	cumcarbontop = cumcarbonbot;
  			 		sl->dz = tempdz;
  			 		totdeep += tempdz;
  					sl->updateProperty4LayerChange();
@@ -81,16 +81,13 @@ void Soil_Bgc::updateShallowThickness(Layer* fstshlwl, Layer* lstshlwl){
  				 	
   			 		cumcarbonbot = cumcarbontop + sl->reac + sl->nonc;
  			 		dbmbot = pow( (cumcarbonbot/10000.)/bgcpar.shlwa, 1./bgcpar.shlwb)/100.;
- 			 		tempdz = dbmbot - dbmtop;
- 			 		
- 				    dbmtop = dbmbot;
- 				    cumcarbontop = cumcarbonbot;
+ 			 		tempdz = dbmbot - dbmtop; 		
+ 				    	dbmtop = dbmbot;
+ 				    	cumcarbontop = cumcarbonbot;
  			 		sl->dz = tempdz;
  			 		totshlw += tempdz;
  					sl->updateProperty4LayerChange();
- 			 		
- 				}
- 	  		
+				}
  	  		}
  	  	}
  		currl =currl->nextl;
@@ -278,7 +275,8 @@ void Soil_Bgc::prepareIntegration(){
 
      //for below-ground literfall distribution
      for(int i=0;i<numsl; i++){
-           blwlfcfrac[i] = ed->m_sois.rootfrac[i];	
+           	blwlfcfrac[i] = ed->m_sois.rootfrac[i];	
+//		if (i <= 4) cout<<"ed->m_sois.rootfrac[i]: "<<ed->m_sois.rootfrac[i]<<"\n";
      }
      
      //prepare totsolliq in root zone
@@ -308,8 +306,10 @@ void Soil_Bgc::prepareIntegration(){
   	 if(fd->ysf<9){
   		if(bd->m_vegs.deadc>0){
   			bd->m_sois.wdebris += bd->m_vegs.deadc/9./12.;
+//  			bd->m_vegs.standingc = bd->m_vegs.deadc-bd->m_sois.wdebris;	
   		}  	
   	 }else{
+//  		bd->m_vegs.standingc =0.;
   		bd->m_vegs.deadc =0.;
   		bd->m_vegs.deadn=0.;
   	 }
@@ -342,7 +342,8 @@ void Soil_Bgc::initializeState(Layer* fstshlwl, Layer* fstminl,  const int & drg
    bd->kdhum = calpar.kdchum;	
    bd->kdmin = calpar.kdcmin;
    bd->kdslow = calpar.kdcslow;
-   
+
+  
    shlw2cmcarbon = bgcpar.shlwa * pow(2., bgcpar.shlwb*1.) *10000;
    deep2cmcarbon = bgcpar.deepa * pow( 2., bgcpar.deepb*1.) *10000;
 
@@ -382,11 +383,19 @@ void Soil_Bgc::initializeState5restart(Layer* fstsoill, RestartData* resin){
 	bd->m_sois.orgn=resin->soln; //resin->getSOLN(bd->m_sois.orgn, ed->cd->reschtid);
 	bd->m_sois.avln=resin->avln; //resin->getAVLN(bd->m_sois.avln, ed->cd->reschtid);
 	bd->m_sois.wdebris=resin->wdebris; //resin->getWDEBRIS(bd->m_sois.wdebris, ed->cd->reschtid);
+
+
+//	bd->kdfib=calpar.kdcfib; //resin->getKDFIB(bd->kdfib, ed->cd->reschtid);
+//	bd->kdhum=calpar.kdchum;  //resin->getKDHUM(bd->kdhum, ed->cd->reschtid);
+//	bd->kdmin=calpar.kdcmin;  //resin->getkdmin(bd->kdmin, ed->cd->reschtid);
+//	bd->kdslow=calpar.kdcslow;  //resin->getkdlitter(bd->kdlitter, ed->cd->reschtid);
+
+
 	bd->kdfib=resin->kdfib; //resin->getKDFIB(bd->kdfib, ed->cd->reschtid);
 	bd->kdhum=resin->kdhum;  //resin->getKDHUM(bd->kdhum, ed->cd->reschtid);
 	bd->kdmin=resin->kdmin;  //resin->getkdmin(bd->kdmin, ed->cd->reschtid);
 	bd->kdslow=resin->kdslow;  //resin->getkdlitter(bd->kdlitter, ed->cd->reschtid);
-   
+ 
     assignCarbon5Layer2Struct( fstsoill,  0);
    	
     shlw2cmcarbon =  bgcpar.shlwa * pow(2., bgcpar.shlwb*1.) *10000;
@@ -397,7 +406,7 @@ void Soil_Bgc::initializeParameter(const int & drgtypep,const int & vegtypep){
  	int drgtype  = drgtypep;	
  	int  vegtype = vegtypep;	
     
-    bgcpar.rootza = chtlu->rootza[vegtype];
+    	bgcpar.rootza = chtlu->rootza[vegtype];
 	bgcpar.rootzb = chtlu->rootzb[vegtype];
 	bgcpar.rootzc = chtlu->rootzc[vegtype];
 	bgcpar.minrootz = chtlu->minrootz[vegtype];
@@ -412,22 +421,22 @@ void Soil_Bgc::initializeParameter(const int & drgtypep,const int & vegtypep){
   
    	bgcpar.kn2 = chtlu->kn2[vegtype];
   
-    bgcpar.shlwa =chtlu->coefshlwa[drgtype][vegtype];
-    bgcpar.shlwb =chtlu->coefshlwb[drgtype][vegtype];
+    	bgcpar.shlwa =chtlu->coefshlwa[drgtype][vegtype];
+    	bgcpar.shlwb =chtlu->coefshlwb[drgtype][vegtype];
+  	
+    	bgcpar.deepa =chtlu->coefdeepa[drgtype][vegtype];
+    	bgcpar.deepb =chtlu->coefdeepb[drgtype][vegtype];
   
-    bgcpar.deepa =chtlu->coefdeepa[drgtype][vegtype];
-    bgcpar.deepb =chtlu->coefdeepb[drgtype][vegtype];
-  
-    bgcpar.minea =chtlu->coefminea[drgtype][vegtype];
-    bgcpar.mineb =chtlu->coefmineb[drgtype][vegtype];
+    	bgcpar.minea =chtlu->coefminea[drgtype][vegtype];
+    	bgcpar.mineb =chtlu->coefmineb[drgtype][vegtype];
 
-    bgcpar.fsoma =chtlu->fsoma[drgtype][vegtype];
-    bgcpar.fsompr=chtlu->fsompr[drgtype][vegtype];
-    bgcpar.fsomcr=chtlu->fsomcr[drgtype][vegtype];
-    bgcpar.som2co2=chtlu->som2co2[drgtype][vegtype];
+    	bgcpar.fsoma =chtlu->fsoma[drgtype][vegtype];
+    	bgcpar.fsompr=chtlu->fsompr[drgtype][vegtype];
+    	bgcpar.fsomcr=chtlu->fsomcr[drgtype][vegtype];
+    	bgcpar.som2co2=chtlu->som2co2[drgtype][vegtype];
  
-    bgcpar.maxmossthick = chtlu->maxmossthick[vegtype];
-    bgcpar.propftos     = chtlu->propftos[vegtype];
+    	bgcpar.maxmossthick = chtlu->maxmossthick[vegtype];
+    	bgcpar.propftos     = chtlu->propftos[vegtype];
   	bgcpar.nloss        = chtlu->nloss[vegtype];
   
   	calpar.nup    = chtlu->nup[drgtype][vegtype];
@@ -436,11 +445,11 @@ void Soil_Bgc::initializeParameter(const int & drgtypep,const int & vegtypep){
   	calpar.kdcmin = chtlu->kdcmin[drgtype][vegtype];
   	calpar.kdcslow = chtlu->kdcslow[drgtype][vegtype];
   
-    bgcpar.lcclnc   = chtlu->lcclnc[vegtype]; 
+    	bgcpar.lcclnc   = chtlu->lcclnc[vegtype]; 
   	bgcpar.abvltrr2t= chtlu->abvltrr2t[vegtype];
   	bgcpar.blwltrr2t= chtlu->blwltrr2t[vegtype];
   	bgcpar.cnsoil   = chtlu->cnsoil[vegtype];
-  
+
     decay = 0.26299 + (1.14757*bgcpar.propftos)
                     - (0.42956*pow( (double) bgcpar.propftos,2.0 ));
 
@@ -459,14 +468,25 @@ void Soil_Bgc::initSoilCarbon(Layer* fstshlwl, Layer* fstminl, double & initsoil
 	
 	//Init from total soil carbon vs thickness  (depth below moss
 	//use the ltdfmh relationship
+//	cout<<"allreac = "<<allreac<<"\n";
+//	cout<<"allnonc = "<<allnonc<<"\n";
 
 	initShlwCarbon(fstshlwl, allreac, allnonc);
 	initDeepCarbon(fstshlwl, allreac, allnonc);
 
+//	cout<<"allreac = "<<allreac<<"\n";
+//	cout<<"allnonc = "<<allnonc<<"\n";
+
 //	initMineralCarbon(fstminl, allreac, allnonc);
 	double minec = initsoilc - (allreac + allnonc); //Yuan: the mineral-layer somc is the total minus those in peat layers
+//	cout<<"minec = "<<minec<<"\n";
 	if (minec<0.10) minec = 0.10;
 	initMineralCarbon(fstminl, minec, allreac, allnonc);   //Yuan: minec as an input, otherwise, all sites are same
+
+//	cout<<"initsoilc = "<<initsoilc<<"\n";
+//	cout<<"allreac = "<<allreac<<"\n";
+//	cout<<"allnonc = "<<allnonc<<"\n";
+//	cout<<"minec = "<<minec<<"\n";
 
 };
 
@@ -489,15 +509,24 @@ void Soil_Bgc::initShlwCarbon(Layer* fstshlwl, double & allreac, double & allnon
  				dbmbot = dbmtop+  ed->m_sois.dz[currind];
  				if(pl->isFibric){
  				 	cumcarbonbot = bgcpar.shlwa * pow( dbmbot*100. , bgcpar.shlwb*1.) * 10000; //from gC/cm2 to gC/m2	
- 				 	
+// 	cout<<"cumcarbonbot = "<<cumcarbonbot<<"\n";
+// 	cout<<"bgcpar.shlwa = "<<bgcpar.shlwa<<"\n";
+// 	cout<<"dbmbot = "<<dbmbot<<"\n";
+// 	cout<<"bgcpar.shlwb = "<<bgcpar.shlwb<<"\n";
+//	cout<<"cumcarbontop = "<<cumcarbontop<<"\n";
+				 	
  				 	//Yuan: note the changes of initial .reac and .nonc fractions
  				 	if(cumcarbonbot-cumcarbontop>1){
  				 		bd->m_sois.reac[currind] = 10./11. * (cumcarbonbot-cumcarbontop);
  				 		bd->m_sois.nonc[currind] = 1./11. * (cumcarbonbot-cumcarbontop);
- 				 		sl->reac = bd->m_sois.reac[currind];
+//	cout<<"shlw bd->m_sois.reac = "<<bd->m_sois.reac[currind]<<"\n";
+//	cout<<"shlw bd->m_sois.nonc = "<<bd->m_sois.nonc[currind]<<"\n";
+  				 		sl->reac = bd->m_sois.reac[currind];
  				 		sl->nonc = bd->m_sois.nonc[currind];
  				 		allreac +=sl->reac;
  				 		allnonc +=sl->nonc;
+//	cout<<"allreac = "<<allreac<<"\n";
+// 	cout<<"allnonc = "<<allnonc<<"\n";
  					}else{
  				 	  	break;	
  				 	}
@@ -536,17 +565,26 @@ void Soil_Bgc::initDeepCarbon(Layer* fstshlwl, double & allreac, double & allnon
  				if(pl->isHumic){
  				 	currind = sl->solind-1;
  				 	dbmbot  = dbmtop + ed->m_sois.dz[currind];
- 				 	
  				 	cumcarbonbot = bgcpar.deepa * pow( dbmbot*100. , bgcpar.deepb*1.) * 10000; //from gC/cm2 to gC/m2
+
+//	cout<<"deep cumcarbonbot = "<<cumcarbonbot<<"\n";
+// 	cout<<"bgcpar.deepa = "<<bgcpar.deepa<<"\n";
+// 	cout<<"dbmbot = "<<dbmbot<<"\n";
+// 	cout<<"bgcpar.deepb = "<<bgcpar.deepb<<"\n";
+// 	cout<<"deep cumcarbontop = "<<cumcarbontop<<"\n";
 
  				 	//Yuan: note the changes of initial .reac and .nonc fractions
  				 	if(cumcarbonbot-cumcarbontop>1){
  				 		bd->m_sois.reac[currind] = 1./11. * (cumcarbonbot-cumcarbontop);
  				 		bd->m_sois.nonc[currind] = 10./11. * (cumcarbonbot-cumcarbontop);
+//	cout<<"deep bd->m_sois.reac = "<<bd->m_sois.reac[currind]<<"\n";
+// 	cout<<"deep bd->m_sois.nonc = "<<bd->m_sois.nonc[currind]<<"\n";
  				 		sl->reac = bd->m_sois.reac[currind];
  				 		sl->nonc = bd->m_sois.nonc[currind];
  				 		allreac +=sl->reac;
  				 		allnonc +=sl->nonc;
+//	cout<<"allreac = "<<allreac<<"\n";
+//	cout<<"allnonc = "<<allnonc<<"\n";
  					}
  				 	
  				 	cumcarbontop = cumcarbonbot;
@@ -573,7 +611,7 @@ void Soil_Bgc::initMineralCarbon(Layer* fstminl, double & minec, double & allrea
  	int currind;
  	SoilLayer* sl;
  	double ca=  bgcpar.minea;
- 	double cb=  -bgcpar.mineb;
+ 	double cb=  bgcpar.mineb;
 	
 	while(currl!=NULL){
  	  	if(currl->isSoil()){
@@ -582,8 +620,11 @@ void Soil_Bgc::initMineralCarbon(Layer* fstminl, double & minec, double & allrea
 
  			//Yuan: note the changes of initial .reac and .nonc fractions
  			dbm += ed->m_sois.dz[currind];	
-			cumcarbon = ca/cb*(exp(cb*dbm*100) -1) *10000 + 0.0025 *dbm*100*10000;
-			if(cumcarbon-prevcumcarbon>1.0 && dbm<=1.0){   // Yuan: soc will not exist more than 1 m
+//			cumcarbon = ca/cb*(exp(cb*dbm*100) -1) *10000 + 0.0025 *dbm*100*10000;
+			cumcarbon = ca*pow((dbm*100),cb)*10000;
+// 	cout<<"mine cumcarbon = "<<cumcarbon<<"\n";
+// 	cout<<"mine prevcumcarbon = "<<prevcumcarbon<<"\n";
+			if(cumcarbon-prevcumcarbon>1.0 && dbm <= 1.01){   // Yuan: soc will not exist more than 1 m
 			 	sl = dynamic_cast<SoilLayer*> (currl);
  				bd->m_sois.reac[currind] = 1./11. * (cumcarbon -prevcumcarbon);
  				bd->m_sois.nonc[currind] = 10./11. * (cumcarbon -prevcumcarbon);
@@ -591,11 +632,20 @@ void Soil_Bgc::initMineralCarbon(Layer* fstminl, double & minec, double & allrea
 // 				sl->nonc = bd->m_sois.nonc[currind];   //Yuan: moving down below
 // 				allreac +=sl->reac;   //Yuan: moving down below
 // 				allnonc +=sl->nonc;   //Yuan: moving down below
+//	cout<<"mine1 dbm = "<<dbm<<"\n";
+//	cout<<"mine1 cumcarbon = "<<cumcarbon<<"\n";
+//	cout<<"mine1 bd->m_sois.reac = "<<bd->m_sois.reac[currind]<<"\n";
+//	cout<<"mine1 bd->m_sois.nonc = "<<bd->m_sois.nonc[currind]<<"\n";
 			}else{
 // 				break;
  				bd->m_sois.reac[currind] = 0.0;    //
  				bd->m_sois.nonc[currind] = 0.0;
+//HG: line added to fix bug computing mineral carbon
+				cumcarbon = ca*pow((1.0*100),cb)*10000;;
 			}
+//	cout<<"mine1 bd->m_sois.reac = "<<bd->m_sois.reac[currind]<<"\n";
+//	cout<<"mine1 bd->m_sois.nonc = "<<bd->m_sois.nonc[currind]<<"\n";
+//	cout<<"mine1 cumcarbon = "<<cumcarbon<<"\n";
 			prevcumcarbon = cumcarbon;
  	  		
  	  	}else{
@@ -608,6 +658,9 @@ void Soil_Bgc::initMineralCarbon(Layer* fstminl, double & minec, double & allrea
 	//      the following will adjust that by actual initial MINEC amount as an input
 
 	double adjfactor = minec/cumcarbon;
+// 	cout<<"adjfactor = "<<adjfactor<<"\n";
+//	cout<<"cumcarbon = "<<cumcarbon<<"\n";
+//	cout<<"minec = "<<minec<<"\n";
 	currl = fstminl;
 	while(currl!=NULL){
  	  	if(currl->isSoil()){
@@ -617,8 +670,12 @@ void Soil_Bgc::initMineralCarbon(Layer* fstminl, double & minec, double & allrea
  			bd->m_sois.nonc[currind] *= adjfactor;
  			sl->reac = bd->m_sois.reac[currind];
  			sl->nonc = bd->m_sois.nonc[currind];
- 			allreac +=sl->reac;
+// 	cout<<"mine2 bd->m_sois.reac = "<<bd->m_sois.reac[currind]<<"\n";
+//	cout<<"mine2 bd->m_sois.nonc = "<<bd->m_sois.nonc[currind]<<"\n";
+			allreac +=sl->reac;
  			allnonc +=sl->nonc;
+//	cout<<"mine allreac = "<<allreac<<"\n";
+//	cout<<"mine allnonc = "<<allnonc<<"\n";
  	  	}
  		currl =currl->nextl;
  	}
@@ -631,7 +688,7 @@ void Soil_Bgc::delta(){
    	double allreac, allnonc, allrrh, allnrh, allorgc , allrh;
    	double kfastc, kslowc;  //Yuan: kfastc is for relatively-fast-decomposed SOM,
    	                        //      kslowc is for the very-slowly-decomposed SOM
-    double klitrc;    //Yuan: for littering materials (in model, i.e., reactive-C)
+    	double klitrc;    //Yuan: for littering materials (in model, i.e., reactive-C)
 
  	for (int il =0; il<numsl; il++){
 //		bd->m_soid.rhmoist[il] = getRhmoist(ed->m_soid.allaws[il],  //Yuan: vwc normalized by (total pore - ice volume), which makes almost no respiration for poorly-drained BS
@@ -692,19 +749,30 @@ void Soil_Bgc::delta(){
 
 	 	for (int il =0; il<numsl; il++){
 	 	 	if(ed->m_sois.rootfrac[il]>0.01){
+//				cout<<"rootfrac: "<<ed->m_sois.rootfrac[il]<<" for layer: "<<il<<"\n";
 	   			allreac += tmp_sois.reac[il];	
 	   			allrrh  += del_soi2a.rrh[il];
 	   			allnonc += tmp_sois.nonc[il];	
 	   			allnrh  += del_soi2a.nrh[il]; 
 	 	 	}
 	 	}
-    	allorgc = allreac + allnonc;
-    	allrh = allrrh + allnrh;
+    		allorgc = allreac + allnonc;
+    		allrh = allrrh + allnrh;
     
 		del_soi2soi.nimmob =  getNimmob(totsolliq, allorgc,tmp_sois.orgn,
 					          tmp_sois.avln, meanksoil, bgcpar.kn2);
 		del_soi2soi.netnmin= getNetmin(del_soi2soi.nimmob, allorgc,tmp_sois.orgn,
 					          tmp_sois.avln,allrh ,bgcpar.cnsoil, decay,  calpar.nup); 
+//cout<<"numsl: "<<numsl <<"\n";
+//cout<<"nimmob: "<<del_soi2soi.nimmob <<"\n";
+//cout<<"allorgc: "<<allorgc <<"\n";
+//cout<<"orgn: "<<tmp_sois.orgn <<"\n";
+//cout<<"avln: "<<tmp_sois.avln <<"\n";
+//cout<<"rh: "<<allrh <<"\n";
+//cout<<"cnsoil: "<<bgcpar.cnsoil <<"\n";
+//cout<<"decay: "<<decay <<"\n";
+//cout<<"nup: "<<calpar.nup <<"\n";
+//cout<<"del_soi2soi.netnmin: "<<del_soi2soi.netnmin <<"\n";
 
 	} // nfeed
 	  
@@ -950,6 +1018,10 @@ void Soil_Bgc::updateKdyrly4all(const int &yrcnt ){
 	bd->kdhum = tmpkdhum;
 	bd->kdmin = tmpkdmin;
 	bd->kdslow = min(tmpkdhum, tmpkdhum)/100.0;//tmpkdslow;
+
+
+
+
 /*
 	for(int i=0; i<MAX_SOI_LAY; i++){
 		 if(ed->m_sois.type[i]==0){ //moss
@@ -1009,8 +1081,7 @@ double Soil_Bgc::getKdyrly(double& yrltrc, double& yrltrn,
   	if ( nfeed == 0 ){
     	kd = kdc; 
    	} else {
-    	kd = kdc * pow( (yrltrc/yrltrn),-0.784 )
-           / pow( lcclnc,-0.784 );
+    	kd = kdc * pow( (yrltrc/yrltrn),-0.784 ) / pow( lcclnc,-0.784 );
    	}
  	
  	return kd;

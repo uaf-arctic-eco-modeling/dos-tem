@@ -16,10 +16,10 @@ void BgcData::init(){
 	foliagemx =0.0;
 
 	for(int il=0; il<MAX_SOI_LAY; il++){
-		m_sois.reac[il]= 0;
-		m_sois.nonc[il]= 0;
-	  	m_soi2a.rrh[il]= 0;
-	  	m_soi2a.nrh[il]= 0;
+		m_sois.reac[il]= 0.;
+		m_sois.nonc[il]= 0.;
+	  	m_soi2a.rrh[il]= 0.;
+	  	m_soi2a.nrh[il]= 0.;
 	}
 	
 	m_sois.wdebris =0.;
@@ -36,13 +36,14 @@ void BgcData::beginOfMonth(const int & currmind){
 void BgcData::beginOfYear(){
 	
 	y_a2soi.ninput = 0.0;
-    y_soi2l.nlost = 0.0;
+    	y_soi2l.nlost = 0.0;
       
  	y_vegs.c = 0;
  	y_vegs.ston = 0;
  	y_vegs.strn = 0;
  	y_vegs.unnormleaf = 0;
- 
+ 	y_vegs.deadn = 0;
+ 	y_vegs.deadc = 0; 
  	y_vegd.abvgndc =0.;
  	y_v2a.rg = 0;
  	y_v2a.rm = 0;
@@ -117,13 +118,28 @@ void BgcData::beginOfYear(){
 
 void BgcData::endOfMonth(const int & currmind){
  
- 	y_vegs.c += m_vegs.c/12.;
- 	y_vegs.ston += m_vegs.ston/12.;
- 	y_vegs.strn += m_vegs.strn/12.;
- 	y_vegs.unnormleaf += m_vegs.unnormleaf/12.;
+	double vegn=0;
+
+	if (currmind==11) {
+	 	y_vegs.c = m_vegs.c;
+	 	y_vegs.ston = m_vegs.ston;
+	 	y_vegs.strn = m_vegs.strn;
+	 	y_vegs.unnormleaf = m_vegs.unnormleaf;
+	 	vegn = y_vegs.strn+y_vegs.ston;
+	 	y_vegs.deadn = m_vegs.deadn;
+		y_vegs.deadc = m_vegs.deadc;
+	 	y_vegd.abvgndc = m_vegd.abvgndc;
+	}
+	
+//	y_vegs.c += m_vegs.c/12.;
+//	y_vegs.ston += m_vegs.ston/12.;
+//	y_vegs.strn += m_vegs.strn/12.;
+//	y_vegs.unnormleaf += m_vegs.unnormleaf/12.;
+//	vegn = y_vegs.strn+y_vegs.ston;
+//	y_vegs.deadn += m_vegs.deadn/12.;
+//	y_vegs.deadc += m_vegs.deadc/12.;
+//	y_vegd.abvgndc += m_vegd.abvgndc/12.;
  
- 	y_vegd.abvgndc += m_vegd.abvgndc/12.;
-  
  	y_v2a.rg += m_v2a.rg;
  	y_v2a.rm += m_v2a.rm;
  
@@ -134,7 +150,16 @@ void BgcData::endOfMonth(const int & currmind){
  	y_a2v.ingpp += m_a2v.ingpp;
  	y_a2v.npp += m_a2v.npp;
  	y_a2v.innpp += m_a2v.innpp;
- 
+	
+	if (currmind==11) {
+		cout <<"-- Aboveground C --"<<"\n";
+		cout <<"GPP "<<y_a2v.gpp<<"\n";
+		cout <<"NPP "<<y_a2v.npp<<"\n";
+		cout <<"VEGC "<<y_vegs.c<<"\n";
+		cout <<"INNPP "<<y_a2v.innpp<<"\n";
+		cout <<"DEADC "<<y_vegs.deadc<<"\n";
+	}
+
  	y_v2soi.ltrfalc += m_v2soi.ltrfalc;
  	y_v2soi.ltrfaln += m_v2soi.ltrfaln;
  
@@ -142,7 +167,7 @@ void BgcData::endOfMonth(const int & currmind){
  	y_soi2v.nuptake +=m_soi2v.nuptake;
  	y_soi2v.luptake +=m_soi2v.luptake;
  	y_soi2v.suptake +=m_soi2v.suptake;
- 
+
  	m_soid.reacsum=0.;
  	m_soid.rrhsum=0.;
  	m_soid.noncsum=0.;
@@ -166,33 +191,70 @@ void BgcData::endOfMonth(const int & currmind){
    
  	}
  	
-   	y_soid.shlwc += m_soid.shlwc/12;
-   	y_soid.deepc += m_soid.deepc/12;
-   	y_soid.minec += m_soid.minec/12;
-   
+	if (currmind==11) {
+   		y_soid.shlwc = m_soid.shlwc;
+   		y_soid.deepc = m_soid.deepc;
+   		y_soid.minec = m_soid.minec;
+	}
+   	
+//	y_soid.shlwc += m_soid.shlwc/12;
+//   	y_soid.deepc += m_soid.deepc/12;
+//   	y_soid.minec += m_soid.minec/12;
+
+ 	if (currmind==11) {
+		cout <<"-- Belowground C --"<<"\n";
+		cout <<"SHLWC "<<y_soid.shlwc<<"\n";
+		cout <<"DEEPC "<<y_soid.deepc<<"\n";
+		cout <<"MINEC "<<y_soid.minec<<"\n";
+	}
+  
  	for (int il =0; il<MAX_SOI_LAY; il++){
-   	    y_sois.reac[il] += m_sois.reac[il]/12;
-   		y_sois.nonc[il] += m_sois.nonc[il]/12;
+		if (currmind==11) {
+			y_sois.reac[il] = m_sois.reac[il];
+   			y_sois.nonc[il] = m_sois.nonc[il];
+		}
+
+//		y_sois.reac[il] += m_sois.reac[il]/12;
+//  		y_sois.nonc[il] += m_sois.nonc[il]/12;
    		y_soid.kdl[il] += m_soid.kdl[il]/12;
    		y_soid.kdr[il] += m_soid.kdr[il]/12;
-    	y_soid.kdn[il] += m_soid.kdn[il]/12;
+    		y_soid.kdn[il] += m_soid.kdn[il]/12;
    		y_soid.ksoil[il] += m_soid.ksoil[il]/12;
    		y_soid.rhmoist[il] += m_soid.rhmoist[il]/12;
    		y_soid.rhq10[il] += m_soid.rhq10[il]/12;
    		y_soi2a.rrh[il] += m_soi2a.rrh[il];
-   		y_soi2a.nrh[il] += m_soi2a.nrh[il];
- 	} 
+   		y_soi2a.nrh[il] += m_soi2a.nrh[il]; 	
+	} 
  
-   	y_sois.wdebris = m_sois.wdebris/12.;
- 	y_soid.reacsum += m_soid.reacsum/12.;
- 	y_soid.noncsum += m_soid.noncsum/12.;
- 
+	if (currmind==11) {
+	   	y_sois.wdebris = m_sois.wdebris;
+	 	y_soid.reacsum = m_soid.reacsum;
+	 	y_soid.noncsum = m_soid.noncsum;
+	 	y_sois.avln = m_sois.avln;
+	 	y_sois.orgn = m_sois.orgn;
+	}
+
+//   	y_sois.wdebris += m_sois.wdebris/12.;
+// 	y_soid.reacsum += m_soid.reacsum/12.;
+// 	y_soid.noncsum += m_soid.noncsum/12.;
+// 	y_sois.avln += m_sois.avln/12.;
+// 	y_sois.orgn += m_sois.orgn/12.;
+
  	y_soi2a.wdrh += m_soi2a.wdrh;	
  	y_soid.rrhsum += m_soid.rrhsum;
  	y_soid.nrhsum += m_soid.nrhsum;
 
- 	y_sois.avln += m_sois.avln/12.;
- 	y_sois.orgn += m_sois.orgn/12.;
+
+ 	if (currmind==11) {
+		cout <<"-- N cycle --"<<"\n";
+		cout <<"VEGN "<<vegn<<"\n";
+		cout <<"NUPTAKE "<<y_soi2v.nuptake<<"\n";
+		cout <<"AVLN "<<y_sois.avln<<"\n";
+		cout <<"ORGN "<<y_sois.orgn<<"\n";
+		cout <<"WDEBRIS "<<y_sois.wdebris<<"\n";
+		cout <<"WDRH "<<y_soi2a.wdrh<<"\n";
+	}
+
  
  	if (baseline!=1){
  		y_a2soi.ninput += m_a2soi.ninput;  //Yuan
@@ -212,7 +274,10 @@ void BgcData::endOfMonth(const int & currmind){
  	y_vegd.kr+= m_vegd.kr/12;
  	y_vegd.leaf+= m_vegd.leaf/12;
  	y_vegd.raq10+= m_vegd.raq10/12;
- 
+
+  	if (currmind==11) {
+		cout <<"LAI "<<y_vegd.lai<<"\n";
+	}
 };
 
 
@@ -253,14 +318,28 @@ void BgcData::endOfYear(const double & cnsoil){
 
    	//need to balance soil org. N, if switched on
    	if (baseline == 1 ) {
-      	if ( (m_soid.reacsum+ m_soid.noncsum)/cnsoil >= m_sois.orgn ) {
-      		y_a2soi.ninput = ((m_soid.reacsum+ m_soid.noncsum)/cnsoil) -m_sois.orgn ;
-      	} else {
-      		y_soi2l.nlost = m_sois.orgn - ((m_soid.reacsum+ m_soid.noncsum)/cnsoil);
-      	}
-      	m_sois.orgn =(m_soid.reacsum+ m_soid.noncsum)/cnsoil;   	
-    }
+		int numsl = ed->m_soid.actual_num_soil;
+		double allreac, allnonc, allorgc;
 
+		//Because soil N is estimated for the rooting zone only, 
+		//the orgn adkjustment should be computed with soil C summed 
+		//over the rooting zone only and not the entire 1m profile...
+
+		 for (int il =0; il<numsl; il++){
+	 	 	if(ed->m_sois.rootfrac[il]>0.01){
+	   			allreac += m_sois.reac[il];	
+	   			allnonc += m_sois.nonc[il];	
+	 	 	}
+	 	}
+    		allorgc = allreac + allnonc;
+      		if ( allorgc/cnsoil >= m_sois.orgn ) {
+      			y_a2soi.ninput = (allorgc/cnsoil) -m_sois.orgn ;
+      		} else {
+      			y_soi2l.nlost = m_sois.orgn - (allorgc/cnsoil);
+      		}
+      		m_sois.orgn =allorgc/cnsoil;   	
+//	cout << "cnsoil: " << cnsoil <<"\n";
+    	}
 };
 
 /////////////////private functions ////////////////

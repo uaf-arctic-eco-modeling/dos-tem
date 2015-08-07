@@ -18,6 +18,7 @@ struct atmdiag_env{
 
 struct soidiag_fir{
   	double burnthick;	
+  	double OLR;	
 };
 
 struct vegdiag_env{
@@ -67,6 +68,8 @@ struct soidiag_env{
 	double nfactor;
 	int permafrost;
 	int growstart;
+//	int snowstart;
+//	int snowend;
 	int snowfree1st;
 	int growend;
 	double tmineral10cm;

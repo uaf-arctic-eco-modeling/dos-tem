@@ -17,7 +17,7 @@ class RegnOutData{
 	  	int status;
 	  	float ysf;
 
-	  	int outvarlist[54];  // switches for a list of following variables. read in from a .txt file
+	  	int outvarlist[64];  // switches for a list of following variables. read in from a .txt file
 	  	                     // 0 - not output; 1 - yearly; 2 - monthly;
 
 	  	// Yuan: yearly output variables (if set monthly, it's always same value)
@@ -25,8 +25,19 @@ class RegnOutData{
 	 	float burnsoic;
 	 	float burnvegc;
 
+		float dwd[12];
+		float dwdrh[12];
+		float deadc[12];
+		float deadn[12];
+		float burnsoiln;
+		float burnvegn;
+		float ndepo;
+		float ORL;
+
 	 	float growstart;
 		float growend;
+	 	float snowstart;
+		float snowend;
 		float perm;
 
 		float mossdz;
@@ -34,29 +45,29 @@ class RegnOutData{
 		float deepdz;
 	 
 	 	//Yuan: variables are in monthly, so when yearly output needed, it's in [0]
-    	float lai[12];    //Yuan: monthly
+    		float lai[12];    //Yuan: monthly
 	  	float vegc[12];   //Yuan: monthly
-    	float vegn[12];   //Yuan: monthly
+    		float vegn[12];   //Yuan: monthly
 	 	float gpp[12];    //Yuan: monthly
-     	float npp[12];    //Yuan: monthly
+     		float npp[12];    //Yuan: monthly
 	 	float rh[12];     //Yuan: monthly
-	 
-    	float ltrfalc[12];   //Yuan: monthly
-       	float ltrfaln[12];   //Yuan: monthly
+		 
+    		float ltrfalc[12];   //Yuan: monthly
+       		float ltrfaln[12];   //Yuan: monthly
 
 	  	float shlwc[12];       //Yuan: monthly;;
 	  	float deepc[12];       //Yuan: monthly;;
 	  	float minec[12];       //Yuan: monthly;;
 	  	float orgn[12];       //Yuan: monthly;;
-    	float avln[12];       //Yuan: monthly;
+    		float avln[12];       //Yuan: monthly;
 
-    	float netnmin[12];   //Yuan: monthly;
-    	float nuptake[12];   //Yuan: monthly;
+    		float netnmin[12];   //Yuan: monthly;
+    		float nuptake[12];   //Yuan: monthly;
 		float ninput[12];   //Yuan: monthly;
 		float nlost[12];   //Yuan: monthly;
 
-    	float eet[12];   //Yuan: monthly
-    	float pet[12];   //Yuan: monthly
+    		float eet[12];   //Yuan: monthly
+    		float pet[12];   //Yuan: monthly
 
 		float qdrain[12];   //Yuan: monthly;
 		float qrunoff[12];   //Yuan: monthly;
@@ -65,7 +76,7 @@ class RegnOutData{
 		float swe[12];        // Yuan: monthly snow water equivalent (mm)
 
 		float wtd[12];   //Yuan: monthly
-    	float ald[12];   //Yuan: monthly
+    		float ald[12];   //Yuan: monthly
 	 
 		float vwcshlw[12];   //Yuan: monthly
 		float vwcdeep[12];   //Yuan: monthly
@@ -74,7 +85,7 @@ class RegnOutData{
 
 		float tshlw[12];   //Yuan: monthly
 		float tdeep[12];   //Yuan: monthly
-    	float tminetop[12];   //Yuan: monthly (top minearl 20 cm)
+    		float tminetop[12];   //Yuan: monthly (top minearl 20 cm)
 		float tminebot[12];   //Yuan: monthly (below top mineral 20 cm)
 
 		float hkshlw[12];   //Yuan: monthly hydraulic conductivity
@@ -84,7 +95,7 @@ class RegnOutData{
 
 		float tcshlw[12];   //Yuan: monthly thermal conductivity
 		float tcdeep[12];   //Yuan: monthly thermal conductivity
-    	float tcminetop[12];   //Yuan: monthly (top minearl 20 cm)
+    		float tcminetop[12];   //Yuan: monthly (top minearl 20 cm)
 		float tcminebot[12];   //Yuan: monthly (below top mineral 20 cm)
 
 		float trock34[12];   //Yuan: monthly;;

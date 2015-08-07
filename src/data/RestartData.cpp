@@ -34,7 +34,9 @@ void RestartData::reinitValue(){
 	}
 	
 	for(int il =0;il<MAX_MIN_LAY; il++){
-		TYPEmin[il] = -999;	
+		CLAYmin[il] = -999;	
+		SANDmin[il] = -999;
+		SILTmin[il] = -999;
 	}
    
 	for(int il =0;il<MAX_ROC_LAY; il++){
